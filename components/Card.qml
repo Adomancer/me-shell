@@ -2,20 +2,21 @@ import QtQuick
 import QtQuick.Layouts
 import qs.utils
 
-// Kartu berjudul: "TITLE ........ note". Isi disusun vertikal; anak pakai Layout.fillWidth.
+// Kartu Material 3: latar container, sudut bulat, judul kecil ber-ikon (opsional).
+// Isi disusun vertikal; anak pakai Layout.fillWidth.
 StyledRect {
     id: root
 
     property string title: ""
+    property string icon: ""
     property string note: ""
+    property int pad: Appearance.padding.normal + 2
     default property alias content: body.data
-    readonly property int pad: Appearance.spacing.large
 
     implicitWidth: col.implicitWidth + pad * 2
     implicitHeight: col.implicitHeight + pad * 2
-    color: Appearance.colors.background
-    border.width: Appearance.border.thin
-    border.color: Appearance.colors.outline
+    radius: Appearance.radius.normal
+    color: Appearance.colors.surfaceContainer
 
     ColumnLayout {
         id: col
@@ -24,18 +25,24 @@ StyledRect {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: root.pad
-        spacing: 6
+        spacing: Appearance.spacing.normal
 
         RowLayout {
             Layout.fillWidth: true
             visible: root.title !== ""
+            spacing: Appearance.spacing.small
+
+            MaterialIcon {
+                visible: root.icon !== ""
+                text: root.icon
+                font.pixelSize: Appearance.font.size.larger
+                color: Appearance.colors.primary
+            }
 
             StyledText {
-                text: root.title.toUpperCase()
+                text: root.title
                 color: Appearance.colors.primary
-                font.pixelSize: Appearance.font.size.small
-                font.bold: true
-                font.letterSpacing: 2
+                font.weight: Font.Medium
             }
 
             Item {
@@ -43,11 +50,11 @@ StyledRect {
             }
 
             StyledText {
+                Layout.maximumWidth: 180
                 text: root.note
                 color: Appearance.colors.textDim
                 font.pixelSize: Appearance.font.size.small
                 elide: Text.ElideRight
-                Layout.maximumWidth: 180
             }
         }
 
@@ -55,7 +62,7 @@ StyledRect {
             id: body
 
             Layout.fillWidth: true
-            spacing: 6
+            spacing: Appearance.spacing.small
         }
     }
 }
