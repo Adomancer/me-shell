@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import qs.components
 import qs.services
 import qs.utils
 
@@ -44,7 +45,7 @@ Variants {
             asynchronous: true
             onStatusChanged: {
                 if (status === Image.Ready && prev.opacity > 0)
-                    fade.restart();
+                    swap.restart();
             }
         }
 
@@ -58,14 +59,24 @@ Variants {
             opacity: 0
         }
 
-        NumberAnimation {
-            id: fade
+        // Gambar baru menyusut pelan ke ukuran asli sementara yang lama memudar
+        ParallelAnimation {
+            id: swap
 
-            target: prev
-            property: "opacity"
-            to: 0
-            duration: Appearance.anim.duration.slow * 2
-            easing.type: Appearance.anim.easing.standard
+            Anim {
+                target: prev
+                property: "opacity"
+                to: 0
+                duration: Appearance.anim.durations.extraLarge
+            }
+            Anim {
+                target: cur
+                property: "scale"
+                from: 1.08
+                to: 1
+                duration: Appearance.anim.durations.extraLarge * 1.4
+                easing.bezierCurve: Appearance.anim.curves.emphasizedDecel
+            }
         }
 
         Connections {
