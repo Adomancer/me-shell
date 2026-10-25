@@ -1,6 +1,7 @@
 //@ pragma UseQApplication
 
 import Quickshell
+import QtQuick
 import qs.services
 import qs.modules.background
 import qs.modules.drawers
