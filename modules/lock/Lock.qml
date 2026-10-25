@@ -15,9 +15,11 @@ Scope {
     property bool busy: false
     property bool failed: false
     property string message: ""
+    // true = password benar, animasi keluar sedang berjalan sebelum sesi dibuka
+    property bool unlocking: false
 
     function submit(): void {
-        if (password === "" || busy)
+        if (password === "" || busy || unlocking)
             return;
         busy = true;
         message = "";
@@ -43,11 +45,23 @@ Scope {
             if (result === PamResult.Success) {
                 root.failed = false;
                 root.message = "";
-                Session.locked = false;
+                root.unlocking = true;
+                unlockTimer.restart();
             } else {
                 root.failed = true;
-                root.message = "AKSES DITOLAK";
+                root.message = "Password salah";
             }
+        }
+    }
+
+    // Beri waktu animasi keluar sebelum permukaan lock dihancurkan
+    Timer {
+        id: unlockTimer
+
+        interval: Appearance.anim.durations.large
+        onTriggered: {
+            Session.locked = false;
+            root.unlocking = false;
         }
     }
 
@@ -55,7 +69,7 @@ Scope {
         locked: Session.locked
 
         WlSessionLockSurface {
-            color: Appearance.colors.background
+            color: "black"
 
             LockSurface {
                 anchors.fill: parent

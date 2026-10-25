@@ -6,60 +6,76 @@ import qs.utils
 
 // Info sistem ala neofetch
 Card {
-    component Key: StyledText {
-        Layout.preferredWidth: 64
-        color: Appearance.colors.primary
-        font.pixelSize: Appearance.font.size.small
-        font.bold: true
+    component Key: Row {
+        property string icon
+        property string label
+
+        Layout.preferredWidth: 96
+        spacing: Appearance.spacing.small
+
+        MaterialIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            text: parent.icon
+            font.pixelSize: Appearance.font.size.larger
+            color: Appearance.colors.primary
+        }
+
+        StyledText {
+            anchors.verticalCenter: parent.verticalCenter
+            text: parent.label
+            color: Appearance.colors.textDim
+        }
     }
 
     component Value: StyledText {
         Layout.fillWidth: true
-        font.pixelSize: Appearance.font.size.small
+        font.family: Appearance.font.family.mono
+        font.pixelSize: Appearance.font.size.smaller
         elide: Text.ElideRight
     }
 
-    title: "fetch"
+    title: "Sistem"
+    icon: "terminal"
     note: `${UserInfo.user}@${UserInfo.host}`
+    color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.85)
 
     GridLayout {
         Layout.fillWidth: true
         columns: 2
         columnSpacing: Appearance.spacing.normal
-        rowSpacing: 2
+        rowSpacing: 4
 
         Key {
-            text: "OS"
+            icon: "computer"
+            label: "OS"
         }
         Value {
             text: UserInfo.distro
         }
         Key {
-            text: "WM"
+            icon: "grid_view"
+            label: "WM"
         }
         Value {
             text: UserInfo.wm
         }
         Key {
-            text: "SHELL"
-        }
-        Value {
-            text: "me-shell"
-        }
-        Key {
-            text: "KERNEL"
+            icon: "deployed_code"
+            label: "Kernel"
         }
         Value {
             text: UserInfo.kernel
         }
         Key {
-            text: "UPTIME"
+            icon: "schedule"
+            label: "Uptime"
         }
         Value {
             text: UserInfo.uptime
         }
         Key {
-            text: "PKGS"
+            icon: "package_2"
+            label: "Paket"
         }
         Value {
             text: UserInfo.packages

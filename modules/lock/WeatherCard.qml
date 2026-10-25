@@ -3,47 +3,42 @@ import QtQuick.Layouts
 import qs.components
 import qs.services
 import qs.utils
-import "../../utils/WeatherArt.js" as WeatherArt
+import "../../utils/WeatherIcons.js" as WeatherIcons
 
 Card {
-    title: "weather"
+    title: "Cuaca"
+    icon: "partly_cloudy_day"
     note: Weather.location
+    color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.85)
 
     RowLayout {
         Layout.fillWidth: true
-        visible: Weather.available
-        spacing: Appearance.spacing.huge
+        spacing: Appearance.spacing.large
 
-        StyledText {
-            text: WeatherArt.get(Weather.kind)
-            textFormat: Text.PlainText
-            color: Appearance.colors.primary
-            font.pixelSize: Appearance.font.size.small
-            lineHeight: 0.9
+        MaterialIcon {
+            text: Weather.available ? WeatherIcons.get(Weather.kind) : "cloud_off"
+            fill: 1
+            font.pixelSize: 56
+            color: Appearance.colors.tertiary
         }
 
         ColumnLayout {
-            spacing: 2
+            Layout.fillWidth: true
+            spacing: 0
 
             StyledText {
-                text: `${Weather.temp}°C`
-                font.pixelSize: 32
-                font.bold: true
+                text: Weather.available ? `${Weather.temp}°C` : "--"
+                font.family: Appearance.font.family.mono
+                font.pixelSize: Appearance.font.size.extraLarge
+                font.weight: Font.Medium
             }
 
             StyledText {
                 Layout.fillWidth: true
-                text: Weather.description.toUpperCase()
+                text: Weather.available ? Weather.description : "Tidak ada data"
                 color: Appearance.colors.textDim
-                font.pixelSize: Appearance.font.size.small
                 elide: Text.ElideRight
             }
         }
-    }
-
-    StyledText {
-        visible: !Weather.available
-        text: "-- TIDAK ADA DATA --"
-        color: Appearance.colors.textDim
     }
 }

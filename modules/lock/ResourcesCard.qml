@@ -5,74 +5,70 @@ import qs.services
 import qs.utils
 
 Card {
-    component Label: StyledText {
-        Layout.preferredWidth: 40
-        color: Appearance.colors.textDim
-        font.pixelSize: Appearance.font.size.small
-        font.bold: true
-    }
+    title: "Resource"
+    icon: "monitoring"
+    color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.85)
 
-    component Pct: StyledText {
-        Layout.preferredWidth: 40
-        horizontalAlignment: Text.AlignRight
-        font.pixelSize: Appearance.font.size.small
-    }
-
-    title: "resources"
-
-    GridLayout {
+    RowLayout {
         Layout.fillWidth: true
-        columns: 3
-        columnSpacing: Appearance.spacing.normal
-        rowSpacing: 4
+        Layout.topMargin: Appearance.spacing.small
+        spacing: Appearance.spacing.normal
 
-        Label {
-            text: "CPU"
-        }
-        BlockBar {
+        Item {
             Layout.fillWidth: true
-            value: SystemStats.cpu
-        }
-        Pct {
-            text: `${Math.round(SystemStats.cpu * 100)}%`
+            implicitHeight: 84
+
+            CircularProgress {
+                anchors.centerIn: parent
+                size: 84
+                thickness: 7
+                value: SystemStats.cpu
+                label: "CPU"
+            }
         }
 
-        Label {
-            text: "RAM"
-        }
-        BlockBar {
+        Item {
             Layout.fillWidth: true
-            value: SystemStats.memory
-        }
-        Pct {
-            text: `${Math.round(SystemStats.memory * 100)}%`
+            implicitHeight: 84
+
+            CircularProgress {
+                anchors.centerIn: parent
+                size: 84
+                thickness: 7
+                value: SystemStats.memory
+                label: "RAM"
+                color: Appearance.colors.secondary
+            }
         }
 
-        Label {
-            text: "DISK"
-        }
-        BlockBar {
+        Item {
             Layout.fillWidth: true
-            value: SystemStats.disk
-        }
-        Pct {
-            text: `${Math.round(SystemStats.disk * 100)}%`
+            implicitHeight: 84
+
+            CircularProgress {
+                anchors.centerIn: parent
+                size: 84
+                thickness: 7
+                value: SystemStats.disk
+                label: "DISK"
+                color: Appearance.colors.tertiary
+            }
         }
 
-        Label {
+        Item {
+            Layout.fillWidth: true
+            implicitHeight: 84
             visible: SystemStats.temp > 0
-            text: "TEMP"
-        }
-        BlockBar {
-            Layout.fillWidth: true
-            visible: SystemStats.temp > 0
-            // Skala 0-100°C
-            value: SystemStats.temp / 100
-            color: SystemStats.temp >= 80 ? Appearance.colors.error : Appearance.colors.primary
-        }
-        Pct {
-            visible: SystemStats.temp > 0
-            text: `${Math.round(SystemStats.temp)}°`
+
+            CircularProgress {
+                anchors.centerIn: parent
+                size: 84
+                thickness: 7
+                // Skala 0-100°C
+                value: SystemStats.temp / 100
+                label: "SUHU"
+                color: SystemStats.temp >= 80 ? Appearance.colors.error : Appearance.colors.primary
+            }
         }
     }
 }

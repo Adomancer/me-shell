@@ -10,16 +10,21 @@ import qs.utils
 Item {
     id: root
 
-    component Big: StyledText {
-        color: Appearance.colors.primary
-        font.pixelSize: 104
-        font.bold: true
+    required property var lock
+    // 0 = baru muncul / sedang membuka, 1 = tampil penuh
+    property real reveal: 0
+    readonly property real shown: lock.unlocking ? 0 : reveal
+
+    Component.onCompleted: reveal = 1
+
+    Behavior on reveal {
+        Anim {
+            duration: Appearance.anim.durations.extraLarge
+            easing.bezierCurve: Appearance.anim.curves.emphasizedDecel
+        }
     }
 
-    required property var lock
-    property bool cursorOn: true
-
-    // Wallpaper blur + gelap. Jadi sumber untuk shader CRT kalau diaktifkan.
+    // Wallpaper yang makin buram dan gelap seiring lock muncul. Jadi sumber shader CRT kalau aktif.
     Item {
         id: scene
 
@@ -39,9 +44,27 @@ Item {
             anchors.fill: wall
             source: wall
             blurEnabled: true
-            blur: 1
+            blur: root.shown
             blurMax: 64
-            brightness: -0.35
+            brightness: -0.2 * root.shown
+            saturation: -0.2 * root.shown
+            // Lebih besar sedikit supaya tepi buram tidak terlihat
+            scale: 1 + 0.06 * root.shown
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            opacity: root.shown
+            gradient: Gradient {
+                GradientStop {
+                    position: 0
+                    color: Appearance.alpha(Appearance.colors.scrim, 0.1)
+                }
+                GradientStop {
+                    position: 1
+                    color: Appearance.alpha(Appearance.colors.scrim, 0.5)
+                }
+            }
         }
     }
 
@@ -71,16 +94,7 @@ Item {
         }
     }
 
-    Image {
-        anchors.fill: parent
-        source: Qt.resolvedUrl("../../assets/scanlines.svg")
-        fillMode: Image.Tile
-        sourceSize: Qt.size(4, 4)
-        smooth: false
-        opacity: 0.35
-    }
-
-    // Input tersembunyi; yang tampil adalah bintang + kursor
+    // Input tersembunyi; yang tampil adalah titik-titik di kolom password
     TextInput {
         id: input
 
@@ -108,256 +122,248 @@ Item {
         }
     }
 
-    Timer {
-        interval: 530
-        repeat: true
-        running: true
-        onTriggered: root.cursorOn = !root.cursorOn
-    }
-
-    Item {
-        id: wrap
+    RowLayout {
+        id: content
 
         anchors.fill: parent
-        anchors.topMargin: 36
-        anchors.bottomMargin: 36
-        anchors.leftMargin: 48
-        anchors.rightMargin: 48
+        anchors.margins: 48
+        spacing: Appearance.spacing.huge * 2
+        opacity: root.shown
+        scale: root.lock.unlocking ? 1.06 : 0.94 + 0.06 * root.reveal
 
-        // Efek layar CRT menyala: garis horizontal dulu, lalu melebar ke atas-bawah
-        transform: Scale {
-            id: crtOn
-
-            origin.x: wrap.width / 2
-            origin.y: wrap.height / 2
-            xScale: 0.02
-            yScale: 0.01
+        transform: Translate {
+            y: (1 - root.reveal) * 40
         }
 
-        Component.onCompleted: powerOn.start()
+        Behavior on scale {
+            enabled: root.lock.unlocking
 
-        SequentialAnimation {
-            id: powerOn
-
-            NumberAnimation {
-                target: crtOn
-                property: "xScale"
-                to: 1
-                duration: Appearance.anim.duration.fast
-                easing.type: Easing.OutCubic
-            }
-            NumberAnimation {
-                target: crtOn
-                property: "yScale"
-                to: 1
-                duration: Appearance.anim.duration.slow
-                easing.type: Appearance.anim.easing.emphasized
+            Anim {
+                duration: Appearance.anim.durations.large
+                easing.bezierCurve: Appearance.anim.curves.emphasizedAccel
             }
         }
 
-        RetroFrame {
-            id: frame
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            Layout.alignment: Qt.AlignTop
+            spacing: Appearance.spacing.normal
 
-            anchors.fill: parent
-            title: "locked // me-shell"
-            background: Qt.rgba(Appearance.colors.surface.r, Appearance.colors.surface.g, Appearance.colors.surface.b, 0.86)
+            WeatherCard {
+                Layout.fillWidth: true
+            }
 
-            RowLayout {
-                width: wrap.width - frame.pad * 2 - frame.bw * 2 - frame.so
-                height: wrap.height - 24 - frame.pad * 2 - frame.bw * 2 - frame.so
-                spacing: Appearance.spacing.huge
+            FetchCard {
+                Layout.fillWidth: true
+            }
 
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 1
-                    Layout.alignment: Qt.AlignTop
-                    spacing: Appearance.spacing.large
+            LockMedia {
+                Layout.fillWidth: true
+            }
+        }
 
-                    WeatherCard {
-                        Layout.fillWidth: true
-                    }
+        ColumnLayout {
+            Layout.preferredWidth: 400
+            Layout.maximumWidth: 400
+            Layout.alignment: Qt.AlignVCenter
+            spacing: Appearance.spacing.normal
 
-                    FetchCard {
-                        Layout.fillWidth: true
-                    }
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: Qt.formatDateTime(Time.date, "hh:mm")
+                color: Appearance.colors.primary
+                font.family: Appearance.font.family.mono
+                font.pixelSize: 120
+                font.bold: true
+            }
 
-                    LockMedia {
-                        Layout.fillWidth: true
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: -Appearance.spacing.normal
+                text: Time.date.toLocaleString(Qt.locale(), "dddd, d MMMM")
+                color: Appearance.colors.text
+                font.pixelSize: Appearance.font.size.large
+            }
+
+            // Avatar dengan cincin; cincin berputar selama password diperiksa
+            Item {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: Appearance.spacing.huge * 2
+                implicitWidth: 132
+                implicitHeight: 132
+
+                CircularProgress {
+                    anchors.fill: parent
+                    size: 132
+                    thickness: 4
+                    value: 0.75
+                    label: ""
+                    visible: root.lock.busy
+                    color: Appearance.colors.primary
+
+                    RotationAnimator on rotation {
+                        from: 0
+                        to: 360
+                        duration: 900
+                        loops: Animation.Infinite
+                        running: root.lock.busy
                     }
                 }
 
-                ColumnLayout {
-                    Layout.preferredWidth: 384
-                    Layout.maximumWidth: 384
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: Appearance.spacing.large
+                Avatar {
+                    anchors.centerIn: parent
+                    size: 116
+                    source: `file://${UserInfo.avatar}`
+                    initial: UserInfo.displayName.charAt(0).toUpperCase()
+                }
+            }
 
-                    Row {
-                        Layout.alignment: Qt.AlignHCenter
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: Appearance.spacing.small
+                text: UserInfo.displayName
+                font.pixelSize: Appearance.font.size.large
+                font.weight: Font.Medium
+            }
 
-                        Big {
-                            text: Qt.formatDateTime(Time.date, "hh")
-                        }
-                        Big {
-                            text: ":"
-                            opacity: root.cursorOn ? 1 : 0
-                        }
-                        Big {
-                            text: Qt.formatDateTime(Time.date, "mm")
-                        }
+            // Kolom password
+            StyledRect {
+                id: box
+
+                property real shakeX: 0
+
+                Layout.fillWidth: true
+                Layout.topMargin: Appearance.spacing.normal
+                implicitHeight: 56
+                radius: height / 2
+                color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.85)
+                border.width: root.lock.failed && !root.lock.busy ? 2 : 0
+                border.color: Appearance.colors.error
+
+                transform: Translate {
+                    x: box.shakeX
+                }
+
+                SequentialAnimation {
+                    id: shake
+
+                    Anim {
+                        target: box
+                        property: "shakeX"
+                        to: 14
+                        duration: 60
+                    }
+                    Anim {
+                        target: box
+                        property: "shakeX"
+                        to: -10
+                        duration: 90
+                    }
+                    Anim {
+                        target: box
+                        property: "shakeX"
+                        to: 6
+                        duration: 90
+                    }
+                    Anim {
+                        target: box
+                        property: "shakeX"
+                        to: 0
+                        duration: Appearance.anim.durations.normal
+                        easing.bezierCurve: Appearance.anim.curves.expressiveDefault
+                    }
+                }
+
+                MaterialIcon {
+                    id: lockIcon
+
+                    anchors.left: parent.left
+                    anchors.leftMargin: Appearance.padding.large
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.lock.unlocking ? "lock_open" : "lock"
+                    fill: 1
+                    color: Appearance.colors.textDim
+                }
+
+                // Titik untuk tiap karakter, meletup saat muncul
+                ListView {
+                    anchors.left: lockIcon.right
+                    anchors.leftMargin: Appearance.spacing.normal
+                    anchors.right: submit.left
+                    anchors.rightMargin: Appearance.spacing.normal
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 16
+                    orientation: ListView.Horizontal
+                    spacing: 6
+                    interactive: false
+                    clip: true
+                    model: root.lock.password.length
+
+                    delegate: Rectangle {
+                        width: 12
+                        height: 12
+                        radius: 6
+                        anchors.verticalCenter: parent?.verticalCenter
+                        color: Appearance.colors.text
                     }
 
-                    StyledText {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: Time.date.toLocaleString(Qt.locale(), "dddd • d MMM").toUpperCase()
-                        font.pixelSize: Appearance.font.size.large
-                        font.bold: true
-                        font.letterSpacing: 3
-                    }
-
-                    // Avatar dari ~/.face; inisial kalau tidak ada
-                    Item {
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.topMargin: Appearance.spacing.large
-                        implicitWidth: 112 + Appearance.shadowOffset.normal
-                        implicitHeight: 112 + Appearance.shadowOffset.normal
-
-                        Rectangle {
-                            x: Appearance.shadowOffset.normal
-                            y: Appearance.shadowOffset.normal
-                            width: 112
-                            height: 112
-                            color: Appearance.colors.shadow
-                            opacity: 0.6
-                        }
-
-                        Rectangle {
-                            width: 112
-                            height: 112
-                            color: Appearance.colors.surfaceHigh
-                            border.width: Appearance.border.normal
-                            border.color: Appearance.colors.primary
-
-                            Image {
-                                id: avatar
-
-                                anchors.fill: parent
-                                anchors.margins: Appearance.border.normal
-                                source: `file://${UserInfo.avatar}`
-                                fillMode: Image.PreserveAspectCrop
-                                smooth: !Config.pixelArt
-                                sourceSize: Config.pixelArt ? Qt.size(32, 32) : Qt.size(224, 224)
-                                asynchronous: true
-                                visible: status === Image.Ready
-                            }
-
-                            StyledText {
-                                anchors.centerIn: parent
-                                visible: !avatar.visible
-                                text: UserInfo.displayName.charAt(0).toUpperCase()
-                                color: Appearance.colors.primary
-                                font.pixelSize: 56
-                                font.bold: true
-                            }
+                    add: Transition {
+                        Anim {
+                            property: "scale"
+                            from: 0
+                            to: 1
+                            duration: Appearance.anim.durations.expressiveFast
+                            easing.bezierCurve: Appearance.anim.curves.expressiveFast
                         }
                     }
-
-                    StyledText {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: UserInfo.displayName.toUpperCase()
-                        font.bold: true
-                        font.letterSpacing: 2
-                    }
-
-                    RetroFrame {
-                        id: box
-
-                        property real shakeX: 0
-
-                        Layout.fillWidth: true
-                        title: "login"
-
-                        transform: Translate {
-                            x: box.shakeX
-                        }
-
-                        SequentialAnimation {
-                            id: shake
-
-                            loops: 2
-
-                            NumberAnimation {
-                                target: box
-                                property: "shakeX"
-                                to: 12
-                                duration: 40
-                            }
-                            NumberAnimation {
-                                target: box
-                                property: "shakeX"
-                                to: -12
-                                duration: 80
-                            }
-                            NumberAnimation {
-                                target: box
-                                property: "shakeX"
-                                to: 0
-                                duration: 40
-                            }
-                        }
-
-                        Column {
-                            width: 384 - box.pad * 2 - box.bw * 2 - box.so
-                            spacing: Appearance.spacing.normal
-
-                            Row {
-                                spacing: Appearance.spacing.normal
-
-                                StyledText {
-                                    text: "password>"
-                                    color: Appearance.colors.textDim
-                                    font.pixelSize: Appearance.font.size.large
-                                }
-
-                                StyledText {
-                                    text: "*".repeat(Math.min(root.lock.password.length, 20))
-                                    font.pixelSize: Appearance.font.size.large
-                                }
-
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 10
-                                    height: Appearance.font.size.large + 4
-                                    color: Appearance.colors.primary
-                                    opacity: root.cursorOn && !root.lock.busy ? 1 : 0
-                                }
-                            }
-
-                            StyledText {
-                                text: root.lock.busy ? "MEMERIKSA..." : root.lock.message !== "" ? root.lock.message : "TEKAN ENTER UNTUK MASUK"
-                                color: root.lock.failed && !root.lock.busy ? Appearance.colors.error : Appearance.colors.textDim
-                                font.pixelSize: Appearance.font.size.small
-                                font.bold: true
-                            }
+                    remove: Transition {
+                        Anim {
+                            property: "scale"
+                            to: 0
+                            duration: Appearance.anim.durations.small
                         }
                     }
                 }
 
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.preferredWidth: 1
-                    spacing: Appearance.spacing.large
-
-                    ResourcesCard {
-                        Layout.fillWidth: true
-                    }
-
-                    NotifDock {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                    }
+                StyledText {
+                    anchors.left: lockIcon.right
+                    anchors.leftMargin: Appearance.spacing.normal
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.lock.password === ""
+                    text: root.lock.busy ? "Memeriksa..." : root.lock.message !== "" ? root.lock.message : "Masukkan password"
+                    color: root.lock.failed && !root.lock.busy ? Appearance.colors.error : Appearance.colors.textDim
                 }
+
+                IconButton {
+                    id: submit
+
+                    anchors.right: parent.right
+                    anchors.rightMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon: "arrow_forward"
+                    type: "filled"
+                    toggled: root.lock.password !== ""
+                    padding: Appearance.padding.small + 3
+                    disabled: root.lock.busy
+                    onClicked: root.lock.submit()
+                }
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.preferredWidth: 1
+            spacing: Appearance.spacing.normal
+
+            ResourcesCard {
+                Layout.fillWidth: true
+            }
+
+            NotifDock {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
             }
         }
     }

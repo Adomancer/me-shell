@@ -9,88 +9,90 @@ Card {
 
     readonly property var player: Media.active
 
-    title: "now playing"
+    title: "Sedang diputar"
+    icon: "music_note"
     note: player?.identity ?? ""
+    color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.85)
 
     RowLayout {
         Layout.fillWidth: true
-        visible: root.player !== null
         spacing: Appearance.spacing.large
 
-        Rectangle {
-            Layout.alignment: Qt.AlignTop
+        StyledClippingRect {
             implicitWidth: 64
             implicitHeight: 64
-            color: Appearance.colors.surfaceHigh
-            border.width: Appearance.border.thin
-            border.color: Appearance.colors.outline
+            radius: Appearance.radius.small
+            color: Appearance.colors.secondaryContainer
 
             Image {
+                id: art
+
                 anchors.fill: parent
-                anchors.margins: Appearance.border.thin
                 source: root.player?.trackArtUrl ?? ""
                 fillMode: Image.PreserveAspectCrop
-                smooth: !Config.pixelArt
-                sourceSize: Config.pixelArt ? Qt.size(32, 32) : Qt.size(128, 128)
+                sourceSize: Qt.size(128, 128)
                 asynchronous: true
+                visible: status === Image.Ready
+            }
+
+            MaterialIcon {
+                anchors.centerIn: parent
+                visible: !art.visible
+                text: "album"
+                font.pixelSize: 32
+                color: Appearance.colors.secondaryContainerText
             }
         }
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: Appearance.spacing.small
+            spacing: 2
 
             StyledText {
                 Layout.fillWidth: true
-                text: root.player?.trackTitle ?? ""
-                font.bold: true
+                text: root.player?.trackTitle || "Tidak ada media"
+                font.weight: Font.Medium
                 elide: Text.ElideRight
             }
 
             StyledText {
                 Layout.fillWidth: true
+                visible: text !== ""
                 text: root.player?.trackArtist ?? ""
                 color: Appearance.colors.textDim
                 elide: Text.ElideRight
             }
 
-            SegmentSlider {
+            StyledRect {
                 Layout.fillWidth: true
+                Layout.topMargin: 4
                 visible: (root.player?.length ?? 0) > 0
-                implicitHeight: 6
-                segments: 24
-                showValue: false
-                value: root.player && root.player.length > 0 ? root.player.position / root.player.length : 0
-            }
+                implicitHeight: 4
+                radius: 2
+                color: Appearance.colors.secondaryContainer
 
-            Row {
-                spacing: Appearance.spacing.small
+                StyledRect {
+                    width: parent.width * (root.player && root.player.length > 0 ? Math.min(1, root.player.position / root.player.length) : 0)
+                    height: parent.height
+                    radius: 2
+                    color: Appearance.colors.primary
 
-                RetroButton {
-                    text: "|<"
-                    enabled: root.player?.canGoPrevious ?? false
-                    onClicked: root.player.previous()
-                }
-
-                RetroButton {
-                    text: Media.playing ? "||" : ">"
-                    active: true
-                    enabled: root.player?.canTogglePlaying ?? false
-                    onClicked: root.player.togglePlaying()
-                }
-
-                RetroButton {
-                    text: ">|"
-                    enabled: root.player?.canGoNext ?? false
-                    onClicked: root.player.next()
+                    Behavior on width {
+                        Anim {
+                            duration: 1000
+                            easing.type: Easing.Linear
+                        }
+                    }
                 }
             }
         }
-    }
 
-    StyledText {
-        visible: root.player === null
-        text: "-- TIDAK ADA MEDIA --"
-        color: Appearance.colors.textDim
+        IconButton {
+            visible: root.player !== null
+            icon: Media.playing ? "pause" : "play_arrow"
+            type: "filled"
+            toggled: true
+            onClicked: root.player.togglePlaying()
+        }
     }
 }
