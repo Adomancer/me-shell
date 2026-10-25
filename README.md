@@ -35,17 +35,31 @@ misc {
     allow_session_lock_restore = true
 }
 
+# Keybind mengikuti JaKooLit
 $qs = qs -c me-shell ipc call
-bind = SUPER, Space, exec, $qs drawers toggle launcher
-bind = SUPER, A, exec, $qs drawers toggle panel
-bind = SUPER, Escape, exec, $qs drawers toggle session
-bind = SUPER, L, exec, $qs lock lock
+bind = SUPER, D, exec, $qs drawers toggle launcher
+bind = SUPER, W, exec, $qs drawers launcher :
+bind = SUPER SHIFT, E, exec, $qs drawers panel dash
+bind = SUPER SHIFT, N, exec, $qs drawers panel notif
+bind = CTRL ALT, L, exec, $qs lock lock
+bind = CTRL ALT, P, exec, $qs drawers toggle session
 bindel = , XF86AudioRaiseVolume, exec, $qs volume up
 bindel = , XF86AudioLowerVolume, exec, $qs volume down
+bindel = ALT, XF86AudioRaiseVolume, exec, $qs volume upPrecise
+bindel = ALT, XF86AudioLowerVolume, exec, $qs volume downPrecise
 bindl = , XF86AudioMute, exec, $qs volume mute
+bindl = , XF86AudioMicMute, exec, $qs volume mic
+bindl = , XF86AudioPlayPause, exec, $qs media playPause
+bindl = , XF86AudioPause, exec, $qs media playPause
+bindl = , XF86AudioPlay, exec, $qs media playPause
+bindl = , XF86AudioNext, exec, $qs media next
+bindl = , XF86AudioPrev, exec, $qs media previous
+bindl = , XF86AudioStop, exec, $qs media stop
 bindel = , XF86MonBrightnessUp, exec, $qs brightness up
 bindel = , XF86MonBrightnessDown, exec, $qs brightness down
 ```
+
+Keybind di atas sama dengan JaKooLit, jadi hapus dulu bind lama yang memanggil rofi, wlogout, swaync, dan script volume/media JaKooLit supaya tidak dobel. Screenshot, clipboard, dan emoji tidak diurus shell ini, jadi bind-nya biarkan saja.
 
 Jangan hapus `allow_session_lock_restore`. Kalau shell crash pas layar terkunci, opsi itu yang bikin lockscreen masih bisa dipulihkan.
 
