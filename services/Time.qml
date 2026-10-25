@@ -9,7 +9,7 @@ Singleton {
 
     readonly property date date: clock.date
     readonly property string time: Qt.formatDateTime(clock.date, Config.clockFormat)
-    readonly property string dateText: Qt.formatDateTime(clock.date, Config.dateFormat)
+    readonly property string dateText: clock.date.toLocaleString(Qt.locale(), Config.dateFormat)
 
     SystemClock {
         id: clock
