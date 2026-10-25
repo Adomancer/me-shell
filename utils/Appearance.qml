@@ -1,38 +1,38 @@
 pragma Singleton
 
 import Quickshell
+import Quickshell.Io
 import QtQuick
+import qs.utils
 
 // Design tokens. Semua module WAJIB ambil warna/ukuran/animasi dari sini.
 Singleton {
     id: root
 
-    // Placeholder palet retro (amber di atas gelap hangat).
-    // Nanti diganti hasil matugen dari wallpaper.
+    // Warna dari matugen (scripts/gen-colors.sh), fallback ke palet retro amber.
     readonly property QtObject colors: QtObject {
-        readonly property color background: "#12100e"
-        readonly property color surface: "#1c1915"
-        readonly property color surfaceHigh: "#27231d"
-        readonly property color outline: "#3a342c"
-        readonly property color text: "#e8dcc4"
-        readonly property color textDim: "#9a8f7c"
-        readonly property color primary: "#e0a458"
-        readonly property color onPrimary: "#12100e"
-        readonly property color error: "#d9614f"
+        readonly property color background: scheme.background || "#12100e"
+        readonly property color surface: scheme.surface || "#1c1915"
+        readonly property color surfaceHigh: scheme.surfaceHigh || "#27231d"
+        readonly property color outline: scheme.outline || "#3a342c"
+        readonly property color text: scheme.text || "#e8dcc4"
+        readonly property color textDim: scheme.textDim || "#9a8f7c"
+        readonly property color primary: scheme.primary || "#e0a458"
+        readonly property color onPrimary: scheme.onPrimary || "#12100e"
+        readonly property color error: scheme.error || "#d9614f"
         readonly property color shadow: "#000000"
     }
 
     readonly property QtObject font: QtObject {
         readonly property QtObject family: QtObject {
-            // Ganti ke "Departure Mono" kalau sudah terinstall
-            readonly property string mono: "JetBrains Mono"
-            readonly property string sans: "Inter"
+            readonly property string mono: Config.fontFamily
         }
         readonly property QtObject size: QtObject {
             readonly property int small: 11
             readonly property int normal: 13
             readonly property int large: 16
             readonly property int huge: 48
+            readonly property int giant: 112
         }
     }
 
@@ -70,6 +70,26 @@ Singleton {
         readonly property QtObject easing: QtObject {
             readonly property int standard: Easing.OutCubic
             readonly property int emphasized: Easing.OutBack
+        }
+    }
+
+    FileView {
+        path: `${Paths.state}/colors.json`
+        watchChanges: true
+        onFileChanged: reload()
+
+        JsonAdapter {
+            id: scheme
+
+            property string background: ""
+            property string surface: ""
+            property string surfaceHigh: ""
+            property string outline: ""
+            property string text: ""
+            property string textDim: ""
+            property string primary: ""
+            property string onPrimary: ""
+            property string error: ""
         }
     }
 }
