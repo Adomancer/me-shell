@@ -8,11 +8,11 @@ Masih tahap awal dan belum pernah dites di mesin asli, jadi kemungkinan besar ma
 
 ## Isinya
 
-- bar di atas: workspace, jam, tray, status jaringan/volume/baterai
-- control panel yang turun dari jam: media, volume, brightness, toggle wifi/bluetooth/dnd, kalender, notifikasi
+- bar di atas: workspace, jam, tray, baterai
+- control panel bertab yang turun dari jam: dashboard, media player dengan kaset dan equalizer (cava), grafik performa, cuaca, notifikasi
 - launcher: cari aplikasi, `=` buat ngitung, `>` buat jalanin perintah, `:` buat ganti wallpaper
-- notifikasi, OSD volume/brightness, menu power
-- lockscreen dengan efek CRT
+- notifikasi, OSD volume/brightness, menu power di tepi kanan
+- lockscreen tiga kolom: cuaca, info sistem, media, jam, foto profil, notifikasi, plus efek CRT
 - wallpaper + warna yang ikut wallpaper (pakai matugen)
 
 ## Pasang
@@ -59,11 +59,14 @@ Bikin `~/.config/me-shell/config.json` kalau mau ganti sesuatu. Semua key opsion
   "workspaces": 5,
   "wallpaperDir": "~/Pictures/Wallpapers",
   "renderWallpaper": true,
-  "crtShader": false
+  "crtShader": false,
+  "weatherLocation": "Jakarta"
 }
 ```
 
 Daftar lengkapnya ada di [`utils/Config.qml`](utils/Config.qml).
+
+Foto profil diambil dari `~/.face`. Cuaca diambil dari wttr.in, jadi butuh internet; kalau `weatherLocation` kosong, lokasinya ditebak dari IP.
 
 Kalau wallpaper sudah diatur swww atau hyprpaper, set `renderWallpaper` ke `false`. Shader CRT di lockscreen perlu di-compile dulu pakai `scripts/build-shaders.sh`, baru `crtShader` bisa dinyalakan.
 
