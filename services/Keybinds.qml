@@ -222,7 +222,8 @@ Singleton {
     // Dipanggil dari shell.qml saat start supaya file-file hypr/ selalu ada
     function ensureFiles(): void {
         writer.write("me-shell.conf", mainConf(), false);
-        writer.write("keybinds.conf", generate(), false);
+        // reload supaya keybind langsung aktif pada start pertama
+        writer.write("keybinds.conf", generate(), true);
         Quickshell.execDetached(["sh", "-c", 'mkdir -p "$1" && { [ -f "$1/user.conf" ] || printf "%s\\n" "# Keybind dan setting Hyprland milikmu sendiri. me-shell tidak pernah menimpa file ini." > "$1/user.conf"; }', "sh", dir]);
     }
 }
