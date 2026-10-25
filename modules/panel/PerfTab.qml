@@ -4,135 +4,218 @@ import qs.components
 import qs.services
 import qs.utils
 
-GridLayout {
+// Tab Performa: cincin CPU/RAM/Disk di atas, grafik riwayat dan jaringan di bawah.
+ColumnLayout {
     id: root
 
-    component Big: StyledText {
-        font.pixelSize: 26
-        font.bold: true
-    }
+    // Baris detail "label .... nilai"
+    component Detail: RowLayout {
+        property string label
+        property string value
 
-    component Label: StyledText {
-        Layout.preferredWidth: 44
-        color: Appearance.colors.textDim
-        font.pixelSize: Appearance.font.size.small
-        font.bold: true
-    }
-
-    component Pct: StyledText {
-        Layout.preferredWidth: 44
-        horizontalAlignment: Text.AlignRight
-        font.pixelSize: Appearance.font.size.small
-    }
-
-    columns: 2
-    columnSpacing: Appearance.spacing.normal
-    rowSpacing: Appearance.spacing.normal
-
-    Card {
         Layout.fillWidth: true
-        Layout.fillHeight: true
-        title: "cpu"
-        note: SystemStats.temp > 0 ? `${SystemStats.cpuName} · ${Math.round(SystemStats.temp)}°C` : SystemStats.cpuName
-
-        Big {
-            text: `${Math.round(SystemStats.cpu * 100)}%`
-        }
-
-        Graph {
-            Layout.fillWidth: true
-            values: SystemStats.cpuHistory
-        }
-    }
-
-    Card {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        title: "ram"
-        note: `${SystemStats.memUsedGiB.toFixed(1)} / ${Math.round(SystemStats.memTotalGiB)} GiB`
-
-        Big {
-            text: `${Math.round(SystemStats.memory * 100)}%`
-        }
-
-        Graph {
-            Layout.fillWidth: true
-            values: SystemStats.memHistory
-        }
-    }
-
-    Card {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        title: "net"
-        note: SystemStats.netIface
-
-        Big {
-            text: `↓ ${SystemStats.formatSpeed(SystemStats.netRx)}`
-        }
 
         StyledText {
-            text: `↑ ${SystemStats.formatSpeed(SystemStats.netTx)}`
+            text: parent.label
             color: Appearance.colors.textDim
             font.pixelSize: Appearance.font.size.small
         }
 
-        Graph {
+        Item {
             Layout.fillWidth: true
-            implicitHeight: 72
-            values: SystemStats.netHistory
-            // Skala ikut puncak terakhir, minimal 64 KB/s supaya diam tidak terlihat penuh
-            maxValue: Math.max(65536, ...SystemStats.netHistory)
+        }
+
+        StyledText {
+            text: parent.value
+            font.family: Appearance.font.family.mono
+            font.pixelSize: Appearance.font.size.small
         }
     }
 
-    Card {
+    component RingCard: Card {
+        id: ring
+
+        property real value
+        property string label
+        property color tint: Appearance.colors.primary
+        default property alias details: info.data
+
         Layout.fillWidth: true
         Layout.fillHeight: true
-        title: "disk"
-        note: `/ · ${Math.round(SystemStats.diskUsedGiB)} / ${Math.round(SystemStats.diskTotalGiB)} GiB`
 
-        Big {
-            text: `${Math.round(SystemStats.disk * 100)}%`
+        RowLayout {
+            spacing: Appearance.spacing.large
+
+            CircularProgress {
+                value: ring.value
+                label: ring.label
+                size: 104
+                thickness: 10
+                color: ring.tint
+            }
+
+            ColumnLayout {
+                id: info
+
+                Layout.fillWidth: true
+                spacing: 4
+            }
+        }
+    }
+
+    spacing: Appearance.spacing.normal
+
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: Appearance.spacing.normal
+
+        RingCard {
+            title: "Prosesor"
+            icon: "memory"
+            value: SystemStats.cpu
+            label: "CPU"
+
+            StyledText {
+                Layout.fillWidth: true
+                text: SystemStats.cpuName
+                font.pixelSize: Appearance.font.size.small
+                wrapMode: Text.Wrap
+                maximumLineCount: 2
+                elide: Text.ElideRight
+            }
+
+            Detail {
+                visible: SystemStats.temp > 0
+                label: "Suhu"
+                value: `${Math.round(SystemStats.temp)}°C`
+            }
         }
 
-        GridLayout {
+        RingCard {
+            title: "Memori"
+            icon: "memory_alt"
+            value: SystemStats.memory
+            label: "RAM"
+            tint: Appearance.colors.secondary
+
+            Detail {
+                label: "Terpakai"
+                value: `${SystemStats.memUsedGiB.toFixed(1)} GiB`
+            }
+
+            Detail {
+                label: "Total"
+                value: `${Math.round(SystemStats.memTotalGiB)} GiB`
+            }
+
+            Detail {
+                label: "Swap"
+                value: `${Math.round(SystemStats.swap * 100)}%`
+            }
+        }
+
+        RingCard {
+            title: "Penyimpanan"
+            icon: "hard_drive"
+            value: SystemStats.disk
+            label: "DISK"
+            tint: Appearance.colors.tertiary
+
+            Detail {
+                label: "Root"
+                value: `${Math.round(SystemStats.diskUsedGiB)} / ${Math.round(SystemStats.diskTotalGiB)} GiB`
+            }
+
+            Detail {
+                label: "Home"
+                value: `${Math.round(SystemStats.home * 100)}%`
+            }
+        }
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        spacing: Appearance.spacing.normal
+
+        Card {
             Layout.fillWidth: true
-            columns: 3
-            columnSpacing: Appearance.spacing.normal
-            rowSpacing: 4
+            Layout.fillHeight: true
+            title: "Riwayat"
+            icon: "monitoring"
+            note: "CPU · RAM"
 
-            Label {
-                text: "ROOT"
-            }
-            BlockBar {
+            Item {
                 Layout.fillWidth: true
-                value: SystemStats.disk
+                implicitHeight: 128
+
+                Graph {
+                    anchors.fill: parent
+                    values: SystemStats.memHistory
+                    color: Appearance.colors.secondary
+                }
+
+                Graph {
+                    anchors.fill: parent
+                    values: SystemStats.cpuHistory
+                    grid: false
+                }
             }
-            Pct {
-                text: `${Math.round(SystemStats.disk * 100)}%`
+        }
+
+        Card {
+            Layout.preferredWidth: 300
+            Layout.fillHeight: true
+            title: "Jaringan"
+            icon: "swap_vert"
+            note: SystemStats.netIface
+
+            RowLayout {
+                spacing: Appearance.spacing.large
+
+                Row {
+                    spacing: 2
+
+                    MaterialIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "arrow_downward"
+                        color: Appearance.colors.primary
+                    }
+
+                    StyledText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: SystemStats.formatSpeed(SystemStats.netRx)
+                        font.family: Appearance.font.family.mono
+                        font.pixelSize: Appearance.font.size.larger
+                        font.bold: true
+                    }
+                }
+
+                Row {
+                    spacing: 2
+
+                    MaterialIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "arrow_upward"
+                        color: Appearance.colors.tertiary
+                    }
+
+                    StyledText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: SystemStats.formatSpeed(SystemStats.netTx)
+                        font.family: Appearance.font.family.mono
+                        font.pixelSize: Appearance.font.size.larger
+                        color: Appearance.colors.textDim
+                    }
+                }
             }
 
-            Label {
-                text: "HOME"
-            }
-            BlockBar {
+            Graph {
                 Layout.fillWidth: true
-                value: SystemStats.home
-            }
-            Pct {
-                text: `${Math.round(SystemStats.home * 100)}%`
-            }
-
-            Label {
-                text: "SWAP"
-            }
-            BlockBar {
-                Layout.fillWidth: true
-                value: SystemStats.swap
-            }
-            Pct {
-                text: `${Math.round(SystemStats.swap * 100)}%`
+                implicitHeight: 92
+                values: SystemStats.netHistory
+                // Skala ikut puncak terakhir, minimal 64 KB/s supaya diam tidak terlihat penuh
+                maxValue: Math.max(65536, ...SystemStats.netHistory)
             }
         }
     }

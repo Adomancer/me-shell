@@ -3,161 +3,91 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Control panel bertab ala dashboard Caelestia, turun dari jam di bar.
-// Pindah tab: noise ala ganti channel TV, lalu halaman masuk patah-patah.
-Reveal {
+// Dashboard bertab yang turun dari bar. Halaman disusun mendatar dan bergeser halus saat pindah tab.
+Item {
     id: root
 
-    component Page: Item {
-        id: page
-
-        property string name
-        property real progress: 1
-        readonly property real stepped: Math.round(progress * 5) / 5
-
-        anchors.fill: parent
-        visible: root.tab === name
-        opacity: stepped
-        onVisibleChanged: {
-            if (visible)
-                enter.restart();
-        }
-
-        transform: Translate {
-            x: (1 - page.stepped) * -24
-        }
-
-        SequentialAnimation {
-            id: enter
-
-            PropertyAction {
-                target: page
-                property: "progress"
-                value: 0
-            }
-            NumberAnimation {
-                target: page
-                property: "progress"
-                to: 1
-                duration: 260
-            }
-        }
-    }
+    property bool shown: false
 
     // Disimpan di DrawerState supaya IPC `drawers panel <tab>` bisa memilih tab
     readonly property string tab: DrawerState.panelTab
     readonly property var tabs: ["dash", "media", "perf", "weather", "notif"]
-    readonly property int contentWidth: 856
+    readonly property int index: Math.max(0, tabs.indexOf(tab))
+    readonly property int pageWidth: 856
+    readonly property int pageHeight: 420
     readonly property bool usingCava: shown && tab === "media"
-    property real noise: 0
 
     function setTab(name: string): void {
         DrawerState.panelTab = name;
     }
 
     function shiftTab(delta: int): void {
-        setTab(tabs[(tabs.indexOf(tab) + delta + tabs.length) % tabs.length]);
+        setTab(tabs[(index + delta + tabs.length) % tabs.length]);
     }
 
-    edge: "top"
+    implicitWidth: pageWidth + Appearance.padding.large * 2
+    implicitHeight: col.implicitHeight + Appearance.padding.large * 2
+
     onShownChanged: {
         if (shown)
-            frame.forceActiveFocus();
+            col.forceActiveFocus();
     }
     onUsingCavaChanged: Cava.users += usingCava ? 1 : -1
-    onTabChanged: noiseAnim.restart()
 
-    NumberAnimation {
-        id: noiseAnim
+    Column {
+        id: col
 
-        target: root
-        property: "noise"
-        from: 1
-        to: 0
-        duration: 220
-    }
-
-    RetroFrame {
-        id: frame
-
-        title: "control"
+        x: Appearance.padding.large
+        y: Appearance.padding.large
+        width: root.pageWidth
+        spacing: Appearance.spacing.large
         focus: true
         Keys.onEscapePressed: DrawerState.close()
         Keys.onLeftPressed: root.shiftTab(-1)
         Keys.onRightPressed: root.shiftTab(1)
 
-        Column {
-            width: root.contentWidth
-            spacing: Appearance.spacing.large
+        TabBar {
+            width: parent.width
+            current: root.tab
+            onSelected: name => root.setTab(name)
+        }
 
-            TabBar {
-                width: parent.width
-                current: root.tab
-                onSelected: name => root.setTab(name)
-            }
+        Item {
+            width: parent.width
+            height: root.pageHeight
+            clip: true
 
-            Item {
-                width: parent.width
-                height: 420
+            Row {
+                id: pages
 
-                Page {
-                    name: "dash"
+                x: -root.index * root.pageWidth
 
-                    DashTab {
-                        anchors.fill: parent
+                Behavior on x {
+                    Anim {
+                        duration: Appearance.anim.durations.large
+                        easing.bezierCurve: Appearance.anim.curves.emphasized
                     }
                 }
 
-                Page {
-                    name: "media"
-
-                    MediaTab {
-                        anchors.fill: parent
-                    }
+                DashTab {
+                    width: root.pageWidth
+                    height: root.pageHeight
                 }
-
-                Page {
-                    name: "perf"
-
-                    PerfTab {
-                        anchors.fill: parent
-                    }
+                MediaTab {
+                    width: root.pageWidth
+                    height: root.pageHeight
                 }
-
-                Page {
-                    name: "weather"
-
-                    WeatherTab {
-                        anchors.fill: parent
-                    }
+                PerfTab {
+                    width: root.pageWidth
+                    height: root.pageHeight
                 }
-
-                Page {
-                    name: "notif"
-
-                    NotifTab {
-                        anchors.fill: parent
-                    }
+                WeatherTab {
+                    width: root.pageWidth
+                    height: root.pageHeight
                 }
-
-                // Noise statis saat pindah tab, dibulatkan ke 4 langkah
-                Image {
-                    readonly property real level: Math.round(root.noise * 4) / 4
-
-                    anchors.fill: parent
-                    anchors.topMargin: level * 6
-                    visible: level > 0
-                    opacity: level * 0.9
-                    source: Qt.resolvedUrl("../../assets/scanlines.svg")
-                    fillMode: Image.Tile
-                    sourceSize: Qt.size(4, 4)
-                    smooth: false
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color: Appearance.colors.text
-                        opacity: 0.08
-                    }
+                NotifTab {
+                    width: root.pageWidth
+                    height: root.pageHeight
                 }
             }
         }

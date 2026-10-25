@@ -2,8 +2,8 @@ import QtQuick
 import qs.components
 import qs.services
 import qs.utils
-import "../../utils/PixelIcons.js" as Icons
 
+// Tab Material 3: ikon + label, indikator di bawah yang meluncur dan sedikit melar saat pindah.
 Item {
     id: root
 
@@ -11,41 +11,50 @@ Item {
     readonly property var items: [
         {
             name: "dash",
-            label: "DASH",
-            icon: Icons.tabDash
+            label: "Dashboard",
+            icon: "dashboard"
         },
         {
             name: "media",
-            label: "MEDIA",
-            icon: Icons.tabMedia
+            label: "Media",
+            icon: "queue_music"
         },
         {
             name: "perf",
-            label: "PERF",
-            icon: Icons.tabPerf
+            label: "Performa",
+            icon: "monitoring"
         },
         {
             name: "weather",
-            label: "CUACA",
-            icon: Icons.tabWeather
+            label: "Cuaca",
+            icon: "partly_cloudy_day"
         },
         {
             name: "notif",
-            label: "NOTIF",
-            icon: Icons.tabNotif
+            label: "Notifikasi",
+            icon: "notifications"
         }
     ]
+    readonly property int index: Math.max(0, items.findIndex(i => i.name === current))
+    readonly property real tabWidth: width / items.length
+    property real lead: index
+    property real trail: index
 
     signal selected(string name)
 
-    implicitHeight: 36
+    implicitHeight: 52
 
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: Appearance.border.normal
-        color: Appearance.colors.outline
+    Behavior on lead {
+        Anim {
+            duration: Appearance.anim.durations.normal
+            easing.bezierCurve: Appearance.anim.curves.emphasizedDecel
+        }
+    }
+    Behavior on trail {
+        Anim {
+            duration: Appearance.anim.durations.large
+            easing.bezierCurve: Appearance.anim.curves.emphasizedDecel
+        }
     }
 
     Row {
@@ -54,46 +63,42 @@ Item {
         Repeater {
             model: root.items
 
-            StyledRect {
-                id: tabBtn
+            Item {
+                id: tab
 
                 required property var modelData
                 required property int index
                 readonly property bool isActive: root.current === modelData.name
-                readonly property color ink: isActive ? Appearance.colors.primaryText : mouse.containsMouse ? Appearance.colors.text : Appearance.colors.textDim
+                readonly property color ink: isActive ? Appearance.colors.primary : Appearance.colors.textDim
 
-                width: root.width / root.items.length
-                height: root.height - Appearance.border.normal
-                radius: 0
-                color: isActive ? Appearance.colors.primary : mouse.containsMouse ? Appearance.colors.surfaceHigh : "transparent"
+                width: root.tabWidth
+                height: root.height
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: Appearance.spacing.normal
+                    spacing: Appearance.spacing.small
 
-                    PixelIcon {
+                    MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
-                        rows: tabBtn.modelData.icon
-                        pixel: 2
-                        color: tabBtn.ink
+                        text: tab.modelData.icon
+                        fill: tab.isActive ? 1 : 0
+                        color: tab.ink
                     }
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: tabBtn.modelData.label
-                        color: tabBtn.ink
-                        font.pixelSize: Appearance.font.size.small
-                        font.bold: true
-                        font.letterSpacing: 2
+                        text: tab.modelData.label
+                        color: tab.ink
+                        font.weight: tab.isActive ? Font.DemiBold : Font.Normal
                     }
 
                     // Jumlah notifikasi
-                    Rectangle {
+                    StyledRect {
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: tabBtn.modelData.name === "notif" && Notifs.list.length > 0
-                        implicitWidth: count.implicitWidth + 8
-                        implicitHeight: count.implicitHeight
-                        radius: Appearance.radius.small
+                        visible: tab.modelData.name === "notif" && Notifs.list.length > 0
+                        implicitWidth: Math.max(implicitHeight, count.implicitWidth + 10)
+                        implicitHeight: 18
+                        radius: height / 2
                         color: Appearance.colors.error
 
                         StyledText {
@@ -101,30 +106,40 @@ Item {
 
                             anchors.centerIn: parent
                             text: Notifs.list.length
-                            color: Appearance.colors.primaryText
+                            color: Appearance.colors.errorText
+                            font.family: Appearance.font.family.mono
                             font.pixelSize: Appearance.font.size.small
                             font.bold: true
                         }
                     }
                 }
 
-                Rectangle {
-                    anchors.right: parent.right
-                    width: Appearance.border.thin
-                    height: parent.height
-                    visible: tabBtn.index < root.items.length - 1
-                    color: Appearance.colors.outline
-                }
-
-                MouseArea {
-                    id: mouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.selected(tabBtn.modelData.name)
+                StateLayer {
+                    radius: Appearance.radius.small
+                    onClicked: root.selected(tab.modelData.name)
                 }
             }
         }
+    }
+
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: 1
+        color: Appearance.colors.outlineVariant
+    }
+
+    // Indikator: lebar mengikuti jarak dua ujung, jadi melar saat berpindah
+    Rectangle {
+        readonly property real inset: root.tabWidth * 0.22
+
+        anchors.bottom: parent.bottom
+        x: Math.min(root.lead, root.trail) * root.tabWidth + inset
+        width: Math.abs(root.lead - root.trail) * root.tabWidth + root.tabWidth - inset * 2
+        height: 3
+        topLeftRadius: 3
+        topRightRadius: 3
+        color: Appearance.colors.primary
     }
 }

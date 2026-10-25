@@ -1,167 +1,317 @@
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Layouts
 import qs.components
 import qs.services
 import qs.utils
 
-// Kaset besar, judul berjalan, dan equalizer dari cava.
-RowLayout {
+// Tab Media: cover besar dengan latar buram dari cover itu sendiri, info lagu, visualizer cava,
+// progress yang bisa digeser, dan kontrol.
+StyledClippingRect {
     id: root
 
     readonly property var player: Media.active
+    readonly property real progress: player && player.length > 0 ? Math.min(1, player.position / player.length) : 0
 
     function fmt(seconds: real): string {
         const s = Math.max(0, Math.floor(seconds));
         return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     }
 
-    spacing: Appearance.spacing.huge
+    radius: Appearance.radius.normal
+    color: Appearance.colors.surfaceContainer
 
-    Cassette {
-        Layout.alignment: Qt.AlignTop
-        big: true
-        label: root.player ? `side a · ${root.player.trackTitle}` : "no tape"
-        playing: Media.playing
+    // Latar: cover yang diburamkan dan digelapkan
+    Image {
+        id: backdrop
+
+        anchors.fill: parent
+        source: root.player?.trackArtUrl ?? ""
+        sourceSize: Qt.size(128, 128)
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        visible: false
     }
 
-    ColumnLayout {
-        Layout.fillWidth: true
-        Layout.alignment: Qt.AlignTop
-        spacing: Appearance.spacing.normal
+    MultiEffect {
+        anchors.fill: parent
+        source: backdrop
+        visible: backdrop.status === Image.Ready
+        blurEnabled: true
+        blur: 1
+        blurMax: 64
+        saturation: 0.2
+        opacity: 0.35
+    }
 
-        Marquee {
-            Layout.fillWidth: true
-            text: root.player ? [root.player.trackTitle, root.player.trackArtist, root.player.trackAlbum].filter(s => s).join("  ///  ").toUpperCase() : "-- TIDAK ADA MEDIA --"
+    Rectangle {
+        anchors.fill: parent
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+
+            GradientStop {
+                position: 0
+                color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.3)
+            }
+            GradientStop {
+                position: 0.6
+                color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.9)
+            }
+        }
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: Appearance.padding.large
+        spacing: Appearance.spacing.huge + 8
+
+        // Cover
+        StyledClippingRect {
+            Layout.alignment: Qt.AlignVCenter
+            implicitWidth: 300
+            implicitHeight: 300
+            radius: Appearance.radius.large
+            color: Appearance.colors.secondaryContainer
+            scale: Media.playing ? 1 : 0.92
+
+            Behavior on scale {
+                Anim {
+                    duration: Appearance.anim.durations.expressiveDefault
+                    easing.bezierCurve: Appearance.anim.curves.expressiveDefault
+                }
+            }
+
+            Image {
+                id: art
+
+                anchors.fill: parent
+                source: root.player?.trackArtUrl ?? ""
+                sourceSize: Qt.size(600, 600)
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                visible: status === Image.Ready
+            }
+
+            MaterialIcon {
+                anchors.centerIn: parent
+                visible: !art.visible
+                text: "music_note"
+                font.pixelSize: 120
+                color: Appearance.colors.secondaryContainerText
+            }
         }
 
-        // Equalizer, tinggi batang dibulatkan ke 12 langkah
-        Item {
+        ColumnLayout {
             Layout.fillWidth: true
-            implicitHeight: 96
+            Layout.alignment: Qt.AlignVCenter
+            spacing: Appearance.spacing.small
 
-            Row {
-                anchors.fill: parent
-                spacing: 3
+            StyledText {
+                Layout.fillWidth: true
+                text: root.player?.trackTitle || "Tidak ada media"
+                font.pixelSize: Appearance.font.size.extraLarge
+                font.weight: Font.Medium
+                elide: Text.ElideRight
+            }
 
-                Repeater {
-                    model: Cava.bars
+            StyledText {
+                Layout.fillWidth: true
+                text: root.player ? (root.player.trackArtist || root.player.identity) : "Putar lagu di aplikasi mana saja"
+                color: Appearance.colors.primary
+                font.pixelSize: Appearance.font.size.larger
+                elide: Text.ElideRight
+            }
 
-                    Item {
-                        id: eqBar
+            StyledText {
+                Layout.fillWidth: true
+                visible: text !== ""
+                text: root.player?.trackAlbum ?? ""
+                color: Appearance.colors.textDim
+                elide: Text.ElideRight
+            }
 
-                        required property int index
-                        readonly property real level: Math.round((Cava.values[index] ?? 0) * 12) / 12
+            // Visualizer cava: batang bulat yang naik turun halus
+            Item {
+                Layout.fillWidth: true
+                Layout.topMargin: Appearance.spacing.normal
+                implicitHeight: 90
 
-                        width: (parent.width - 3 * (Cava.bars - 1)) / Cava.bars
-                        height: parent.height
+                Row {
+                    anchors.fill: parent
+                    spacing: 4
 
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            width: parent.width
-                            height: Math.max(2, eqBar.level * eqBar.height)
-                            color: eqBar.index % 3 === 2 ? Appearance.colors.textDim : Appearance.colors.primary
+                    Repeater {
+                        model: Cava.bars
+
+                        Item {
+                            id: eqBar
+
+                            required property int index
+                            property real level: Media.playing ? (Cava.values[index] ?? 0) : 0
+
+                            width: (parent.width - 4 * (Cava.bars - 1)) / Cava.bars
+                            height: parent.height
+
+                            Behavior on level {
+                                Anim {
+                                    duration: 120
+                                    easing.bezierCurve: Appearance.anim.curves.standardDecel
+                                }
+                            }
+
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                width: parent.width
+                                height: Math.max(width, eqBar.level * eqBar.height)
+                                radius: width / 2
+                                color: Appearance.colors.primary
+                                opacity: 0.45 + eqBar.level * 0.55
+                            }
                         }
+                    }
+                }
+
+                StyledText {
+                    anchors.centerIn: parent
+                    visible: !Cava.available
+                    text: "Install cava untuk visualizer"
+                    color: Appearance.colors.textDim
+                    font.pixelSize: Appearance.font.size.small
+                }
+            }
+
+            // Progress
+            Item {
+                Layout.fillWidth: true
+                Layout.topMargin: Appearance.spacing.normal
+                implicitHeight: 16
+                visible: (root.player?.length ?? 0) > 0
+
+                StyledRect {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    height: 6
+                    radius: 3
+                    color: Appearance.colors.secondaryContainer
+                }
+
+                StyledRect {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: seek.pressed ? seek.live * parent.width : root.progress * parent.width
+                    height: 6
+                    radius: 3
+                    color: Appearance.colors.primary
+
+                    Behavior on width {
+                        enabled: !seek.pressed
+
+                        Anim {
+                            duration: 1000
+                            easing.type: Easing.Linear
+                        }
+                    }
+                }
+
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: (seek.pressed ? seek.live : root.progress) * parent.width - width / 2
+                    width: seek.containsMouse || seek.pressed ? 16 : 12
+                    height: width
+                    radius: width / 2
+                    color: Appearance.colors.primary
+
+                    Behavior on width {
+                        Anim {
+                            duration: Appearance.anim.durations.small
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id: seek
+
+                    property real live: 0
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onPressed: event => live = Math.max(0, Math.min(1, event.x / width))
+                    onPositionChanged: event => {
+                        if (pressed)
+                            live = Math.max(0, Math.min(1, event.x / width));
+                    }
+                    onReleased: {
+                        if (root.player?.canSeek)
+                            root.player.position = live * root.player.length;
                     }
                 }
             }
 
-            StyledText {
-                anchors.centerIn: parent
-                visible: !Cava.available
-                text: "install cava untuk visualizer"
-                color: Appearance.colors.textDim
-                font.pixelSize: Appearance.font.size.small
-            }
-        }
+            RowLayout {
+                Layout.fillWidth: true
+                visible: (root.player?.length ?? 0) > 0
 
-        RowLayout {
-            Layout.fillWidth: true
-            visible: root.player !== null
-            spacing: Appearance.spacing.normal
+                StyledText {
+                    text: root.fmt(root.player?.position ?? 0)
+                    color: Appearance.colors.textDim
+                    font.family: Appearance.font.family.mono
+                    font.pixelSize: Appearance.font.size.small
+                }
 
-            Rectangle {
-                implicitWidth: 40
-                implicitHeight: 40
-                color: Appearance.colors.surfaceHigh
-                border.width: Appearance.border.thin
-                border.color: Appearance.colors.outline
+                Item {
+                    Layout.fillWidth: true
+                }
 
-                Image {
-                    anchors.fill: parent
-                    anchors.margins: Appearance.border.thin
-                    source: root.player?.trackArtUrl ?? ""
-                    fillMode: Image.PreserveAspectCrop
-                    smooth: !Config.pixelArt
-                    sourceSize: Config.pixelArt ? Qt.size(24, 24) : Qt.size(80, 80)
-                    asynchronous: true
+                StyledText {
+                    text: root.fmt(root.player?.length ?? 0)
+                    color: Appearance.colors.textDim
+                    font.family: Appearance.font.family.mono
+                    font.pixelSize: Appearance.font.size.small
                 }
             }
 
-            SegmentSlider {
+            RowLayout {
                 Layout.fillWidth: true
-                implicitHeight: 8
-                segments: 32
-                showValue: false
-                value: root.player && root.player.length > 0 ? root.player.position / root.player.length : 0
-                onMoved: v => {
-                    if (root.player?.canSeek)
-                        root.player.position = v * root.player.length;
+                spacing: Appearance.spacing.normal
+
+                IconButton {
+                    icon: "skip_previous"
+                    size: Appearance.font.size.extraLarge
+                    disabled: !(root.player?.canGoPrevious ?? false)
+                    onClicked: root.player.previous()
                 }
-            }
 
-            StyledText {
-                text: `${root.fmt(root.player?.position ?? 0)} / ${root.fmt(root.player?.length ?? 0)}`
-                font.pixelSize: Appearance.font.size.small
-            }
-        }
+                IconButton {
+                    icon: Media.playing ? "pause" : "play_arrow"
+                    type: "filled"
+                    toggled: true
+                    size: 36
+                    padding: Appearance.padding.normal + 2
+                    disabled: !(root.player?.canTogglePlaying ?? false)
+                    onClicked: root.player.togglePlaying()
+                }
 
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Appearance.spacing.small
+                IconButton {
+                    icon: "skip_next"
+                    size: Appearance.font.size.extraLarge
+                    disabled: !(root.player?.canGoNext ?? false)
+                    onClicked: root.player.next()
+                }
 
-            RetroButton {
-                text: "|<"
-                enabled: root.player?.canGoPrevious ?? false
-                onClicked: root.player.previous()
-            }
+                Item {
+                    Layout.fillWidth: true
+                }
 
-            RetroButton {
-                text: Media.playing ? "||" : ">"
-                active: true
-                enabled: root.player?.canTogglePlaying ?? false
-                onClicked: root.player.togglePlaying()
-            }
+                // Player yang terdeteksi
+                Repeater {
+                    model: Media.players
 
-            RetroButton {
-                text: ">|"
-                enabled: root.player?.canGoNext ?? false
-                onClicked: root.player.next()
-            }
+                    Chip {
+                        required property var modelData
 
-            Item {
-                Layout.fillWidth: true
-            }
-
-            // Player yang terdeteksi
-            Repeater {
-                model: Media.players
-
-                StyledRect {
-                    required property var modelData
-                    readonly property bool isActive: modelData === root.player
-
-                    implicitWidth: chip.implicitWidth + Appearance.spacing.normal * 2
-                    implicitHeight: chip.implicitHeight + 4
-                    border.width: Appearance.border.thin
-                    border.color: isActive ? Appearance.colors.primary : Appearance.colors.outline
-
-                    StyledText {
-                        id: chip
-
-                        anchors.centerIn: parent
-                        text: parent.modelData.identity.toLowerCase()
-                        color: parent.isActive ? Appearance.colors.primary : Appearance.colors.text
-                        font.pixelSize: Appearance.font.size.small
+                        icon: modelData === root.player ? "graphic_eq" : "music_note"
+                        text: modelData.identity
+                        color: modelData === root.player ? Appearance.colors.secondaryContainer : Appearance.colors.surfaceContainerHigh
                     }
                 }
             }

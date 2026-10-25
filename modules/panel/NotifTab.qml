@@ -11,23 +11,36 @@ ColumnLayout {
 
     RowLayout {
         Layout.fillWidth: true
-        spacing: Appearance.spacing.small
+        spacing: Appearance.spacing.normal
+
+        StyledText {
+            text: "Notifikasi"
+            font.pixelSize: Appearance.font.size.large
+            font.weight: Font.Medium
+        }
 
         StyledText {
             Layout.fillWidth: true
-            text: `NOTIF (${Notifs.list.length})`
-            font.bold: true
+            text: Notifs.list.length > 0 ? Notifs.list.length : ""
+            color: Appearance.colors.textDim
+            font.family: Appearance.font.family.mono
         }
 
-        RetroButton {
-            text: `${Notifs.dnd ? "[x]" : "[ ]"} DND`
-            active: Notifs.dnd
-            onClicked: Notifs.dnd = !Notifs.dnd
+        StyledText {
+            text: "Jangan ganggu"
+            color: Appearance.colors.textDim
         }
 
-        RetroButton {
+        StyledSwitch {
+            checked: Notifs.dnd
+            onToggled: v => Notifs.dnd = v
+        }
+
+        TextButton {
+            Layout.leftMargin: Appearance.spacing.normal
             visible: Notifs.list.length > 0
-            text: "CLEAR"
+            icon: "clear_all"
+            text: "Hapus semua"
             onClicked: Notifs.clearAll()
         }
     }
@@ -39,6 +52,7 @@ ColumnLayout {
         Layout.fillHeight: true
         clip: true
         spacing: Appearance.spacing.normal
+        boundsBehavior: Flickable.StopAtBounds
 
         model: ScriptModel {
             values: [...Notifs.list].reverse()
@@ -51,11 +65,62 @@ ColumnLayout {
             notif: modelData
         }
 
-        StyledText {
+        add: Transition {
+            Anim {
+                property: "opacity"
+                from: 0
+                to: 1
+            }
+            Anim {
+                property: "scale"
+                from: 0.9
+                to: 1
+                easing.bezierCurve: Appearance.anim.curves.expressiveDefault
+            }
+        }
+
+        remove: Transition {
+            Anim {
+                property: "x"
+                to: list.width
+                easing.bezierCurve: Appearance.anim.curves.emphasizedAccel
+            }
+            Anim {
+                property: "opacity"
+                to: 0
+            }
+        }
+
+        displaced: Transition {
+            Anim {
+                property: "y"
+                duration: Appearance.anim.durations.expressiveDefault
+                easing.bezierCurve: Appearance.anim.curves.expressiveDefault
+            }
+            // Item yang tergeser di tengah animasi masuk langsung dirapikan
+            Anim {
+                properties: "opacity,scale"
+                to: 1
+            }
+        }
+
+        Column {
             anchors.centerIn: parent
             visible: list.count === 0
-            text: "-- KOSONG --"
-            color: Appearance.colors.textDim
+            spacing: Appearance.spacing.small
+
+            MaterialIcon {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "notifications_paused"
+                font.pixelSize: 56
+                color: Appearance.colors.outline
+            }
+
+            StyledText {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Semua sudah terbaca"
+                color: Appearance.colors.textDim
+            }
         }
     }
 }

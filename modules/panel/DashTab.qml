@@ -3,18 +3,12 @@ import QtQuick.Layouts
 import qs.components
 import qs.services
 import qs.utils
-import "../../utils/WeatherArt.js" as WeatherArt
+import "../../utils/WeatherIcons.js" as WeatherIcons
 
-// Tata letak ala tab Dashboard Caelestia: cuaca + user di atas, jam + kalender + meter di bawah,
-// kaset di kanan, lalu kontrol cepat.
+// Tab Dashboard ala Caelestia: user + cuaca di atas, jam + kalender + cincin resource di tengah,
+// lagu di kanan, lalu kontrol cepat.
 ColumnLayout {
     id: root
-
-    readonly property var player: Media.active
-
-    function toggleText(name: string, on: bool): string {
-        return `${on ? "[x]" : "[ ]"} ${name}`;
-    }
 
     spacing: Appearance.spacing.normal
 
@@ -32,50 +26,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 spacing: Appearance.spacing.normal
 
-                Card {
-                    Layout.preferredWidth: 280
-                    Layout.fillHeight: true
-                    title: "weather"
-                    note: Weather.location
-
-                    RowLayout {
-                        visible: Weather.available
-                        spacing: Appearance.spacing.large
-
-                        StyledText {
-                            text: WeatherArt.get(Weather.kind)
-                            textFormat: Text.PlainText
-                            color: Appearance.colors.primary
-                            font.pixelSize: Appearance.font.size.small
-                            lineHeight: 0.9
-                        }
-
-                        ColumnLayout {
-                            spacing: 2
-
-                            StyledText {
-                                text: `${Weather.temp}°C`
-                                font.pixelSize: 28
-                                font.bold: true
-                            }
-
-                            StyledText {
-                                Layout.maximumWidth: 110
-                                text: Weather.description.toUpperCase()
-                                color: Appearance.colors.textDim
-                                font.pixelSize: Appearance.font.size.small
-                                elide: Text.ElideRight
-                            }
-                        }
-                    }
-
-                    StyledText {
-                        visible: !Weather.available
-                        text: "-- TIDAK ADA DATA --"
-                        color: Appearance.colors.textDim
-                    }
-                }
-
+                // User
                 Card {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -84,20 +35,21 @@ ColumnLayout {
                         spacing: Appearance.spacing.large
 
                         Avatar {
-                            size: 64
+                            size: 72
                             source: `file://${UserInfo.avatar}`
                             initial: UserInfo.displayName.charAt(0).toUpperCase()
                         }
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 2
+                            spacing: 4
 
                             StyledText {
-                                text: UserInfo.displayName.toUpperCase()
+                                Layout.fillWidth: true
+                                text: UserInfo.displayName
                                 font.pixelSize: Appearance.font.size.large
-                                font.bold: true
-                                font.letterSpacing: 2
+                                font.weight: Font.Medium
+                                elide: Text.ElideRight
                             }
 
                             StyledText {
@@ -108,14 +60,60 @@ ColumnLayout {
                                 elide: Text.ElideRight
                             }
 
+                            Row {
+                                spacing: Appearance.spacing.small
+
+                                Chip {
+                                    icon: "schedule"
+                                    text: UserInfo.uptime
+                                }
+
+                                Chip {
+                                    icon: Network.ethernet ? "lan" : Network.connected ? "wifi" : "wifi_off"
+                                    text: Network.ethernet ? "Ethernet" : Network.connected ? Network.ssid : "Offline"
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Cuaca
+                Card {
+                    Layout.preferredWidth: 236
+                    Layout.fillHeight: true
+
+                    RowLayout {
+                        spacing: Appearance.spacing.normal
+
+                        MaterialIcon {
+                            text: Weather.available ? WeatherIcons.get(Weather.kind) : "cloud_off"
+                            fill: 1
+                            font.pixelSize: 52
+                            color: Appearance.colors.tertiary
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+
                             StyledText {
-                                text: `UP ${UserInfo.uptime}`
-                                font.pixelSize: Appearance.font.size.small
+                                text: Weather.available ? `${Weather.temp}°` : "--"
+                                font.family: Appearance.font.family.mono
+                                font.pixelSize: Appearance.font.size.extraLarge
+                                font.weight: Font.Medium
                             }
 
                             StyledText {
                                 Layout.fillWidth: true
-                                text: Network.ethernet ? "> ETHERNET" : Network.connected ? `> ${Network.ssid} · ${Network.signal}%` : "> OFFLINE"
+                                text: Weather.available ? Weather.description : "Tidak ada data"
+                                color: Appearance.colors.textDim
+                                font.pixelSize: Appearance.font.size.small
+                                elide: Text.ElideRight
+                            }
+
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: Weather.location
                                 color: Appearance.colors.textDim
                                 font.pixelSize: Appearance.font.size.small
                                 elide: Text.ElideRight
@@ -130,37 +128,41 @@ ColumnLayout {
                 Layout.fillHeight: true
                 spacing: Appearance.spacing.normal
 
-                // Jam bertumpuk
+                // Jam
                 Card {
-                    Layout.preferredWidth: 132
+                    Layout.preferredWidth: 150
                     Layout.fillHeight: true
 
                     ColumnLayout {
                         Layout.alignment: Qt.AlignHCenter
-                        spacing: 0
+                        Layout.topMargin: Appearance.spacing.normal
+                        spacing: -6
 
                         StyledText {
                             Layout.alignment: Qt.AlignHCenter
                             text: Qt.formatDateTime(Time.date, "hh")
                             color: Appearance.colors.primary
-                            font.pixelSize: 52
+                            font.family: Appearance.font.family.mono
+                            font.pixelSize: 64
                             font.bold: true
                         }
 
                         StyledText {
                             Layout.alignment: Qt.AlignHCenter
                             text: Qt.formatDateTime(Time.date, "mm")
-                            color: Appearance.colors.primary
-                            font.pixelSize: 52
+                            color: Appearance.colors.secondary
+                            font.family: Appearance.font.family.mono
+                            font.pixelSize: 64
                             font.bold: true
                         }
+                    }
 
-                        StyledText {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: Time.date.toLocaleString(Qt.locale(), "ddd dd").toUpperCase()
-                            color: Appearance.colors.textDim
-                            font.pixelSize: Appearance.font.size.small
-                        }
+                    StyledText {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.topMargin: Appearance.spacing.small
+                        text: Time.date.toLocaleString(Qt.locale(), "dddd, d MMM")
+                        color: Appearance.colors.textDim
+                        font.pixelSize: Appearance.font.size.small
                     }
                 }
 
@@ -172,155 +174,72 @@ ColumnLayout {
                         Layout.fillWidth: true
                     }
                 }
-
-                Card {
-                    Layout.preferredWidth: 112
-                    Layout.fillHeight: true
-                    title: "sys"
-
-                    Row {
-                        Layout.alignment: Qt.AlignHCenter
-                        spacing: 10
-
-                        VuMeter {
-                            label: "CPU"
-                            value: SystemStats.cpu
-                        }
-
-                        VuMeter {
-                            label: "RAM"
-                            value: SystemStats.memory
-                        }
-
-                        VuMeter {
-                            label: "DSK"
-                            value: SystemStats.disk
-                        }
-                    }
-                }
             }
         }
 
-        Card {
-            Layout.preferredWidth: 196
+        NowPlaying {
+            Layout.preferredWidth: 220
             Layout.fillHeight: true
-            title: "tape"
-            note: root.player?.identity ?? ""
-
-            Cassette {
-                Layout.fillWidth: true
-                label: root.player ? `${root.player.trackTitle} · ${root.player.trackArtist}` : "no tape"
-                playing: Media.playing
-            }
-
-            StyledText {
-                Layout.fillWidth: true
-                Layout.topMargin: Appearance.spacing.small
-                text: root.player?.trackTitle || "TIDAK ADA MEDIA"
-                font.bold: true
-                elide: Text.ElideRight
-            }
-
-            StyledText {
-                Layout.fillWidth: true
-                visible: text !== ""
-                text: root.player?.trackArtist ?? ""
-                color: Appearance.colors.textDim
-                font.pixelSize: Appearance.font.size.small
-                elide: Text.ElideRight
-            }
-
-            SegmentSlider {
-                Layout.fillWidth: true
-                visible: (root.player?.length ?? 0) > 0
-                implicitHeight: 6
-                segments: 16
-                showValue: false
-                value: root.player && root.player.length > 0 ? root.player.position / root.player.length : 0
-                onMoved: v => {
-                    if (root.player?.canSeek)
-                        root.player.position = v * root.player.length;
-                }
-            }
-
-            Row {
-                visible: root.player !== null
-                spacing: Appearance.spacing.small
-
-                RetroButton {
-                    text: "|<"
-                    enabled: root.player?.canGoPrevious ?? false
-                    onClicked: root.player.previous()
-                }
-
-                RetroButton {
-                    text: Media.playing ? "||" : ">"
-                    active: true
-                    enabled: root.player?.canTogglePlaying ?? false
-                    onClicked: root.player.togglePlaying()
-                }
-
-                RetroButton {
-                    text: ">|"
-                    enabled: root.player?.canGoNext ?? false
-                    onClicked: root.player.next()
-                }
-            }
         }
     }
 
-    // Kontrol cepat
     RowLayout {
         Layout.fillWidth: true
-        spacing: Appearance.spacing.huge
+        spacing: Appearance.spacing.normal
 
-        SegmentSlider {
+        StyledSlider {
             Layout.fillWidth: true
-            label: "VOL"
+            icon: Audio.muted ? "volume_off" : "volume_up"
             value: Audio.muted ? 0 : Audio.volume
             onMoved: v => Audio.setVolume(v)
         }
 
-        SegmentSlider {
+        StyledSlider {
             Layout.fillWidth: true
             visible: Brightness.available
-            label: "LCD"
+            icon: "light_mode"
             value: Brightness.value
             onMoved: v => Brightness.set(v)
         }
 
-        Row {
-            spacing: Appearance.spacing.small
+        IconButton {
+            type: "tonal"
+            icon: Network.wifiEnabled ? "wifi" : "wifi_off"
+            toggled: Network.wifiEnabled
+            padding: Appearance.padding.normal - 2
+            onClicked: Network.setWifi(!Network.wifiEnabled)
+        }
 
-            RetroButton {
-                text: root.toggleText("WIFI", Network.wifiEnabled)
-                active: Network.wifiEnabled
-                onClicked: Network.setWifi(!Network.wifiEnabled)
-            }
+        IconButton {
+            type: "tonal"
+            icon: BluetoothService.enabled ? "bluetooth" : "bluetooth_disabled"
+            toggled: BluetoothService.enabled
+            disabled: !BluetoothService.available
+            padding: Appearance.padding.normal - 2
+            onClicked: BluetoothService.toggle()
+        }
 
-            RetroButton {
-                enabled: BluetoothService.available
-                text: root.toggleText("BT", BluetoothService.enabled)
-                active: BluetoothService.enabled
-                onClicked: BluetoothService.toggle()
-            }
+        IconButton {
+            type: "tonal"
+            icon: Notifs.dnd ? "notifications_off" : "notifications"
+            toggled: Notifs.dnd
+            padding: Appearance.padding.normal - 2
+            onClicked: Notifs.dnd = !Notifs.dnd
+        }
 
-            RetroButton {
-                text: root.toggleText("DND", Notifs.dnd)
-                active: Notifs.dnd
-                onClicked: Notifs.dnd = !Notifs.dnd
-            }
+        IconButton {
+            type: "tonal"
+            icon: Audio.micMuted ? "mic_off" : "mic"
+            toggled: !Audio.micMuted
+            padding: Appearance.padding.normal - 2
+            onClicked: Audio.toggleMic()
+        }
 
-            RetroButton {
-                text: root.toggleText("MIC", !Audio.micMuted)
-                active: !Audio.micMuted
-                onClicked: Audio.toggleMic()
-            }
-
-            RetroButton {
-                text: "[CFG]"
-                onClicked: DrawerState.open("settings")
-            }
+        IconButton {
+            type: "tonal"
+            icon: "settings"
+            padding: Appearance.padding.normal - 2
+            onClicked: DrawerState.open("settings")
         }
     }
 }

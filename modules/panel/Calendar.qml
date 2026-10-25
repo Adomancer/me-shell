@@ -22,7 +22,7 @@ ColumnLayout {
         year = d.getFullYear();
     }
 
-    spacing: Appearance.spacing.small
+    spacing: 2
 
     Connections {
         target: DrawerState
@@ -36,20 +36,22 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
 
-        RetroButton {
-            text: "<"
+        StyledText {
+            Layout.fillWidth: true
+            Layout.leftMargin: Appearance.spacing.small
+            text: `${Qt.locale().standaloneMonthName(root.month, Locale.LongFormat)} ${root.year}`
+            color: Appearance.colors.primary
+            font.pixelSize: Appearance.font.size.larger
+            font.weight: Font.Medium
+        }
+
+        IconButton {
+            icon: "chevron_left"
             onClicked: root.shift(-1)
         }
 
-        StyledText {
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-            text: `${Qt.locale().standaloneMonthName(root.month, Locale.LongFormat)} ${root.year}`.toUpperCase()
-            font.bold: true
-        }
-
-        RetroButton {
-            text: ">"
+        IconButton {
+            icon: "chevron_right"
             onClicked: root.shift(1)
         }
     }
@@ -58,7 +60,7 @@ ColumnLayout {
         Layout.fillWidth: true
         columns: 7
         columnSpacing: 2
-        rowSpacing: 2
+        rowSpacing: 0
 
         // Senin duluan
         Repeater {
@@ -72,7 +74,7 @@ ColumnLayout {
                 text: Qt.locale().dayName((index + 1) % 7, Locale.NarrowFormat)
                 color: Appearance.colors.textDim
                 font.pixelSize: Appearance.font.size.small
-                font.bold: true
+                font.weight: Font.Medium
             }
         }
 
@@ -91,15 +93,19 @@ ColumnLayout {
                 readonly property bool inMonth: day.getMonth() === root.month
                 readonly property bool isToday: day.toDateString() === Time.date.toDateString()
 
-                Layout.fillWidth: true
-                implicitHeight: 24
+                Layout.alignment: Qt.AlignHCenter
+                implicitWidth: 28
+                implicitHeight: 26
+                radius: height / 2
                 color: isToday ? Appearance.colors.primary : "transparent"
 
                 StyledText {
                     anchors.centerIn: parent
                     text: cell.day.getDate()
                     color: cell.isToday ? Appearance.colors.primaryText : cell.inMonth ? Appearance.colors.text : Appearance.colors.textDim
-                    opacity: cell.inMonth ? 1 : 0.5
+                    opacity: cell.inMonth ? 1 : 0.4
+                    font.family: Appearance.font.family.mono
+                    font.pixelSize: Appearance.font.size.smaller
                     font.bold: cell.isToday
                 }
             }
