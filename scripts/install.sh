@@ -14,7 +14,7 @@ ask() {
 . /etc/os-release
 case "${ID:-} ${ID_LIKE:-}" in
 *arch*)
-    pkgs=(hyprland brightnessctl networkmanager bluez-utils wl-clipboard ttf-jetbrains-mono qt6-svg qt6-shadertools)
+    pkgs=(hyprland brightnessctl networkmanager bluez-utils wl-clipboard curl cava ttf-jetbrains-mono qt6-svg qt6-shadertools)
     aur=(quickshell matugen-bin)
     echo "pacman: ${pkgs[*]}"
     echo "AUR/repo: ${aur[*]}"
@@ -30,7 +30,7 @@ case "${ID:-} ${ID_LIKE:-}" in
     fi
     ;;
 *fedora*)
-    pkgs=(hyprland quickshell brightnessctl NetworkManager bluez wl-clipboard jetbrains-mono-fonts qt6-qtsvg qt6-qtshadertools)
+    pkgs=(hyprland quickshell brightnessctl NetworkManager bluez wl-clipboard curl cava jetbrains-mono-fonts qt6-qtsvg qt6-qtshadertools)
     echo "dnf (+ COPR errornointernet/quickshell): ${pkgs[*]}"
     if ask "Install sekarang?"; then
         sudo dnf copr enable -y errornointernet/quickshell
