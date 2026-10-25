@@ -1,12 +1,20 @@
 import Quickshell
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Layouts
 import qs.components
 import qs.services
 import qs.utils
 
+// Tata letak 3 kolom ala Caelestia: kiri cuaca/fetch/media, tengah jam/avatar/password, kanan resource/notif.
 Item {
     id: root
+
+    component Big: StyledText {
+        color: Appearance.colors.primary
+        font.pixelSize: 104
+        font.bold: true
+    }
 
     required property var lock
     property bool cursorOn: true
@@ -63,7 +71,6 @@ Item {
         }
     }
 
-    // Scanline statis (selalu ada, ringan)
     Image {
         anchors.fill: parent
         source: Qt.resolvedUrl("../../assets/scanlines.svg")
@@ -73,7 +80,7 @@ Item {
         opacity: 0.35
     }
 
-    // Input tersembunyi; yang tampil adalah bintang + kursor di bawah
+    // Input tersembunyi; yang tampil adalah bintang + kursor
     TextInput {
         id: input
 
@@ -108,18 +115,22 @@ Item {
         onTriggered: root.cursorOn = !root.cursorOn
     }
 
-    Column {
-        id: content
+    Item {
+        id: wrap
 
-        anchors.centerIn: parent
-        spacing: Appearance.spacing.huge
+        anchors.fill: parent
+        anchors.topMargin: 36
+        anchors.bottomMargin: 36
+        anchors.leftMargin: 48
+        anchors.rightMargin: 48
 
-        // Efek layar CRT menyala saat lockscreen muncul
+        // Efek layar CRT menyala: garis horizontal dulu, lalu melebar ke atas-bawah
         transform: Scale {
             id: crtOn
 
-            origin.x: content.width / 2
-            origin.y: content.height / 2
+            origin.x: wrap.width / 2
+            origin.y: wrap.height / 2
+            xScale: 0.02
             yScale: 0.01
         }
 
@@ -130,108 +141,224 @@ Item {
 
             NumberAnimation {
                 target: crtOn
+                property: "xScale"
+                to: 1
+                duration: Appearance.anim.duration.fast
+                easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+                target: crtOn
                 property: "yScale"
-                from: 0.01
                 to: 1
                 duration: Appearance.anim.duration.slow
                 easing.type: Appearance.anim.easing.emphasized
             }
         }
 
-        StyledText {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: Time.time
-            color: Appearance.colors.primary
-            font.pixelSize: Appearance.font.size.giant
-            font.bold: true
-        }
-
-        StyledText {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: Time.dateText.toUpperCase()
-            font.pixelSize: Appearance.font.size.large
-            font.letterSpacing: 4
-        }
-
-        Item {
-            width: 1
-            height: Appearance.spacing.huge
-        }
-
         RetroFrame {
-            id: box
+            id: frame
 
-            anchors.horizontalCenter: parent.horizontalCenter
-            title: `login: ${Quickshell.env("USER")}`
+            anchors.fill: parent
+            title: "locked // me-shell"
+            background: Qt.rgba(Appearance.colors.surface.r, Appearance.colors.surface.g, Appearance.colors.surface.b, 0.86)
 
-            SequentialAnimation {
-                id: shake
+            RowLayout {
+                width: wrap.width - frame.pad * 2 - frame.bw * 2 - frame.so
+                height: wrap.height - 24 - frame.pad * 2 - frame.bw * 2 - frame.so
+                spacing: Appearance.spacing.huge
 
-                loops: 2
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.alignment: Qt.AlignTop
+                    spacing: Appearance.spacing.large
 
-                NumberAnimation {
-                    target: box
-                    property: "anchors.horizontalCenterOffset"
-                    to: 12
-                    duration: 40
+                    WeatherCard {
+                        Layout.fillWidth: true
+                    }
+
+                    FetchCard {
+                        Layout.fillWidth: true
+                    }
+
+                    LockMedia {
+                        Layout.fillWidth: true
+                    }
                 }
-                NumberAnimation {
-                    target: box
-                    property: "anchors.horizontalCenterOffset"
-                    to: -12
-                    duration: 80
-                }
-                NumberAnimation {
-                    target: box
-                    property: "anchors.horizontalCenterOffset"
-                    to: 0
-                    duration: 40
-                }
-            }
 
-            Column {
-                width: 360
-                spacing: Appearance.spacing.normal
+                ColumnLayout {
+                    Layout.preferredWidth: 384
+                    Layout.maximumWidth: 384
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: Appearance.spacing.large
 
-                Row {
-                    spacing: Appearance.spacing.normal
+                    Row {
+                        Layout.alignment: Qt.AlignHCenter
 
-                    StyledText {
-                        text: "password>"
-                        color: Appearance.colors.textDim
-                        font.pixelSize: Appearance.font.size.large
+                        Big {
+                            text: Qt.formatDateTime(Time.date, "hh")
+                        }
+                        Big {
+                            text: ":"
+                            opacity: root.cursorOn ? 1 : 0
+                        }
+                        Big {
+                            text: Qt.formatDateTime(Time.date, "mm")
+                        }
                     }
 
                     StyledText {
-                        text: "*".repeat(Math.min(root.lock.password.length, 20))
+                        Layout.alignment: Qt.AlignHCenter
+                        text: Qt.formatDateTime(Time.date, "dddd • d MMM").toUpperCase()
                         font.pixelSize: Appearance.font.size.large
+                        font.bold: true
+                        font.letterSpacing: 3
                     }
 
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 10
-                        height: Appearance.font.size.large + 4
-                        color: Appearance.colors.primary
-                        opacity: root.cursorOn && !root.lock.busy ? 1 : 0
+                    // Avatar dari ~/.face; inisial kalau tidak ada
+                    Item {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.topMargin: Appearance.spacing.large
+                        implicitWidth: 112 + Appearance.shadowOffset.normal
+                        implicitHeight: 112 + Appearance.shadowOffset.normal
+
+                        Rectangle {
+                            x: Appearance.shadowOffset.normal
+                            y: Appearance.shadowOffset.normal
+                            width: 112
+                            height: 112
+                            color: Appearance.colors.shadow
+                            opacity: 0.6
+                        }
+
+                        Rectangle {
+                            width: 112
+                            height: 112
+                            color: Appearance.colors.surfaceHigh
+                            border.width: Appearance.border.normal
+                            border.color: Appearance.colors.primary
+
+                            Image {
+                                id: avatar
+
+                                anchors.fill: parent
+                                anchors.margins: Appearance.border.normal
+                                source: `file://${UserInfo.avatar}`
+                                fillMode: Image.PreserveAspectCrop
+                                smooth: !Config.pixelArt
+                                sourceSize: Config.pixelArt ? Qt.size(32, 32) : Qt.size(224, 224)
+                                asynchronous: true
+                                visible: status === Image.Ready
+                            }
+
+                            StyledText {
+                                anchors.centerIn: parent
+                                visible: !avatar.visible
+                                text: UserInfo.displayName.charAt(0).toUpperCase()
+                                color: Appearance.colors.primary
+                                font.pixelSize: 56
+                                font.bold: true
+                            }
+                        }
+                    }
+
+                    StyledText {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: UserInfo.displayName.toUpperCase()
+                        font.bold: true
+                        font.letterSpacing: 2
+                    }
+
+                    RetroFrame {
+                        id: box
+
+                        property real shakeX: 0
+
+                        Layout.fillWidth: true
+                        title: "login"
+
+                        transform: Translate {
+                            x: box.shakeX
+                        }
+
+                        SequentialAnimation {
+                            id: shake
+
+                            loops: 2
+
+                            NumberAnimation {
+                                target: box
+                                property: "shakeX"
+                                to: 12
+                                duration: 40
+                            }
+                            NumberAnimation {
+                                target: box
+                                property: "shakeX"
+                                to: -12
+                                duration: 80
+                            }
+                            NumberAnimation {
+                                target: box
+                                property: "shakeX"
+                                to: 0
+                                duration: 40
+                            }
+                        }
+
+                        Column {
+                            width: 384 - box.pad * 2 - box.bw * 2 - box.so
+                            spacing: Appearance.spacing.normal
+
+                            Row {
+                                spacing: Appearance.spacing.normal
+
+                                StyledText {
+                                    text: "password>"
+                                    color: Appearance.colors.textDim
+                                    font.pixelSize: Appearance.font.size.large
+                                }
+
+                                StyledText {
+                                    text: "*".repeat(Math.min(root.lock.password.length, 20))
+                                    font.pixelSize: Appearance.font.size.large
+                                }
+
+                                Rectangle {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 10
+                                    height: Appearance.font.size.large + 4
+                                    color: Appearance.colors.primary
+                                    opacity: root.cursorOn && !root.lock.busy ? 1 : 0
+                                }
+                            }
+
+                            StyledText {
+                                text: root.lock.busy ? "MEMERIKSA..." : root.lock.message !== "" ? root.lock.message : "TEKAN ENTER UNTUK MASUK"
+                                color: root.lock.failed && !root.lock.busy ? Appearance.colors.error : Appearance.colors.textDim
+                                font.pixelSize: Appearance.font.size.small
+                                font.bold: true
+                            }
+                        }
                     }
                 }
 
-                StyledText {
-                    text: root.lock.busy ? "MEMERIKSA..." : root.lock.message !== "" ? root.lock.message : "TEKAN ENTER UNTUK MASUK"
-                    color: root.lock.failed && !root.lock.busy ? Appearance.colors.error : Appearance.colors.textDim
-                    font.pixelSize: Appearance.font.size.small
-                    font.bold: true
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 1
+                    spacing: Appearance.spacing.large
+
+                    ResourcesCard {
+                        Layout.fillWidth: true
+                    }
+
+                    NotifDock {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                    }
                 }
             }
         }
-    }
-
-    StyledText {
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottomMargin: Appearance.spacing.huge * 2
-        visible: Media.active !== null && (Media.active.trackTitle ?? "") !== ""
-        text: `♪ ${Media.active?.trackTitle ?? ""}${Media.active?.trackArtist ? " - " + Media.active.trackArtist : ""}`
-        color: Appearance.colors.textDim
     }
 }
