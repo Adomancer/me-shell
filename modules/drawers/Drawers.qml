@@ -2,6 +2,9 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import QtQuick
+import QtQuick.Effects
+import QtQuick.Shapes
+import qs.components
 import qs.services
 import qs.utils
 import qs.modules.bar
@@ -12,8 +15,8 @@ import qs.modules.notifs
 import qs.modules.osd
 import qs.modules.settings
 
-// Satu window transparan per monitor. Bar dan semua drawer hidup di permukaan yang sama,
-// input hanya ditangkap di area yang terlihat (mask).
+// Satu window transparan per monitor. Bar, bingkai layar, dan semua drawer digambar sebagai satu
+// bentuk menyatu; drawer tumbuh dari tepi bingkai. Input hanya ditangkap di area yang terlihat (mask).
 Scope {
     id: root
 
@@ -22,21 +25,41 @@ Scope {
     readonly property bool here: DrawerState.screen === "" || DrawerState.screen === modelData.name
     readonly property string active: here ? DrawerState.active : ""
     readonly property bool focused: (Hyprland.focusedMonitor?.name ?? modelData.name) === modelData.name
+    readonly property int frame: Appearance.frame.thickness
 
-    // Window kosong yang hanya memesan ruang (exclusive zone) untuk bar
-    PanelWindow {
+    // Window kosong yang hanya memesan ruang (exclusive zone) untuk bar dan bingkai
+    component Exclusion: PanelWindow {
         screen: root.modelData
         color: "transparent"
-        implicitHeight: Config.barHeight
-        exclusiveZone: Config.barHeight
         mask: Region {}
         WlrLayershell.namespace: "me-shell-exclusion"
+        implicitWidth: 1
+        implicitHeight: 1
+    }
 
-        anchors {
-            top: true
-            left: true
-            right: true
-        }
+    Exclusion {
+        exclusiveZone: Config.barHeight
+        anchors.top: true
+        anchors.left: true
+        anchors.right: true
+    }
+    Exclusion {
+        exclusiveZone: root.frame
+        anchors.bottom: true
+        anchors.left: true
+        anchors.right: true
+    }
+    Exclusion {
+        exclusiveZone: root.frame
+        anchors.left: true
+        anchors.top: true
+        anchors.bottom: true
+    }
+    Exclusion {
+        exclusiveZone: root.frame
+        anchors.right: true
+        anchors.top: true
+        anchors.bottom: true
     }
 
     PanelWindow {
@@ -62,19 +85,22 @@ Scope {
                     item: bar
                 },
                 Region {
-                    item: panel
+                    item: dash
                 },
                 Region {
                     item: launcher
                 },
                 Region {
-                    item: session.hitArea
+                    item: session
                 },
                 Region {
-                    item: settings
+                    item: osd
                 },
                 Region {
                     item: popups
+                },
+                Region {
+                    item: settings
                 }
             ]
         }
@@ -86,6 +112,48 @@ Scope {
             onCleared: DrawerState.close()
         }
 
+        // Semua latar dalam satu Shape, dengan bayangan lembut di sekelilingnya
+        Item {
+            anchors.fill: parent
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                blurMax: 18
+                shadowBlur: 1
+                shadowColor: Appearance.alpha(Appearance.colors.shadow, 0.55)
+            }
+
+            Shape {
+                anchors.fill: parent
+                preferredRendererType: Shape.CurveRenderer
+
+                Frame {
+                    screenWidth: win.width
+                    screenHeight: win.height
+                    barHeight: Config.barHeight
+                }
+                PanelShape {
+                    wrapper: dash
+                    edge: "top"
+                }
+                PanelShape {
+                    wrapper: launcher
+                    edge: "bottom"
+                }
+                PanelShape {
+                    wrapper: session
+                    edge: "right"
+                }
+                PanelShape {
+                    wrapper: osd
+                    edge: "right"
+                }
+                CornerShape {
+                    wrapper: popups
+                }
+            }
+        }
+
         Bar {
             id: bar
 
@@ -95,36 +163,69 @@ Scope {
             window: win
         }
 
-        ControlPanel {
-            id: panel
+        Wrapper {
+            id: dash
 
-            anchors.top: bar.bottom
-            anchors.topMargin: Appearance.spacing.normal
-            anchors.horizontalCenter: parent.horizontalCenter
+            edge: "top"
             shown: root.active === "panel"
+            x: Math.round((parent.width - width) / 2)
+            y: Config.barHeight
+
+            ControlPanel {
+                shown: dash.shown
+            }
         }
 
-        Popups {
-            id: popups
-
-            anchors.top: bar.bottom
-            anchors.right: parent.right
-            anchors.margins: Appearance.spacing.large
-            active: root.focused
-        }
-
-        Osd {
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 80
-            anchors.horizontalCenter: parent.horizontalCenter
-            shown: OsdState.shown && root.focused
-        }
-
-        Launcher {
+        Wrapper {
             id: launcher
 
-            anchors.centerIn: parent
+            edge: "bottom"
             shown: root.active === "launcher"
+            x: Math.round((parent.width - width) / 2)
+            y: parent.height - root.frame - height
+
+            Launcher {
+                shown: launcher.shown
+            }
+        }
+
+        Wrapper {
+            id: session
+
+            edge: "right"
+            shown: root.active === "session"
+            x: parent.width - root.frame - width
+            y: Math.round((parent.height - height) / 2)
+
+            SessionMenu {
+                shown: session.shown
+            }
+        }
+
+        Wrapper {
+            id: osd
+
+            edge: "right"
+            shown: OsdState.shown && root.focused && root.active !== "session"
+            x: parent.width - root.frame - width
+            y: Math.round((parent.height - height) / 2)
+
+            Osd {}
+        }
+
+        Wrapper {
+            id: popups
+
+            edge: "top"
+            shown: list.count > 0
+            x: parent.width - root.frame - width
+            y: Config.barHeight
+
+            Popups {
+                id: list
+
+                active: root.focused
+            }
         }
 
         SettingsWindow {
@@ -132,13 +233,6 @@ Scope {
 
             anchors.centerIn: parent
             shown: root.active === "settings"
-        }
-
-        SessionMenu {
-            id: session
-
-            anchors.fill: parent
-            shown: root.active === "session"
         }
     }
 }
