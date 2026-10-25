@@ -18,31 +18,38 @@ Masih tahap awal dan belum pernah dites di mesin asli, jadi kemungkinan besar ma
 
 ## Pasang
 
+Satu baris, jalan di Arch dan Fedora:
+
 ```sh
-git clone https://github.com/Adomancer/me-shell ~/me-shell
-bash ~/me-shell/scripts/install.sh
+curl -fsSL https://raw.githubusercontent.com/Adomancer/me-shell/main/scripts/install.sh | bash
 ```
 
-Script-nya jalan di Arch dan Fedora. Dia install dependency (ditanya dulu) lalu bikin symlink ke `~/.config/quickshell/me-shell`.
+Script-nya nanya sekali sebelum install paket, lalu:
 
-Matikan dulu Waybar dan notification daemon lain (swaync, mako, dunst), soalnya shell ini sudah menggantikan semuanya.
+- install Hyprland (kalau belum ada), Quickshell, dan semua dependency lain
+- clone repo ke `~/.local/share/me-shell` dan pasang perintah `me-shell` di `~/.local/bin`
+- bikin `~/.config/me-shell/hypr/` dan nambahin satu baris `source` ke `hyprland.conf` (ada backup-nya). Kalau belum punya `hyprland.conf`, dibuatin yang minimal
+- nawarin buat matiin Waybar, swaync, mako, atau dunst kalau ketemu di config, soalnya bentrok
 
-Waktu jalan pertama kali, shell bikin folder `~/.config/me-shell/hypr/`. Polanya sama seperti JaKooLit, keybind dipecah ke beberapa file:
+Setelah itu tinggal login ke Hyprland. Kalau install dari live USB, jalankan `passwd` dulu, soalnya user live nggak punya password dan lockscreen jadi nggak bisa di-unlock.
+
+Perintah lain:
+
+```
+me-shell update      ambil versi terbaru lalu restart
+me-shell restart     nyalain ulang shell
+me-shell log         jalanin di terminal dan simpan log (buat lapor error)
+me-shell uninstall   lepas dari Hyprland dan balikin config yang dimatiin
+```
+
+Keybind dipecah ke beberapa file seperti JaKooLit:
 
 ```
 ~/.config/me-shell/hypr/
-  me-shell.conf    file utama, ini yang di-source
+  me-shell.conf    file utama yang di-source
   keybinds.conf    keybind shell, dibuat dari menu settings
   user.conf        punyamu sendiri, tidak pernah ditimpa
 ```
-
-Di `hyprland.conf` cukup tambah satu baris:
-
-```ini
-source = ~/.config/me-shell/hypr/me-shell.conf
-```
-
-File itu sudah berisi `exec-once = qs -c me-shell` dan `allow_session_lock_restore`, jadi jangan ditulis dua kali. Kalau shell belum pernah jalan, jalankan `qs -c me-shell` sekali dulu supaya file-filenya dibuat.
 
 Keybind bawaannya mengikuti JaKooLit:
 
@@ -56,9 +63,9 @@ Keybind bawaannya mengikuti JaKooLit:
 | `CTRL + ALT + P` | menu power |
 | `CTRL + ALT + L` | lockscreen |
 
-Tombol volume, mic, media, dan brightness di keyboard juga sudah diurus. Semua kombinasi bisa diganti dari menu settings, tab KEYBIND, lalu klik TERAPKAN. Hapus dulu bind lama yang memanggil rofi, wlogout, swaync, dan script volume/media JaKooLit supaya tidak dobel. Screenshot, clipboard, dan emoji tidak diurus shell ini, jadi bind-nya biarkan saja.
+Tombol volume, mic, media, dan brightness di keyboard juga sudah diurus. Semua kombinasi bisa diganti dari menu settings, tab KEYBIND, lalu klik TERAPKAN. Kalau sebelumnya pakai JaKooLit, hapus dulu bind lama yang manggil rofi, wlogout, swaync, dan script volume/media-nya supaya nggak dobel. Screenshot, clipboard, dan emoji nggak diurus shell ini, jadi bind-nya biarin aja.
 
-Jangan hapus `allow_session_lock_restore`. Kalau shell crash pas layar terkunci, opsi itu yang bikin lockscreen masih bisa dipulihkan.
+Di `me-shell.conf` ada `allow_session_lock_restore = true`. Jangan dihapus, soalnya kalau shell crash pas layar terkunci, opsi itu yang bikin lockscreen masih bisa dipulihkan.
 
 ## Setting
 
