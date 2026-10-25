@@ -13,6 +13,18 @@ Singleton {
     // Notifikasi yang sedang tampil sebagai popup (terbaru di depan)
     property var popups: []
     readonly property var list: server.trackedNotifications.values
+    // Waktu masuk per id notifikasi (ms), untuk label "5 mnt"
+    property var times: ({})
+    // Berdetak tiap menit supaya label waktu ikut diperbarui
+    property real now: Date.now()
+
+    function ago(notif): string {
+        const t = times[notif?.id];
+        if (!t)
+            return "";
+        const m = Math.floor((now - t) / 60000);
+        return m < 1 ? "baru saja" : m < 60 ? `${m} mnt` : `${Math.floor(m / 60)} jam`;
+    }
 
     function dismissPopup(notif): void {
         popups = popups.filter(p => p !== notif);
@@ -33,10 +45,19 @@ Singleton {
 
         onNotification: notif => {
             notif.tracked = true;
+            root.times[notif.id] = Date.now();
+            root.now = Date.now();
             notif.closed.connect(() => root.dismissPopup(notif));
             if (!root.dnd || notif.urgency === NotificationUrgency.Critical)
                 root.popups = [notif, ...root.popups].slice(0, 5);
         }
+    }
+
+    Timer {
+        interval: 60000
+        repeat: true
+        running: root.list.length > 0
+        onTriggered: root.now = Date.now()
     }
 
     IpcHandler {

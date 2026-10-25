@@ -12,12 +12,25 @@ Singleton {
     property string kind: "volume"
     // Abaikan perubahan saat startup (Pipewire baru siap)
     property bool ready: false
+    // Selama kursor di atas OSD, jangan disembunyikan
+    property bool held: false
 
     function show(k: string): void {
         if (!ready || DrawerState.active === "panel")
             return;
         kind = k;
         shown = true;
+        if (!held)
+            hideTimer.restart();
+    }
+
+    function hold(): void {
+        held = true;
+        hideTimer.stop();
+    }
+
+    function release(): void {
+        held = false;
         hideTimer.restart();
     }
 
