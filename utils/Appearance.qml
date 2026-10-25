@@ -62,10 +62,16 @@ Singleton {
     }
 
     readonly property QtObject anim: QtObject {
+        // Dikali sesuai setting "Kecepatan animasi"
+        readonly property real speed: ({
+                cepat: 0.55,
+                normal: 1,
+                lambat: 1.75
+            })[Config.animSpeed] ?? 1
         readonly property QtObject duration: QtObject {
-            readonly property int fast: 120
-            readonly property int normal: 220
-            readonly property int slow: 400
+            readonly property int fast: Math.round(120 * root.anim.speed)
+            readonly property int normal: Math.round(220 * root.anim.speed)
+            readonly property int slow: Math.round(400 * root.anim.speed)
         }
         readonly property QtObject easing: QtObject {
             readonly property int standard: Easing.OutCubic
