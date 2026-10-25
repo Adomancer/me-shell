@@ -29,7 +29,7 @@ Singleton {
         id: proc
 
         command: ["cava", "-p", `${Paths.shell}/assets/cava/config`]
-        running: root.available && root.users > 0 && Media.playing
+        running: Config.cavaEnabled && root.available && root.users > 0 && Media.playing
         onRunningChanged: {
             if (!running)
                 root.values = [];
