@@ -2,40 +2,58 @@ import Quickshell
 import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import QtQuick
+import qs.components
 import qs.utils
 
-Row {
+StyledRect {
     id: root
 
     property var window
+    readonly property int count: items.count
 
-    spacing: Appearance.spacing.normal
+    implicitWidth: row.implicitWidth + Appearance.padding.small * 2
+    implicitHeight: Config.barHeight - 10
+    radius: height / 2
+    color: Appearance.colors.surfaceContainer
 
-    Repeater {
-        model: SystemTray.items
+    Row {
+        id: row
 
-        MouseArea {
-            id: item
+        anchors.centerIn: parent
+        spacing: Appearance.spacing.small
 
-            required property SystemTrayItem modelData
+        Repeater {
+            id: items
 
-            implicitWidth: 16
-            implicitHeight: 16
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            cursorShape: Qt.PointingHandCursor
-            onClicked: mouse => {
-                if (mouse.button === Qt.LeftButton && !modelData.onlyMenu) {
-                    modelData.activate();
-                } else if (modelData.hasMenu && root.window) {
-                    const p = item.mapToItem(null, 0, item.height + Appearance.spacing.small);
-                    modelData.display(root.window, p.x, p.y);
+            model: SystemTray.items
+
+            Item {
+                id: item
+
+                required property SystemTrayItem modelData
+
+                implicitWidth: 26
+                implicitHeight: 26
+
+                IconImage {
+                    anchors.centerIn: parent
+                    implicitSize: 16
+                    source: item.modelData.icon
+                    asynchronous: true
                 }
-            }
 
-            IconImage {
-                anchors.fill: parent
-                source: item.modelData.icon
-                asynchronous: true
+                StateLayer {
+                    radius: height / 2
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: mouse => {
+                        if (mouse.button === Qt.LeftButton && !item.modelData.onlyMenu) {
+                            item.modelData.activate();
+                        } else if (item.modelData.hasMenu && root.window) {
+                            const p = item.mapToItem(null, 0, item.height + Appearance.spacing.small);
+                            item.modelData.display(root.window, p.x, p.y);
+                        }
+                    }
+                }
             }
         }
     }

@@ -3,56 +3,81 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Status gaya terminal: LABEL nilai. Info lain ada di control panel.
-Row {
+// Ikon status: jaringan, bluetooth, volume, baterai. Klik membuka dashboard, scroll mengubah volume.
+StyledRect {
     id: root
 
-    component StatusItem: MouseArea {
-        id: it
+    readonly property string netIcon: {
+        if (Network.ethernet)
+            return "lan";
+        if (!Network.wifiEnabled)
+            return "signal_wifi_off";
+        if (!Network.connected)
+            return "signal_wifi_statusbar_not_connected";
+        const s = Network.signal;
+        return s > 75 ? "signal_wifi_4_bar" : s > 50 ? "network_wifi_3_bar" : s > 25 ? "network_wifi_2_bar" : "network_wifi_1_bar";
+    }
+    readonly property string volIcon: Audio.muted ? "volume_off" : Audio.volume < 0.01 ? "volume_mute" : Audio.volume < 0.5 ? "volume_down" : "volume_up"
+    readonly property string batIcon: {
+        if (Battery.charging)
+            return "battery_charging_full";
+        const p = Battery.percentage;
+        return p > 0.95 ? "battery_full" : `battery_${Math.max(0, Math.min(6, Math.floor(p * 7)))}_bar`;
+    }
 
-        property string label
-        property string value
-        property color valueColor: Appearance.colors.text
+    implicitWidth: row.implicitWidth + Appearance.padding.normal * 2
+    implicitHeight: Config.barHeight - 10
+    radius: height / 2
+    color: Appearance.colors.surfaceContainer
 
-        implicitWidth: r.implicitWidth
-        implicitHeight: r.implicitHeight
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+    Row {
+        id: row
+
+        anchors.centerIn: parent
+        spacing: Appearance.spacing.normal
+
+        MaterialIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.netIcon
+            color: Appearance.colors.text
+        }
+
+        MaterialIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: BluetoothService.available
+            text: BluetoothService.enabled ? "bluetooth" : "bluetooth_disabled"
+            color: Appearance.colors.text
+        }
+
+        MaterialIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.volIcon
+            color: Appearance.colors.text
+        }
 
         Row {
-            id: r
+            anchors.verticalCenter: parent.verticalCenter
+            visible: Battery.available
+            spacing: 2
 
-            spacing: Appearance.spacing.small
-
-            StyledText {
+            MaterialIcon {
                 anchors.verticalCenter: parent.verticalCenter
-                text: it.label
-                color: it.containsMouse ? Appearance.colors.primary : Appearance.colors.textDim
-                font.pixelSize: Appearance.font.size.small
-                font.bold: true
+                text: root.batIcon
+                rotation: 90
+                color: !Battery.charging && Battery.percentage < 0.15 ? Appearance.colors.error : Appearance.colors.text
             }
 
             StyledText {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: it.value !== ""
-                text: it.value
-                color: it.valueColor
+                text: `${Math.round(Battery.percentage * 100)}%`
+                font.family: Appearance.font.family.mono
+                font.pixelSize: Appearance.font.size.smaller
             }
         }
     }
 
-    spacing: Appearance.spacing.large
-
-    StatusItem {
-        visible: Battery.available
-        label: Battery.charging ? "CHG" : "BAT"
-        value: `${Math.round(Battery.percentage * 100)}%`
-        valueColor: !Battery.charging && Battery.percentage < 0.15 ? Appearance.colors.error : Appearance.colors.text
-    }
-
-    StatusItem {
-        label: "[PWR]"
-        value: ""
-        onClicked: DrawerState.toggle("session")
+    StateLayer {
+        onClicked: DrawerState.togglePanel("dash")
+        onWheel: event => Audio.setVolume(Math.max(0, Math.min(1, Audio.volume + (event.angleDelta.y > 0 ? 0.05 : -0.05))))
     }
 }

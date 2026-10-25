@@ -1,9 +1,10 @@
 import Quickshell
-import Quickshell.Wayland
 import QtQuick
 import qs.components
+import qs.services
 import qs.utils
 
+// Isi bar. Latarnya digambar oleh Frame di Drawers, jadi di sini transparan.
 Item {
     id: root
 
@@ -12,37 +13,26 @@ Item {
 
     implicitHeight: Config.barHeight
 
-    Rectangle {
-        anchors.fill: parent
-        color: Appearance.colors.surface
-
-        // Garis bawah tegas ala retro
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            height: Appearance.border.normal
-            color: Appearance.colors.outline
-        }
-    }
-
     Row {
         anchors.left: parent.left
-        anchors.leftMargin: Appearance.spacing.large
+        anchors.leftMargin: Appearance.frame.thickness + Appearance.spacing.small
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Appearance.spacing.large
+        spacing: Appearance.spacing.normal
+
+        IconButton {
+            anchors.verticalCenter: parent.verticalCenter
+            icon: "apps"
+            toggled: DrawerState.active === "launcher"
+            onClicked: DrawerState.toggleLauncher("")
+        }
 
         Workspaces {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        StyledText {
+        ActiveWindow {
             anchors.verticalCenter: parent.verticalCenter
             visible: Config.barShowTitle
-            width: Math.min(implicitWidth, 320)
-            elide: Text.ElideRight
-            text: ToplevelManager.activeToplevel?.title ?? ""
-            color: Appearance.colors.textDim
         }
     }
 
@@ -52,18 +42,25 @@ Item {
 
     Row {
         anchors.right: parent.right
-        anchors.rightMargin: Appearance.spacing.large
+        anchors.rightMargin: Appearance.frame.thickness + Appearance.spacing.small
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Appearance.spacing.large
+        spacing: Appearance.spacing.normal
 
         Tray {
             anchors.verticalCenter: parent.verticalCenter
-            visible: Config.barShowTray
+            visible: Config.barShowTray && count > 0
             window: root.window
         }
 
         Status {
             anchors.verticalCenter: parent.verticalCenter
+        }
+
+        IconButton {
+            anchors.verticalCenter: parent.verticalCenter
+            icon: "power_settings_new"
+            toggled: DrawerState.active === "session"
+            onClicked: DrawerState.toggle("session")
         }
     }
 }

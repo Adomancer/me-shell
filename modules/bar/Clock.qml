@@ -3,50 +3,41 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Jam di tengah bar. Klik untuk membuka control panel.
+// Jam di tengah bar (angka mono). Klik untuk membuka dashboard.
 StyledRect {
     id: root
 
     readonly property bool active: DrawerState.active === "panel"
-    property bool cursorOn: true
 
-    implicitWidth: row.implicitWidth + Appearance.spacing.large * 2
-    implicitHeight: Config.barHeight - Appearance.spacing.small * 2 - Appearance.border.normal
-    color: active ? Appearance.colors.primary : mouse.containsMouse ? Appearance.colors.surfaceHigh : "transparent"
+    implicitWidth: row.implicitWidth + Appearance.padding.normal * 2
+    implicitHeight: Config.barHeight - 10
+    radius: height / 2
+    color: active ? Appearance.colors.primaryContainer : Appearance.colors.surfaceContainer
 
     Row {
         id: row
 
         anchors.centerIn: parent
+        spacing: Appearance.spacing.normal
 
         StyledText {
+            anchors.verticalCenter: parent.verticalCenter
             text: Time.time
-            color: root.active ? Appearance.colors.primaryText : Appearance.colors.primary
+            font.family: Appearance.font.family.mono
+            font.pixelSize: Appearance.font.size.larger
             font.bold: true
+            color: root.active ? Appearance.colors.primaryContainerText : Appearance.colors.primary
         }
 
-        // Kursor terminal yang berkedip
         StyledText {
-            text: "_"
-            opacity: root.cursorOn ? 1 : 0
-            color: root.active ? Appearance.colors.primaryText : Appearance.colors.primary
-            font.bold: true
+            anchors.verticalCenter: parent.verticalCenter
+            text: Time.dateText
+            color: root.active ? Appearance.colors.primaryContainerText : Appearance.colors.textDim
         }
     }
 
-    Timer {
-        interval: 530
-        repeat: true
-        running: Config.blinkCursor
-        onTriggered: root.cursorOn = !root.cursorOn
-    }
-
-    MouseArea {
-        id: mouse
-
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: DrawerState.toggle("panel")
+    StateLayer {
+        color: root.active ? Appearance.colors.primaryContainerText : Appearance.colors.text
+        onClicked: DrawerState.togglePanel("dash")
     }
 }
