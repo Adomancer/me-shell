@@ -160,7 +160,7 @@ Reveal {
 
                         required property var modelData
                         readonly property bool isActive: root.page === modelData.id
-                        readonly property color ink: isActive ? Appearance.colors.onPrimary : mouse.containsMouse ? Appearance.colors.text : Appearance.colors.textDim
+                        readonly property color ink: isActive ? Appearance.colors.primaryText : mouse.containsMouse ? Appearance.colors.text : Appearance.colors.textDim
 
                         Layout.fillWidth: true
                         implicitHeight: 40

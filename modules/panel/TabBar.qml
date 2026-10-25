@@ -60,7 +60,7 @@ Item {
                 required property var modelData
                 required property int index
                 readonly property bool isActive: root.current === modelData.name
-                readonly property color ink: isActive ? Appearance.colors.onPrimary : mouse.containsMouse ? Appearance.colors.text : Appearance.colors.textDim
+                readonly property color ink: isActive ? Appearance.colors.primaryText : mouse.containsMouse ? Appearance.colors.text : Appearance.colors.textDim
 
                 width: root.width / root.items.length
                 height: root.height - Appearance.border.normal
@@ -101,7 +101,7 @@ Item {
 
                             anchors.centerIn: parent
                             text: Notifs.list.length
-                            color: Appearance.colors.onPrimary
+                            color: Appearance.colors.primaryText
                             font.pixelSize: Appearance.font.size.small
                             font.bold: true
                         }

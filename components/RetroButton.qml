@@ -27,7 +27,7 @@ StyledRect {
 
         anchors.centerIn: parent
         text: root.text
-        color: root.active ? Appearance.colors.onPrimary : Appearance.colors.text
+        color: root.active ? Appearance.colors.primaryText : Appearance.colors.text
         font.bold: root.active
     }
 

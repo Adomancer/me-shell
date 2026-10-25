@@ -94,7 +94,7 @@ ColumnLayout {
 
                         anchors.centerIn: parent
                         text: "AKTIF"
-                        color: Appearance.colors.onPrimary
+                        color: Appearance.colors.primaryText
                         font.pixelSize: Appearance.font.size.small
                         font.bold: true
                     }

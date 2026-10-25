@@ -30,7 +30,7 @@ StyledRect {
         font.pixelSize: Appearance.font.size.normal
         selectByMouse: true
         selectionColor: Appearance.colors.primary
-        selectedTextColor: Appearance.colors.onPrimary
+        selectedTextColor: Appearance.colors.primaryText
         clip: true
         onEditingFinished: root.committed(text)
         cursorDelegate: Rectangle {

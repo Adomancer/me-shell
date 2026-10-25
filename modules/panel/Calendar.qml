@@ -98,7 +98,7 @@ ColumnLayout {
                 StyledText {
                     anchors.centerIn: parent
                     text: cell.day.getDate()
-                    color: cell.isToday ? Appearance.colors.onPrimary : cell.inMonth ? Appearance.colors.text : Appearance.colors.textDim
+                    color: cell.isToday ? Appearance.colors.primaryText : cell.inMonth ? Appearance.colors.text : Appearance.colors.textDim
                     opacity: cell.inMonth ? 1 : 0.5
                     font.bold: cell.isToday
                 }

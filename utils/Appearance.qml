@@ -18,7 +18,7 @@ Singleton {
         readonly property color text: scheme.text || "#e8dcc4"
         readonly property color textDim: scheme.textDim || "#9a8f7c"
         readonly property color primary: scheme.primary || "#e0a458"
-        readonly property color onPrimary: scheme.onPrimary || "#12100e"
+        readonly property color primaryText: scheme.primaryText || "#12100e"
         readonly property color error: scheme.error || "#d9614f"
         readonly property color shadow: "#000000"
     }
@@ -94,7 +94,7 @@ Singleton {
             property string text: ""
             property string textDim: ""
             property string primary: ""
-            property string onPrimary: ""
+            property string primaryText: ""
             property string error: ""
         }
     }

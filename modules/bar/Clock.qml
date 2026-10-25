@@ -21,7 +21,7 @@ StyledRect {
 
         StyledText {
             text: Time.time
-            color: root.active ? Appearance.colors.onPrimary : Appearance.colors.primary
+            color: root.active ? Appearance.colors.primaryText : Appearance.colors.primary
             font.bold: true
         }
 
@@ -29,7 +29,7 @@ StyledRect {
         StyledText {
             text: "_"
             opacity: root.cursorOn ? 1 : 0
-            color: root.active ? Appearance.colors.onPrimary : Appearance.colors.primary
+            color: root.active ? Appearance.colors.primaryText : Appearance.colors.primary
             font.bold: true
         }
     }

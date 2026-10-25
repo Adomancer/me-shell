@@ -37,7 +37,7 @@ Item {
             anchors.rightMargin: Appearance.spacing.normal
             verticalAlignment: Text.AlignVCenter
             text: root.label.toUpperCase()
-            color: Appearance.colors.onPrimary
+            color: Appearance.colors.primaryText
             font.pixelSize: root.big ? Appearance.font.size.normal : Appearance.font.size.small
             font.bold: true
             elide: Text.ElideRight

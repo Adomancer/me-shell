@@ -37,7 +37,7 @@ Row {
                 text: ws.wsId
                 font.pixelSize: Appearance.font.size.small
                 font.bold: ws.focused
-                color: ws.focused ? Appearance.colors.onPrimary : ws.occupied ? Appearance.colors.text : Appearance.colors.textDim
+                color: ws.focused ? Appearance.colors.primaryText : ws.occupied ? Appearance.colors.text : Appearance.colors.textDim
             }
 
             MouseArea {

@@ -140,7 +140,7 @@ Reveal {
                         font.pixelSize: Appearance.font.size.large
                         selectByMouse: true
                         selectionColor: Appearance.colors.primary
-                        selectedTextColor: Appearance.colors.onPrimary
+                        selectedTextColor: Appearance.colors.primaryText
                         cursorDelegate: Rectangle {
                             width: 9
                             color: Appearance.colors.primary
@@ -225,7 +225,7 @@ Reveal {
                                 anchors.centerIn: parent
                                 visible: row.modelData.kind === "calc" || row.modelData.kind === "run"
                                 text: row.modelData.kind === "calc" ? "=" : "$"
-                                color: row.current ? Appearance.colors.onPrimary : Appearance.colors.primary
+                                color: row.current ? Appearance.colors.primaryText : Appearance.colors.primary
                                 font.pixelSize: Appearance.font.size.large
                                 font.bold: true
                             }
@@ -238,7 +238,7 @@ Reveal {
                             StyledText {
                                 Layout.fillWidth: true
                                 text: row.modelData.title
-                                color: row.current ? Appearance.colors.onPrimary : Appearance.colors.text
+                                color: row.current ? Appearance.colors.primaryText : Appearance.colors.text
                                 font.bold: row.current
                                 elide: Text.ElideRight
                             }
@@ -247,7 +247,7 @@ Reveal {
                                 Layout.fillWidth: true
                                 visible: text !== ""
                                 text: row.modelData.subtitle
-                                color: row.current ? Appearance.colors.onPrimary : Appearance.colors.textDim
+                                color: row.current ? Appearance.colors.primaryText : Appearance.colors.textDim
                                 font.pixelSize: Appearance.font.size.small
                                 elide: Text.ElideRight
                             }

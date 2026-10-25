@@ -213,7 +213,7 @@ Item {
                         required property int index
                         readonly property bool isCurrent: root.current === index
                         readonly property bool isPending: root.pending === modelData.id
-                        readonly property color ink: isPending || isCurrent ? Appearance.colors.onPrimary : Appearance.colors.text
+                        readonly property color ink: isPending || isCurrent ? Appearance.colors.primaryText : Appearance.colors.text
                         // Animasi muncul, dibulatkan ke 4 langkah
                         property real progress: 0
                         readonly property real stepped: Math.round(progress * 4) / 4
