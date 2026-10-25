@@ -209,7 +209,7 @@ Item {
 
                     StyledText {
                         Layout.alignment: Qt.AlignHCenter
-                        text: Qt.formatDateTime(Time.date, "dddd • d MMM").toUpperCase()
+                        text: Time.date.toLocaleString(Qt.locale(), "dddd • d MMM").toUpperCase()
                         font.pixelSize: Appearance.font.size.large
                         font.bold: true
                         font.letterSpacing: 3
