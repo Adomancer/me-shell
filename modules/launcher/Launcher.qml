@@ -89,7 +89,9 @@ Reveal {
     onResultsChanged: list.currentIndex = 0
     onShownChanged: {
         if (shown) {
-            input.text = "";
+            input.text = DrawerState.launcherQuery;
+            input.cursorPosition = input.text.length;
+            DrawerState.launcherQuery = "";
             input.forceActiveFocus();
         }
     }
