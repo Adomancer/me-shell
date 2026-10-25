@@ -92,6 +92,7 @@ Reveal {
             input.text = DrawerState.launcherQuery;
             input.cursorPosition = input.text.length;
             DrawerState.launcherQuery = "";
+            list.lastMouse = Qt.point(-1, -1);
             input.forceActiveFocus();
         }
     }
@@ -172,6 +173,9 @@ Reveal {
 
             ListView {
                 id: list
+
+                // Posisi mouse terakhir (koordinat window); x < 0 = belum tercatat sejak dibuka
+                property point lastMouse: Qt.point(-1, -1)
 
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.min(contentHeight, 8 * 44)
@@ -258,7 +262,14 @@ Reveal {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onEntered: list.currentIndex = row.index
+                        // Pilih hanya kalau mouse benar-benar bergerak, bukan saat daftar bergeser di bawah kursor
+                        onPositionChanged: mouse => {
+                            const p = mapToItem(null, mouse.x, mouse.y);
+                            const moved = list.lastMouse.x >= 0 && (p.x !== list.lastMouse.x || p.y !== list.lastMouse.y);
+                            list.lastMouse = p;
+                            if (moved)
+                                list.currentIndex = row.index;
+                        }
                         onClicked: root.activate(row.index)
                     }
                 }
