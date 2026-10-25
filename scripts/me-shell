@@ -111,28 +111,30 @@ install_deps() {
         fi
         ;;
     fedora)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cava jetbrains-mono-fonts qt6-qtsvg qt6-qtshadertools)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cava jetbrains-mono-fonts qt6-qtsvg qt6-qtshadertools)
         need_terminal && pkgs+=(kitty)
-        note "COPR:   errornointernet/quickshell"
+        # Hyprland dan matugen tidak ada di repo resmi Fedora (cek: Fedora 44); diambil dari COPR.
+        # sdegler/hyprland punya build untuk Fedora 43-45 + rawhide, lionheartp/Hyprland cadangannya.
+        note "COPR:   errornointernet/quickshell, sdegler/hyprland"
         note "dnf:    ${pkgs[*]}"
         ask "Install sekarang?" || { warn "Dependency dilewati"; return; }
         sudo dnf install -y dnf-plugins-core
         sudo dnf copr enable -y errornointernet/quickshell ||
             die "COPR quickshell belum ada untuk Fedora ini. Coba lagi nanti atau build Quickshell dari source."
-        if ! sudo dnf install -y "${pkgs[@]}"; then
-            warn "Gagal install; coba ambil Hyprland dari COPR solopasha/hyprland"
-            sudo dnf copr enable -y solopasha/hyprland
-            sudo dnf install -y "${pkgs[@]}"
-        fi
-        if ! command -v matugen >/dev/null; then
-            if ask "matugen (warna dari wallpaper) tidak ada di repo Fedora. Install lewat cargo? (agak lama)"; then
-                sudo dnf install -y cargo
-                cargo install matugen
-                note "matugen ada di ~/.cargo/bin, pastikan folder itu ada di PATH"
-            else
-                note "Dilewati; shell memakai warna amber bawaan"
+        local copr=""
+        for c in sdegler/hyprland lionheartp/Hyprland; do
+            if sudo dnf copr enable -y "$c"; then
+                copr="$c"
+                break
             fi
-        fi
+            warn "COPR $c tidak punya build untuk Fedora ini, coba yang lain"
+        done
+        [ -n "$copr" ] || die "Tidak ada COPR Hyprland untuk Fedora ini."
+        # lionheartp tidak punya matugen; jangan sampai seluruh transaksi gagal karenanya
+        sudo dnf install -y --skip-unavailable "${pkgs[@]}"
+        command -v Hyprland >/dev/null || command -v hyprland >/dev/null || die "Hyprland gagal ter-install, cek pesan dnf di atas."
+        command -v qs >/dev/null || die "Quickshell gagal ter-install, cek pesan dnf di atas."
+        command -v matugen >/dev/null || note "matugen tidak ter-install; shell memakai warna amber bawaan"
         ;;
     *)
         warn "Distro tidak dikenal. Install manual: hyprland, quickshell, git, curl, brightnessctl,"
