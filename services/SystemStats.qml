@@ -5,22 +5,53 @@ import Quickshell.Io
 import QtQuick
 import qs.services
 
-// CPU & RAM dari /proc. Hanya polling saat control panel terbuka.
+// CPU, RAM, disk, suhu, dan jaringan. Hanya polling saat control panel terbuka atau layar terkunci.
 Singleton {
     id: root
 
+    readonly property int historyLength: 40
+
     property real cpu: 0
+    property string cpuName: ""
     property real memory: 0
+    property real memUsedGiB: 0
+    property real memTotalGiB: 0
+    property real swap: 0
+    property real disk: 0
+    property real home: 0
+    property real diskUsedGiB: 0
+    property real diskTotalGiB: 0
+    // °C, 0 kalau sensor tidak terbaca
+    property real temp: 0
+    // byte per detik
+    property real netRx: 0
+    property real netTx: 0
+    property string netIface: ""
+
+    // Riwayat untuk grafik; netHistory dalam byte/detik (UI menormalkan sendiri)
+    property var cpuHistory: []
+    property var memHistory: []
+    property var netHistory: []
+
     property var lastCpu: null
+    property var lastNet: null
+
+    function push(arr: var, v: real): var {
+        const a = arr.concat([v]);
+        return a.length > historyLength ? a.slice(-historyLength) : a;
+    }
 
     Timer {
         interval: 2000
         repeat: true
         triggeredOnStart: true
-        running: DrawerState.active === "panel"
+        running: DrawerState.active === "panel" || Session.locked
         onTriggered: {
             stat.reload();
             meminfo.reload();
+            netdev.reload();
+            diskProc.running = true;
+            tempProc.running = true;
         }
     }
 
@@ -35,6 +66,7 @@ Singleton {
             if (root.lastCpu) {
                 const dt = total - root.lastCpu.total;
                 root.cpu = dt > 0 ? 1 - (idle - root.lastCpu.idle) / dt : 0;
+                root.cpuHistory = root.push(root.cpuHistory, root.cpu);
             }
             root.lastCpu = {
                 total,
@@ -44,14 +76,104 @@ Singleton {
     }
 
     FileView {
+        path: "/proc/cpuinfo"
+        onLoaded: root.cpuName = (text().match(/model name\s*:\s*(.*)/)?.[1] ?? "").replace(/\s+/g, " ").trim()
+    }
+
+    FileView {
         id: meminfo
 
         path: "/proc/meminfo"
         onLoaded: {
             const t = text();
-            const total = Number(t.match(/MemTotal:\s+(\d+)/)?.[1] ?? 0);
-            const avail = Number(t.match(/MemAvailable:\s+(\d+)/)?.[1] ?? 0);
+            const kb = key => Number(t.match(new RegExp(`${key}:\\s+(\\d+)`))?.[1] ?? 0);
+            const total = kb("MemTotal");
+            const avail = kb("MemAvailable");
+            const swapTotal = kb("SwapTotal");
             root.memory = total ? 1 - avail / total : 0;
+            root.memTotalGiB = total / 1048576;
+            root.memUsedGiB = (total - avail) / 1048576;
+            root.swap = swapTotal ? 1 - kb("SwapFree") / swapTotal : 0;
+            root.memHistory = root.push(root.memHistory, root.memory);
         }
+    }
+
+    FileView {
+        id: netdev
+
+        path: "/proc/net/dev"
+        onLoaded: {
+            let rx = 0;
+            let tx = 0;
+            let best = "";
+            let bestRx = -1;
+            for (const line of text().split("\n").slice(2)) {
+                const [name, rest] = line.split(":");
+                if (!rest || name.trim() === "lo")
+                    continue;
+                const f = rest.trim().split(/\s+/).map(Number);
+                rx += f[0];
+                tx += f[8];
+                if (f[0] > bestRx) {
+                    bestRx = f[0];
+                    best = name.trim();
+                }
+            }
+            const now = Date.now();
+            if (root.lastNet) {
+                const dt = (now - root.lastNet.time) / 1000;
+                root.netRx = dt > 0 ? Math.max(0, (rx - root.lastNet.rx) / dt) : 0;
+                root.netTx = dt > 0 ? Math.max(0, (tx - root.lastNet.tx) / dt) : 0;
+                root.netHistory = root.push(root.netHistory, root.netRx);
+            }
+            root.netIface = best;
+            root.lastNet = {
+                rx,
+                tx,
+                time: now
+            };
+        }
+    }
+
+    Process {
+        id: diskProc
+
+        command: ["df", "-P", "-B1", "/", "/home"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                for (const line of text.trim().split("\n").slice(1)) {
+                    const f = line.trim().split(/\s+/);
+                    const used = Number(f[2]);
+                    const size = Number(f[1]);
+                    const ratio = size ? used / size : 0;
+                    if (f[5] === "/") {
+                        root.disk = ratio;
+                        root.diskUsedGiB = used / 1073741824;
+                        root.diskTotalGiB = size / 1073741824;
+                        root.home = ratio;
+                    } else if (f[5] === "/home") {
+                        root.home = ratio;
+                    }
+                }
+            }
+        }
+    }
+
+    // Ambil suhu tertinggi dari semua thermal zone
+    Process {
+        id: tempProc
+
+        command: ["sh", "-c", "cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1"]
+        stdout: StdioCollector {
+            onStreamFinished: root.temp = (Number(text.trim()) || 0) / 1000
+        }
+    }
+
+    function formatSpeed(bytes: real): string {
+        if (bytes >= 1048576)
+            return `${(bytes / 1048576).toFixed(1)} MB/s`;
+        if (bytes >= 1024)
+            return `${Math.round(bytes / 1024)} KB/s`;
+        return `${Math.round(bytes)} B/s`;
     }
 }
