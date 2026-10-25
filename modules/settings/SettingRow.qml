@@ -3,8 +3,9 @@ import QtQuick.Layouts
 import qs.components
 import qs.utils
 
-// Satu baris setting: judul + penjelasan di kiri, kontrol di kanan.
-Item {
+// Satu baris setting di dalam grup: judul + penjelasan di kiri, kontrol di kanan.
+// Baris-baris yang bertumpuk dengan jarak 2px terlihat sebagai satu grup ala pengaturan Android.
+StyledRect {
     id: root
 
     property string label: ""
@@ -12,12 +13,15 @@ Item {
     default property alias control: slot.data
 
     Layout.fillWidth: true
-    implicitHeight: Math.max(texts.implicitHeight, slot.childrenRect.height) + Appearance.spacing.large * 2
+    implicitHeight: Math.max(texts.implicitHeight, slot.childrenRect.height) + Appearance.padding.normal * 2 + 4
+    radius: Appearance.radius.small - 4
+    color: Appearance.colors.surfaceContainer
 
     ColumnLayout {
         id: texts
 
         anchors.left: parent.left
+        anchors.leftMargin: Appearance.padding.large
         anchors.right: slot.left
         anchors.rightMargin: Appearance.spacing.huge
         anchors.verticalCenter: parent.verticalCenter
@@ -26,7 +30,7 @@ Item {
         StyledText {
             Layout.fillWidth: true
             text: root.label
-            font.bold: true
+            font.pixelSize: Appearance.font.size.larger
             elide: Text.ElideRight
         }
 
@@ -35,7 +39,7 @@ Item {
             visible: text !== ""
             text: root.description
             color: Appearance.colors.textDim
-            font.pixelSize: Appearance.font.size.small
+            font.pixelSize: Appearance.font.size.smaller
             wrapMode: Text.Wrap
         }
     }
@@ -44,27 +48,9 @@ Item {
         id: slot
 
         anchors.right: parent.right
+        anchors.rightMargin: Appearance.padding.large
         anchors.verticalCenter: parent.verticalCenter
         width: childrenRect.width
         height: childrenRect.height
-    }
-
-    // Garis putus-putus di bawah
-    Row {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        spacing: 3
-        clip: true
-
-        Repeater {
-            model: Math.ceil(root.width / 6)
-
-            Rectangle {
-                width: 3
-                height: 1
-                color: Appearance.colors.outline
-            }
-        }
     }
 }

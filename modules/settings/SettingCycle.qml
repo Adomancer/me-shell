@@ -2,38 +2,10 @@ import QtQuick
 import qs.components
 import qs.utils
 
-// Pilihan bergilir: < NILAI >. SettingStepper memakai ini untuk angka (wrap: false).
+// Pilihan bergilir dengan tombol panah. SettingStepper memakai ini untuk angka (wrap: false).
+// Saat nilai berganti, teks lama bergeser keluar dan yang baru masuk dari arah tombol.
 StyledRect {
     id: root
-
-    component Arrow: StyledRect {
-        id: arrow
-
-        property string glyph
-
-        signal hit
-
-        width: 32
-        height: 28
-        radius: 0
-        color: mouse.containsMouse ? Appearance.colors.surfaceHigh : "transparent"
-
-        StyledText {
-            anchors.centerIn: parent
-            text: arrow.glyph
-            color: Appearance.colors.primary
-            font.bold: true
-        }
-
-        MouseArea {
-            id: mouse
-
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: arrow.hit()
-        }
-    }
 
     property var options: []
     property var value
@@ -41,7 +13,8 @@ StyledRect {
     // false = berhenti di ujung daftar, tidak berputar
     property bool wrap: true
     // Ubah tampilan nilai, misalnya menambah satuan
-    property var format: v => String(v).toUpperCase()
+    property var format: v => String(v)
+    property int direction: 1
 
     signal picked(var value)
 
@@ -49,36 +22,81 @@ StyledRect {
         const i = Math.max(0, options.indexOf(value));
         const n = options.length;
         const next = wrap ? (i + delta + n) % n : Math.max(0, Math.min(n - 1, i + delta));
-        if (options[next] !== value)
+        if (options[next] !== value) {
+            direction = delta;
             picked(options[next]);
+        }
     }
 
-    implicitWidth: row.implicitWidth
-    implicitHeight: row.implicitHeight
-    border.width: Appearance.border.thin
-    border.color: Appearance.colors.outline
+    implicitWidth: row.implicitWidth + 4
+    implicitHeight: 40
+    radius: height / 2
+    color: Appearance.colors.surfaceContainerHighest
+
+    onValueChanged: swap.restart()
 
     Row {
         id: row
 
-        Arrow {
-            glyph: "<"
-            onHit: root.step(-1)
+        anchors.centerIn: parent
+
+        IconButton {
+            anchors.verticalCenter: parent.verticalCenter
+            icon: "chevron_left"
+            onClicked: root.step(-1)
         }
 
-        StyledText {
+        Item {
             width: root.labelWidth
-            height: 28
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            text: root.format(root.value)
-            font.bold: true
-            elide: Text.ElideRight
+            height: root.height
+            clip: true
+
+            StyledText {
+                id: label
+
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                text: root.format(root.value)
+                font.weight: Font.Medium
+                elide: Text.ElideRight
+            }
         }
 
-        Arrow {
-            glyph: ">"
-            onHit: root.step(1)
+        IconButton {
+            anchors.verticalCenter: parent.verticalCenter
+            icon: "chevron_right"
+            onClicked: root.step(1)
+        }
+    }
+
+    SequentialAnimation {
+        id: swap
+
+        PropertyAction {
+            target: label
+            property: "x"
+            value: root.direction * 24
+        }
+        PropertyAction {
+            target: label
+            property: "opacity"
+            value: 0
+        }
+        ParallelAnimation {
+            Anim {
+                target: label
+                property: "x"
+                to: 0
+                duration: Appearance.anim.durations.normal
+                easing.bezierCurve: Appearance.anim.curves.emphasizedDecel
+            }
+            Anim {
+                target: label
+                property: "opacity"
+                to: 1
+                duration: Appearance.anim.durations.small
+            }
         }
     }
 }

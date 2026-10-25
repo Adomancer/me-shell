@@ -31,7 +31,7 @@ ColumnLayout {
     }
 
     SettingSection {
-        title: `pilih wallpaper (${walls.count})`
+        title: `Pilih wallpaper (${walls.count})`
     }
 
     FolderListModel {
@@ -64,39 +64,55 @@ ColumnLayout {
             width: grid.cellWidth
             height: grid.cellHeight
 
-            Rectangle {
+            StyledClippingRect {
                 anchors.fill: parent
-                anchors.margins: Appearance.spacing.small
-                color: Appearance.colors.surfaceHigh
-                border.width: Appearance.border.normal
-                border.color: cell.isCurrent ? Appearance.colors.primary : mouse.containsMouse ? Appearance.colors.textDim : Appearance.colors.outline
+                anchors.margins: Appearance.spacing.small / 2 + 1
+                radius: cell.isCurrent ? Appearance.radius.large : Appearance.radius.small
+                color: Appearance.colors.surfaceContainerHigh
+                scale: mouse.containsMouse ? 1.03 : 1
+
+                Behavior on radius {
+                    Anim {
+                        duration: Appearance.anim.durations.expressiveFast
+                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                    }
+                }
+                Behavior on scale {
+                    Anim {
+                        duration: Appearance.anim.durations.small
+                    }
+                }
 
                 Image {
                     anchors.fill: parent
-                    anchors.margins: Appearance.border.normal
                     source: `file://${cell.filePath}`
                     sourceSize: Qt.size(256, 160)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                 }
 
-                Rectangle {
-                    visible: cell.isCurrent
-                    anchors.left: parent.left
+                StyledRect {
+                    anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     anchors.margins: Appearance.spacing.small
-                    implicitWidth: tag.implicitWidth + 8
-                    implicitHeight: tag.implicitHeight
+                    width: 28
+                    height: 28
+                    radius: 14
                     color: Appearance.colors.primary
+                    scale: cell.isCurrent ? 1 : 0
 
-                    StyledText {
-                        id: tag
+                    Behavior on scale {
+                        Anim {
+                            duration: Appearance.anim.durations.expressiveFast
+                            easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                        }
+                    }
 
+                    MaterialIcon {
                         anchors.centerIn: parent
-                        text: "AKTIF"
+                        text: "check"
+                        font.pixelSize: Appearance.font.size.larger
                         color: Appearance.colors.primaryText
-                        font.pixelSize: Appearance.font.size.small
-                        font.bold: true
                     }
                 }
 
@@ -115,7 +131,7 @@ ColumnLayout {
     StyledText {
         visible: walls.count === 0
         Layout.topMargin: Appearance.spacing.normal
-        text: "-- tidak ada gambar di folder ini --"
+        text: "Tidak ada gambar di folder ini"
         color: Appearance.colors.textDim
     }
 

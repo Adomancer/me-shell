@@ -4,11 +4,11 @@ import qs.services
 import qs.utils
 
 ColumnLayout {
-    spacing: 0
+    spacing: 2
 
     SettingSection {
         Layout.topMargin: 0
-        title: "cuaca"
+        title: "Cuaca"
     }
 
     SettingRow {
@@ -23,7 +23,7 @@ ColumnLayout {
     }
 
     SettingSection {
-        title: "notifikasi"
+        title: "Notifikasi"
     }
 
     SettingRow {
@@ -50,7 +50,7 @@ ColumnLayout {
     }
 
     SettingSection {
-        title: "audio"
+        title: "Audio"
     }
 
     SettingRow {
@@ -64,7 +64,7 @@ ColumnLayout {
     }
 
     SettingSection {
-        title: "jaringan"
+        title: "Jaringan"
     }
 
     SettingRow {

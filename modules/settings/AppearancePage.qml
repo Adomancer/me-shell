@@ -4,11 +4,11 @@ import qs.services
 import qs.utils
 
 ColumnLayout {
-    spacing: 0
+    spacing: 2
 
     SettingSection {
         Layout.topMargin: 0
-        title: "tema"
+        title: "Tema"
     }
 
     SettingRow {
@@ -27,8 +27,20 @@ ColumnLayout {
     }
 
     SettingRow {
-        label: "Font"
-        description: "Font monospace untuk semua teks; harus sudah terinstall"
+        label: "Font teks"
+        description: "Font untuk sebagian besar teks; harus sudah terinstall"
+
+        SettingCycle {
+            labelWidth: 160
+            options: ["Rubik", "Inter", "Outfit", "Noto Sans"]
+            value: Config.fontSans
+            onPicked: v => Config.set("fontSans", v)
+        }
+    }
+
+    SettingRow {
+        label: "Font angka"
+        description: "Font monospace untuk jam dan angka"
 
         SettingCycle {
             labelWidth: 160
@@ -46,16 +58,29 @@ ColumnLayout {
     }
 
     SettingSection {
-        title: "efek retro"
+        title: "Efek"
     }
 
     SettingRow {
-        label: "Pixel art"
-        description: "Cover album dan avatar dibuat kotak-kotak"
+        label: "Bingkai layar"
+        description: "Bingkai di sekeliling layar tempat panel menempel"
 
         SettingToggle {
-            checked: Config.pixelArt
-            onToggled: v => Config.set("pixelArt", v)
+            checked: Config.frameEnabled
+            onToggled: v => Config.set("frameEnabled", v)
+        }
+    }
+
+    SettingRow {
+        label: "Tebal bingkai"
+
+        SettingStepper {
+            from: 4
+            to: 20
+            stepSize: 2
+            unit: "px"
+            value: Config.frameThickness
+            onPicked: v => Config.set("frameThickness", v)
         }
     }
 

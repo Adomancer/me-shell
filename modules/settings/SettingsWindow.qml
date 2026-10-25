@@ -3,61 +3,61 @@ import QtQuick.Layouts
 import qs.components
 import qs.services
 import qs.utils
-import "../../utils/PixelIcons.js" as Icons
 
-// Menu settings: jendela retro di tengah dengan sidebar kategori (ala end_4).
-// Semua perubahan langsung disimpan ke config.json; keybind perlu TERAPKAN.
-Reveal {
+// Menu settings: jendela mengambang di tengah dengan sidebar kategori (ala end_4).
+// Semua perubahan langsung disimpan ke config.json; keybind perlu "Terapkan".
+Item {
     id: root
 
+    property bool shown: false
     property string page: "general"
-    property real progress: 1
-    readonly property real stepped: Math.round(progress * 5) / 5
     readonly property var pages: [
         {
             id: "general",
-            label: "UMUM",
-            desc: "Jam, workspace, dan launcher.",
-            icon: Icons.setGeneral
+            label: "Umum",
+            desc: "Jam, workspace, dan launcher",
+            icon: "tune"
         },
         {
             id: "look",
-            label: "TAMPILAN",
-            desc: "Tema, font, dan efek retro.",
-            icon: Icons.setLook
+            label: "Tampilan",
+            desc: "Tema, font, bingkai, dan animasi",
+            icon: "palette"
         },
         {
             id: "bar",
-            label: "BAR",
-            desc: "Isi dan ukuran bar atas.",
-            icon: Icons.setBar
+            label: "Bar",
+            desc: "Isi dan ukuran bar atas",
+            icon: "toolbar"
         },
         {
             id: "wallpaper",
-            label: "WALLPAPER",
-            desc: "Wallpaper dan warna yang ikut wallpaper.",
-            icon: Icons.setWallpaper
+            label: "Wallpaper",
+            desc: "Wallpaper dan warna yang ikut wallpaper",
+            icon: "wallpaper"
         },
         {
             id: "keys",
-            label: "KEYBIND",
-            desc: "Klik UBAH lalu tekan kombinasi baru. Esc untuk batal.",
-            icon: Icons.setKeys
+            label: "Keybind",
+            desc: "Klik Ubah lalu tekan kombinasi baru. Esc untuk batal",
+            icon: "keyboard"
         },
         {
             id: "services",
-            label: "LAYANAN",
-            desc: "Cuaca, notifikasi, audio, dan jaringan.",
-            icon: Icons.setServices
+            label: "Layanan",
+            desc: "Cuaca, notifikasi, audio, dan jaringan",
+            icon: "widgets"
         },
         {
             id: "about",
-            label: "TENTANG",
+            label: "Tentang",
             desc: "",
-            icon: Icons.setAbout
+            icon: "info"
         }
     ]
-    readonly property var current: pages.find(p => p.id === page) ?? pages[0]
+    readonly property int index: Math.max(0, pages.findIndex(p => p.id === page))
+    readonly property var current: pages[index]
+    property real progress: shown ? 1 : 0
 
     function open(id: string): void {
         if (id === page)
@@ -67,25 +67,45 @@ Reveal {
         enter.restart();
     }
 
-    edge: "center"
+    implicitWidth: 960
+    implicitHeight: 600
+    // Ukuran 0 saat tertutup supaya keluar dari mask input
+    width: progress > 0 ? implicitWidth : 0
+    height: progress > 0 ? implicitHeight : 0
+    visible: progress > 0
+    opacity: progress
+    scale: 0.9 + progress * 0.1
+
     onShownChanged: {
         if (shown)
-            frame.forceActiveFocus();
+            body.forceActiveFocus();
     }
 
-    SequentialAnimation {
+    Behavior on progress {
+        Anim {
+            duration: root.shown ? Appearance.anim.durations.expressiveDefault : Appearance.anim.durations.small
+            easing.bezierCurve: root.shown ? Appearance.anim.curves.expressiveDefault : Appearance.anim.curves.emphasizedAccel
+        }
+    }
+
+    // Halaman baru masuk: muncul dari sedikit bawah
+    ParallelAnimation {
         id: enter
 
-        PropertyAction {
-            target: root
-            property: "progress"
-            value: 0
-        }
-        NumberAnimation {
-            target: root
-            property: "progress"
+        Anim {
+            target: content
+            property: "opacity"
+            from: 0
             to: 1
-            duration: 260
+            duration: Appearance.anim.durations.normal
+        }
+        Anim {
+            target: shift
+            property: "y"
+            from: 24
+            to: 0
+            duration: Appearance.anim.durations.normal
+            easing.bezierCurve: Appearance.anim.curves.emphasizedDecel
         }
     }
 
@@ -131,95 +151,148 @@ Reveal {
         AboutPage {}
     }
 
-    RetroFrame {
-        id: frame
+    Elevation {
+        anchors.fill: bg
+        radius: bg.radius
+        level: 3
+    }
 
-        title: "settings // me-shell"
+    StyledRect {
+        id: bg
+
+        anchors.fill: parent
+        radius: Appearance.radius.large
+        color: Appearance.colors.surface
+    }
+
+    RowLayout {
+        id: body
+
+        anchors.fill: parent
+        anchors.margins: Appearance.padding.normal
+        spacing: Appearance.spacing.normal
         focus: true
         Keys.onEscapePressed: DrawerState.close()
-        Keys.onUpPressed: root.open(root.pages[Math.max(0, root.pages.indexOf(root.current) - 1)].id)
-        Keys.onDownPressed: root.open(root.pages[Math.min(root.pages.length - 1, root.pages.indexOf(root.current) + 1)].id)
+        Keys.onUpPressed: root.open(root.pages[Math.max(0, root.index - 1)].id)
+        Keys.onDownPressed: root.open(root.pages[Math.min(root.pages.length - 1, root.index + 1)].id)
 
-        RowLayout {
-            width: 900
-            height: 540
-            spacing: 0
+        // Sidebar kategori
+        Item {
+            Layout.preferredWidth: 220
+            Layout.fillHeight: true
 
-            // Sidebar kategori
-            ColumnLayout {
-                Layout.preferredWidth: 184
-                Layout.fillHeight: true
-                Layout.rightMargin: Appearance.spacing.normal
-                spacing: Appearance.spacing.small
+            Column {
+                id: nav
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.topMargin: Appearance.padding.small
+                spacing: 2
+
+                Row {
+                    id: navHeader
+
+                    leftPadding: Appearance.padding.normal
+                    bottomPadding: Appearance.padding.normal
+                    spacing: Appearance.spacing.normal
+
+                    MaterialIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "settings"
+                        fill: 1
+                        color: Appearance.colors.primary
+                        font.pixelSize: Appearance.font.size.extraLarge
+                    }
+
+                    StyledText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Pengaturan"
+                        font.pixelSize: Appearance.font.size.large
+                        font.weight: Font.Medium
+                    }
+                }
 
                 Repeater {
                     model: root.pages
 
-                    StyledRect {
+                    Item {
                         id: item
 
                         required property var modelData
+                        required property int index
                         readonly property bool isActive: root.page === modelData.id
-                        readonly property color ink: isActive ? Appearance.colors.primaryText : mouse.containsMouse ? Appearance.colors.text : Appearance.colors.textDim
 
-                        Layout.fillWidth: true
-                        implicitHeight: 40
-                        color: isActive ? Appearance.colors.primary : mouse.containsMouse ? Appearance.colors.surfaceHigh : "transparent"
+                        width: nav.width
+                        height: 48
 
                         Row {
                             anchors.left: parent.left
-                            anchors.leftMargin: Appearance.spacing.normal
+                            anchors.leftMargin: Appearance.padding.normal + 4
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: Appearance.spacing.normal
 
-                            PixelIcon {
+                            MaterialIcon {
                                 anchors.verticalCenter: parent.verticalCenter
-                                rows: item.modelData.icon
-                                pixel: 2
-                                color: item.ink
+                                text: item.modelData.icon
+                                fill: item.isActive ? 1 : 0
+                                color: item.isActive ? Appearance.colors.secondaryContainerText : Appearance.colors.textDim
                             }
 
                             StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: item.modelData.label
-                                color: item.ink
-                                font.bold: true
-                                font.letterSpacing: 2
+                                color: item.isActive ? Appearance.colors.secondaryContainerText : Appearance.colors.text
+                                font.weight: item.isActive ? Font.Medium : Font.Normal
                             }
                         }
 
-                        MouseArea {
-                            id: mouse
-
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
+                        StateLayer {
+                            radius: height / 2
                             onClicked: root.open(item.modelData.id)
                         }
                     }
                 }
+            }
 
-                Item {
-                    Layout.fillHeight: true
-                }
+            // Sorotan halaman aktif, meluncur dengan pegas
+            StyledRect {
+                z: -1
+                x: nav.x
+                y: nav.y + navHeader.height + nav.spacing + root.index * (48 + nav.spacing)
+                width: nav.width
+                height: 48
+                radius: height / 2
+                color: Appearance.colors.secondaryContainer
 
-                StyledText {
-                    Layout.leftMargin: Appearance.spacing.normal
-                    text: "me-shell 0.1.0"
-                    color: Appearance.colors.textDim
-                    font.pixelSize: Appearance.font.size.small
+                Behavior on y {
+                    Anim {
+                        duration: Appearance.anim.durations.expressiveFast
+                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                    }
                 }
             }
 
-            Rectangle {
-                Layout.fillHeight: true
-                implicitWidth: Appearance.border.normal
-                color: Appearance.colors.outline
+            StyledText {
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                anchors.margins: Appearance.padding.normal
+                text: "me-shell 0.1.0"
+                color: Appearance.colors.textDim
+                font.family: Appearance.font.family.mono
+                font.pixelSize: Appearance.font.size.small
             }
+        }
+
+        // Isi halaman
+        StyledClippingRect {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            radius: Appearance.radius.normal
+            color: Appearance.colors.surfaceContainerLow
 
             ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                anchors.fill: parent
                 spacing: 0
 
                 Flickable {
@@ -229,28 +302,25 @@ Reveal {
                     Layout.fillHeight: true
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
-                    contentHeight: content.implicitHeight + Appearance.spacing.huge
+                    contentHeight: content.implicitHeight + Appearance.spacing.huge * 2
 
                     ColumnLayout {
                         id: content
 
                         x: Appearance.spacing.huge
-                        y: Appearance.spacing.normal
+                        y: Appearance.spacing.huge
                         width: flick.width - Appearance.spacing.huge * 2
                         spacing: 2
-                        opacity: root.stepped
 
                         transform: Translate {
-                            x: (1 - root.stepped) * -24
+                            id: shift
                         }
 
                         StyledText {
                             visible: root.current.id !== "about"
                             text: root.current.label
-                            color: Appearance.colors.primary
-                            font.pixelSize: 20
-                            font.bold: true
-                            font.letterSpacing: 3
+                            font.pixelSize: Appearance.font.size.extraLarge
+                            font.weight: Font.Medium
                         }
 
                         StyledText {
@@ -258,7 +328,6 @@ Reveal {
                             Layout.bottomMargin: Appearance.spacing.normal
                             text: root.current.desc
                             color: Appearance.colors.textDim
-                            font.pixelSize: Appearance.font.size.small
                         }
 
                         Loader {
@@ -276,50 +345,34 @@ Reveal {
                     }
                 }
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: Appearance.border.normal
-                    color: Appearance.colors.outline
-                }
-
                 // Status simpan
                 RowLayout {
                     Layout.fillWidth: true
-                    Layout.margins: Appearance.spacing.normal
+                    Layout.margins: Appearance.padding.normal
                     Layout.leftMargin: Appearance.spacing.huge
-                    spacing: Appearance.spacing.large
+                    spacing: Appearance.spacing.normal
 
-                    Rectangle {
-                        implicitWidth: 8
-                        implicitHeight: 8
+                    MaterialIcon {
+                        text: Keybinds.dirty ? "pending" : "cloud_done"
+                        fill: 1
                         color: Keybinds.dirty ? Appearance.colors.error : Appearance.colors.primary
-                        opacity: Keybinds.dirty && !blink.lit ? 0 : 1
-
-                        Timer {
-                            id: blink
-
-                            property bool lit: true
-
-                            interval: 250
-                            repeat: true
-                            running: Keybinds.dirty && root.shown
-                            onTriggered: lit = !lit
-                        }
+                        font.pixelSize: Appearance.font.size.larger
                     }
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: Keybinds.dirty ? "KEYBIND BERUBAH · BELUM DITERAPKAN" : `TERSIMPAN · ${Paths.config}/config.json`
+                        text: Keybinds.dirty ? "Keybind berubah, belum diterapkan" : `Tersimpan otomatis di ${Paths.config}/config.json`
                         color: Appearance.colors.textDim
-                        font.pixelSize: Appearance.font.size.small
+                        font.pixelSize: Appearance.font.size.smaller
                         elide: Text.ElideMiddle
                     }
 
-                    RetroButton {
+                    TextButton {
                         visible: root.page === "keys" || Keybinds.dirty
-                        enabled: Keybinds.dirty
-                        active: Keybinds.dirty
-                        text: "TERAPKAN KEYBIND"
+                        disabled: !Keybinds.dirty
+                        type: "filled"
+                        icon: "check"
+                        text: "Terapkan keybind"
                         onClicked: Keybinds.apply()
                     }
                 }

@@ -3,11 +3,11 @@ import QtQuick.Layouts
 import qs.utils
 
 ColumnLayout {
-    spacing: 0
+    spacing: 2
 
     SettingSection {
         Layout.topMargin: 0
-        title: "jam & tanggal"
+        title: "Jam & tanggal"
     }
 
     SettingRow {
@@ -30,18 +30,8 @@ ColumnLayout {
         }
     }
 
-    SettingRow {
-        label: "Kursor berkedip"
-        description: "Kursor _ di sebelah jam"
-
-        SettingToggle {
-            checked: Config.blinkCursor
-            onToggled: v => Config.set("blinkCursor", v)
-        }
-    }
-
     SettingSection {
-        title: "workspace"
+        title: "Workspace"
     }
 
     SettingRow {
@@ -57,7 +47,7 @@ ColumnLayout {
     }
 
     SettingSection {
-        title: "launcher"
+        title: "Launcher"
     }
 
     SettingRow {

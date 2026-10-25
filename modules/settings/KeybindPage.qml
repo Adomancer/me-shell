@@ -23,7 +23,7 @@ ColumnLayout {
         Keybinds.endCapture();
     }
 
-    spacing: 0
+    spacing: 2
 
     Component.onDestruction: stopCapture()
 
@@ -66,43 +66,51 @@ ColumnLayout {
                     spacing: 4
 
                     Repeater {
-                        model: row.isCapturing ? ["TEKAN TOMBOL..."] : [...row.modelData.mods.split(" ").filter(m => m), row.modelData.key]
+                        model: row.isCapturing ? ["Tekan tombol..."] : [...row.modelData.mods.split(" ").filter(m => m), row.modelData.key]
 
-                        // Tombol keyboard: border bawah lebih tebal
-                        Rectangle {
+                        // Tutup tombol keyboard
+                        StyledRect {
                             required property string modelData
 
-                            implicitWidth: cap.implicitWidth + 12
-                            implicitHeight: cap.implicitHeight + 6
-                            radius: Appearance.radius.small
-                            color: Appearance.colors.surfaceHigh
-                            border.width: Appearance.border.thin
-                            border.color: row.isCapturing ? Appearance.colors.primary : Appearance.colors.outline
-
-                            Rectangle {
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.bottom: parent.bottom
-                                height: 3
-                                color: parent.border.color
-                            }
+                            implicitWidth: Math.max(implicitHeight, cap.implicitWidth + 14)
+                            implicitHeight: 28
+                            radius: Appearance.radius.small - 4
+                            color: row.isCapturing ? Appearance.colors.primaryContainer : Appearance.colors.surfaceContainerHighest
 
                             StyledText {
                                 id: cap
 
                                 anchors.centerIn: parent
-                                anchors.verticalCenterOffset: -1
                                 text: parent.modelData
-                                color: row.isCapturing ? Appearance.colors.primary : Appearance.colors.text
-                                font.pixelSize: Appearance.font.size.small
+                                color: row.isCapturing ? Appearance.colors.primaryContainerText : Appearance.colors.text
+                                font.family: Appearance.font.family.mono
+                                font.pixelSize: Appearance.font.size.smaller
                                 font.bold: true
+                            }
+
+                            // Berdenyut halus selama menunggu tombol
+                            SequentialAnimation on opacity {
+                                running: row.isCapturing
+                                loops: Animation.Infinite
+                                onStopped: parent.opacity = 1
+
+                                Anim {
+                                    to: 0.45
+                                    duration: Appearance.anim.durations.large
+                                }
+                                Anim {
+                                    to: 1
+                                    duration: Appearance.anim.durations.large
+                                }
                             }
                         }
                     }
                 }
 
-                RetroButton {
-                    text: row.isCapturing ? "BATAL" : "UBAH"
+                TextButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    type: row.isCapturing ? "filled" : "tonal"
+                    text: row.isCapturing ? "Batal" : "Ubah"
                     onClicked: {
                         if (row.isCapturing)
                             root.stopCapture();
@@ -115,16 +123,15 @@ ColumnLayout {
     }
 
     SettingSection {
-        title: "file keybind (pola jakoolit)"
+        title: "File keybind (pola JaKooLit)"
     }
 
     StyledRect {
         Layout.fillWidth: true
         Layout.topMargin: Appearance.spacing.normal
         implicitHeight: files.implicitHeight + Appearance.spacing.large * 2
-        color: Appearance.colors.background
-        border.width: Appearance.border.thin
-        border.color: Appearance.colors.outline
+        radius: Appearance.radius.small
+        color: Appearance.colors.surfaceContainer
 
         StyledText {
             id: files
@@ -133,6 +140,7 @@ ColumnLayout {
             anchors.margins: Appearance.spacing.large
             textFormat: Text.PlainText
             color: Appearance.colors.textDim
+            font.family: Appearance.font.family.mono
             font.pixelSize: Appearance.font.size.small
             text: `${Keybinds.dir}/
   me-shell.conf    di-source dari hyprland.conf
@@ -147,8 +155,9 @@ source = ${Keybinds.dir}/me-shell.conf`
     RowLayout {
         Layout.topMargin: Appearance.spacing.large
 
-        RetroButton {
-            text: "RESET KE DEFAULT"
+        TextButton {
+            icon: "restart_alt"
+            text: "Reset ke default"
             onClicked: Keybinds.resetAll()
         }
     }

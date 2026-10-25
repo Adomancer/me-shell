@@ -1,6 +1,7 @@
 import QtQuick
+import qs.utils
 
-// Angka dengan tombol < / >, dibatasi from..to.
+// Angka dengan tombol panah, dibatasi from..to.
 SettingCycle {
     property int from: 0
     property int to: 10
@@ -14,6 +15,6 @@ SettingCycle {
         return out;
     }
     wrap: false
-    labelWidth: 72
+    labelWidth: 64
     format: v => `${v}${unit}`
 }

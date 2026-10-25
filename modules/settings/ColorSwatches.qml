@@ -1,21 +1,23 @@
 import QtQuick
+import qs.components
 import qs.utils
 
-// Kotak-kotak warna dari palet aktif
+// Lingkaran warna dari palet aktif
 Row {
-    spacing: Appearance.spacing.small
+    spacing: -6
 
     Repeater {
-        model: ["background", "surface", "surfaceHigh", "outline", "text", "textDim", "primary", "error"]
+        model: ["surfaceContainer", "secondaryContainer", "outline", "tertiary", "secondary", "primary"]
 
-        Rectangle {
+        StyledRect {
             required property string modelData
 
-            width: 26
-            height: 26
+            width: 30
+            height: 30
+            radius: 15
             color: Appearance.colors[modelData]
-            border.width: Appearance.border.thin
-            border.color: Appearance.colors.outline
+            border.width: 2
+            border.color: Appearance.colors.surfaceContainer
         }
     }
 }

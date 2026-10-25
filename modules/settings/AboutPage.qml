@@ -9,24 +9,33 @@ ColumnLayout {
 
     component Key: StyledText {
         Layout.preferredWidth: 96
-        color: Appearance.colors.primary
-        font.pixelSize: Appearance.font.size.small
-        font.bold: true
+        color: Appearance.colors.textDim
     }
 
     component Value: StyledText {
         Layout.fillWidth: true
+        font.family: Appearance.font.family.mono
         elide: Text.ElideRight
     }
 
     RowLayout {
         spacing: Appearance.spacing.huge * 2
 
-        StyledText {
-            textFormat: Text.PlainText
-            color: Appearance.colors.primary
-            lineHeight: 0.9
-            text: "███╗   ███╗███████╗\n████╗ ████║██╔════╝\n██╔████╔██║█████╗\n██║╚██╔╝██║██╔══╝\n██║ ╚═╝ ██║███████╗\n╚═╝     ╚═╝╚══════╝"
+        // Logo: "me" mono di kotak bulat
+        StyledRect {
+            implicitWidth: 128
+            implicitHeight: 128
+            radius: Appearance.radius.large + 8
+            color: Appearance.colors.primaryContainer
+
+            StyledText {
+                anchors.centerIn: parent
+                text: "me"
+                color: Appearance.colors.primaryContainerText
+                font.family: Appearance.font.family.mono
+                font.pixelSize: 56
+                font.bold: true
+            }
         }
 
         GridLayout {
@@ -36,7 +45,7 @@ ColumnLayout {
             rowSpacing: 4
 
             Key {
-                text: "VERSI"
+                text: "Versi"
             }
             Value {
                 text: "0.1.0"
@@ -48,19 +57,19 @@ ColumnLayout {
                 text: UserInfo.distro
             }
             Key {
-                text: "KERNEL"
+                text: "Kernel"
             }
             Value {
                 text: UserInfo.kernel
             }
             Key {
-                text: "CONFIG"
+                text: "Config"
             }
             Value {
                 text: Paths.config
             }
             Key {
-                text: "REPO"
+                text: "Repo"
             }
             Value {
                 text: "github.com/Adomancer/me-shell"
@@ -69,7 +78,7 @@ ColumnLayout {
     }
 
     SettingSection {
-        title: "terinspirasi dari"
+        title: "Terinspirasi dari"
     }
 
     StyledText {
