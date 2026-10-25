@@ -1,6 +1,9 @@
 # Di-generate Quickshell untuk qmlls (LSP), isinya path lokal
 .qmlls.ini
 
+# Shader hasil compile (scripts/build-shaders.sh)
+*.qsb
+
 # Editor / OS
 .idea/
 *.swp
