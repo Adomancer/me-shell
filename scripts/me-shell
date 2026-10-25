@@ -272,8 +272,10 @@ setup_hyprland_conf() {
 in_hyprland() { [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; }
 
 stop_shell() {
-    pkill -f "qs -c me-shell" 2>/dev/null || true
-    pkill -f "quickshell -c me-shell" 2>/dev/null || true
+    qs kill -c me-shell >/dev/null 2>&1 || true
+    # Sisa instance yang tidak menjawab IPC. Pola di-anchor: pkill -f "qs -c me-shell" biasa
+    # ikut membunuh proses lain yang command line-nya memuat teks itu.
+    pkill -f '^(qs|quickshell) -c me-shell$' 2>/dev/null || true
 }
 
 start_shell() {
@@ -360,7 +362,8 @@ cmd_uninstall() {
         sed -i "\|^$SOURCE_LINE\$|d; /^# me-shell\$/d" "$HYPR_CONF"
         ok "Baris source dihapus dari hyprland.conf"
     fi
-    grep -rlF --include='*.conf' "$MARK" "$CONF/hypr" 2>/dev/null | while read -r f; do
+    # grep keluar dengan status 1 kalau tidak ada yang cocok; tanpa "|| true" set -e menghentikan uninstall
+    { grep -rlF --include='*.conf' "$MARK" "$CONF/hypr" 2>/dev/null || true; } | while read -r f; do
         sed -i "s/^$MARK //" "$f"
         ok "Dikembalikan: $f"
     done
