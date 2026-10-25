@@ -1,52 +1,35 @@
 #!/usr/bin/env bash
-# Install dependency me-shell (Arch / Fedora) lalu pasang sebagai config Quickshell
-# di ~/.config/quickshell/me-shell (symlink ke repo ini).
+# Install me-shell dalam satu baris (Arch / Fedora):
+#   curl -fsSL https://raw.githubusercontent.com/Adomancer/me-shell/main/scripts/install.sh | bash
+# Dari repo yang sudah di-clone: bash scripts/install.sh
+# Semua langkahnya ada di scripts/me-shell (perintah "install").
 set -euo pipefail
 
-root="$(cd "$(dirname "$0")/.." && pwd)"
-target="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/me-shell"
+DATA="${XDG_DATA_HOME:-$HOME/.local/share}/me-shell"
 
-ask() {
-    read -rp "$1 [y/N] " ok
-    [[ $ok == [yY] ]]
-}
-
-. /etc/os-release
-case "${ID:-} ${ID_LIKE:-}" in
-*arch*)
-    pkgs=(hyprland brightnessctl networkmanager bluez-utils wl-clipboard curl cava ttf-jetbrains-mono qt6-svg qt6-shadertools)
-    aur=(quickshell matugen-bin)
-    echo "pacman: ${pkgs[*]}"
-    echo "AUR/repo: ${aur[*]}"
-    if ask "Install sekarang?"; then
-        sudo pacman -S --needed "${pkgs[@]}"
-        if command -v paru >/dev/null; then
-            paru -S --needed "${aur[@]}"
-        elif command -v yay >/dev/null; then
-            yay -S --needed "${aur[@]}"
-        else
-            echo "Tidak ada AUR helper. Install manual: ${aur[*]}"
-        fi
-    fi
-    ;;
-*fedora*)
-    pkgs=(hyprland quickshell brightnessctl NetworkManager bluez wl-clipboard curl cava jetbrains-mono-fonts qt6-qtsvg qt6-qtshadertools)
-    echo "dnf (+ COPR errornointernet/quickshell): ${pkgs[*]}"
-    if ask "Install sekarang?"; then
-        sudo dnf copr enable -y errornointernet/quickshell
-        sudo dnf install -y "${pkgs[@]}"
-        command -v matugen >/dev/null || echo "matugen: install lewat 'cargo install matugen'"
-    fi
-    ;;
-*)
-    echo "Distro tidak dikenal, install dependency manual (lihat README)."
-    ;;
-esac
-
-mkdir -p "$(dirname "$target")"
-if [ -e "$target" ] && [ ! -L "$target" ]; then
-    echo "$target sudah ada dan bukan symlink, dilewati."
-else
-    ln -sfn "$root" "$target"
-    echo "Terpasang: $target -> $root"
+# Dijalankan dari dalam repo: langsung pakai repo itu
+here="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
+if [ -n "$here" ] && [ -f "$here/me-shell" ] && [ -f "$here/../shell.qml" ]; then
+    exec bash "$here/me-shell" install "$@"
 fi
+
+# Lewat curl: clone dulu (butuh git)
+if ! command -v git >/dev/null; then
+    echo ">> git belum ada, meng-install..."
+    if command -v pacman >/dev/null; then
+        sudo pacman -S --needed --noconfirm git
+    elif command -v dnf >/dev/null; then
+        sudo dnf install -y git
+    else
+        echo "Install git dulu, lalu jalankan ulang." >&2
+        exit 1
+    fi
+fi
+
+if [ -d "$DATA/.git" ]; then
+    git -C "$DATA" pull --ff-only
+else
+    git clone --depth 1 https://github.com/Adomancer/me-shell "$DATA"
+fi
+
+exec bash "$DATA/scripts/me-shell" install "$@"

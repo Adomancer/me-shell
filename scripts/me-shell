@@ -1,0 +1,410 @@
+#!/usr/bin/env bash
+# CLI me-shell: install, update, restart, log, uninstall.
+# Dipasang ke ~/.local/bin/me-shell oleh "me-shell install".
+set -euo pipefail
+
+REPO_URL="https://github.com/Adomancer/me-shell"
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}"
+DATA="${XDG_DATA_HOME:-$HOME/.local/share}/me-shell"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/me-shell"
+QS_LINK="$CONF/quickshell/me-shell"
+HYPR_DIR="$CONF/me-shell/hypr"
+HYPR_CONF="$CONF/hypr/hyprland.conf"
+SOURCE_LINE="source = $HYPR_DIR/me-shell.conf"
+BIN="$HOME/.local/bin/me-shell"
+# Penanda baris config lain yang dimatikan oleh installer, supaya bisa dikembalikan saat uninstall
+MARK="#me-shell-off#"
+
+YES=0
+
+# --- Tampilan -----------------------------------------------------------------
+
+if [ -t 1 ]; then
+    A=$'\e[33m'; G=$'\e[32m'; R=$'\e[31m'; D=$'\e[2m'; B=$'\e[1m'; N=$'\e[0m'
+else
+    A=""; G=""; R=""; D=""; B=""; N=""
+fi
+
+step() { printf '\n%s>>%s %s%s%s\n' "$A" "$N" "$B" "$*" "$N"; }
+ok() { printf '   %s[ok]%s %s\n' "$G" "$N" "$*"; }
+note() { printf '   %s%s%s\n' "$D" "$*" "$N"; }
+warn() { printf '   %s[!]%s %s\n' "$A" "$N" "$*"; }
+die() { printf '%s[x]%s %s\n' "$R" "$N" "$*" >&2; exit 1; }
+
+# Baca jawaban dari terminal, juga saat dijalankan lewat "curl | bash"
+ask() {
+    [ "$YES" = 1 ] && return 0
+    local ans
+    read -rp "   $1 [Y/n] " ans </dev/tty || ans=n
+    [[ -z $ans || $ans == [yY]* ]]
+}
+
+banner() {
+    printf '%s' "$A"
+    cat <<'EOF'
+ ███╗   ███╗███████╗      ███████╗██╗  ██╗███████╗██╗     ██╗
+ ████╗ ████║██╔════╝      ██╔════╝██║  ██║██╔════╝██║     ██║
+ ██╔████╔██║█████╗  █████╗███████╗███████║█████╗  ██║     ██║
+ ██║╚██╔╝██║██╔══╝  ╚════╝╚════██║██╔══██║██╔══╝  ██║     ██║
+ ██║ ╚═╝ ██║███████╗      ███████║██║  ██║███████╗███████╗███████╗
+ ╚═╝     ╚═╝╚══════╝      ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝
+EOF
+    printf '%s' "$N"
+}
+
+# --- Lokasi repo --------------------------------------------------------------
+
+# Pakai repo tempat script ini berada (mode development), kalau tidak ada pakai ~/.local/share/me-shell
+repo_root() {
+    local self dir
+    self="$(readlink -f "${BASH_SOURCE[0]}")"
+    dir="$(cd "$(dirname "$self")/.." && pwd)"
+    if [ -f "$dir/shell.qml" ]; then echo "$dir"; else echo "$DATA"; fi
+}
+
+# --- Dependency ---------------------------------------------------------------
+
+distro() {
+    [ -r /etc/os-release ] || { echo unknown; return; }
+    . /etc/os-release
+    case "${ID:-} ${ID_LIKE:-}" in
+    *arch*) echo arch ;;
+    *fedora*) echo fedora ;;
+    *) echo unknown ;;
+    esac
+}
+
+need_terminal() {
+    for t in kitty foot alacritty wezterm ghostty; do command -v "$t" >/dev/null && return 1; done
+    return 0
+}
+
+install_deps() {
+    local d
+    d="$(distro)"
+    step "Dependency ($d)"
+    case "$d" in
+    arch)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cava ttf-jetbrains-mono qt6-svg qt6-shadertools)
+        local aur=(quickshell matugen-bin)
+        need_terminal && pkgs+=(kitty)
+        note "pacman: ${pkgs[*]}"
+        note "AUR:    ${aur[*]}"
+        ask "Install sekarang?" || { warn "Dependency dilewati"; return; }
+        sudo pacman -S --needed --noconfirm "${pkgs[@]}"
+        local helper=""
+        command -v paru >/dev/null && helper=paru
+        [ -z "$helper" ] && command -v yay >/dev/null && helper=yay
+        if [ -z "$helper" ] && ask "Tidak ada AUR helper. Pasang yay?"; then
+            sudo pacman -S --needed --noconfirm base-devel
+            local tmp
+            tmp="$(mktemp -d)"
+            git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$tmp/yay-bin"
+            (cd "$tmp/yay-bin" && makepkg -si --noconfirm)
+            rm -rf "$tmp"
+            helper=yay
+        fi
+        if [ -n "$helper" ]; then
+            "$helper" -S --needed --noconfirm "${aur[@]}"
+        else
+            warn "Install manual dari AUR: ${aur[*]}"
+        fi
+        ;;
+    fedora)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cava jetbrains-mono-fonts qt6-qtsvg qt6-qtshadertools)
+        need_terminal && pkgs+=(kitty)
+        note "COPR:   errornointernet/quickshell"
+        note "dnf:    ${pkgs[*]}"
+        ask "Install sekarang?" || { warn "Dependency dilewati"; return; }
+        sudo dnf install -y dnf-plugins-core
+        sudo dnf copr enable -y errornointernet/quickshell ||
+            die "COPR quickshell belum ada untuk Fedora ini. Coba lagi nanti atau build Quickshell dari source."
+        if ! sudo dnf install -y "${pkgs[@]}"; then
+            warn "Gagal install; coba ambil Hyprland dari COPR solopasha/hyprland"
+            sudo dnf copr enable -y solopasha/hyprland
+            sudo dnf install -y "${pkgs[@]}"
+        fi
+        if ! command -v matugen >/dev/null; then
+            if ask "matugen (warna dari wallpaper) tidak ada di repo Fedora. Install lewat cargo? (agak lama)"; then
+                sudo dnf install -y cargo
+                cargo install matugen
+                note "matugen ada di ~/.cargo/bin, pastikan folder itu ada di PATH"
+            else
+                note "Dilewati; shell memakai warna amber bawaan"
+            fi
+        fi
+        ;;
+    *)
+        warn "Distro tidak dikenal. Install manual: hyprland, quickshell, git, curl, brightnessctl,"
+        warn "NetworkManager, bluez, wl-clipboard, cava, font JetBrains Mono, matugen"
+        ;;
+    esac
+}
+
+# --- File config --------------------------------------------------------------
+
+link() {
+    local target="$1" path="$2"
+    mkdir -p "$(dirname "$path")"
+    if [ -e "$path" ] && [ ! -L "$path" ]; then
+        mv "$path" "$path.bak.$(date +%Y%m%d%H%M%S)"
+        warn "$path sudah ada, dipindah ke .bak"
+    fi
+    ln -sfn "$target" "$path"
+    ok "$path -> $target"
+}
+
+# Isi awal; shell menulis ulang file-file ini setiap start (services/Keybinds.qml)
+write_hypr_files() {
+    step "File Hyprland ($HYPR_DIR)"
+    mkdir -p "$HYPR_DIR"
+    if [ ! -f "$HYPR_DIR/me-shell.conf" ]; then
+        cat >"$HYPR_DIR/me-shell.conf" <<EOF
+# Dibuat oleh me-shell, ditulis ulang setiap shell start. Tambahkan di hyprland.conf:
+#   $SOURCE_LINE
+
+exec-once = qs -c me-shell
+
+misc {
+    allow_session_lock_restore = true
+}
+
+source = $HYPR_DIR/keybinds.conf
+source = $HYPR_DIR/user.conf
+EOF
+    fi
+    [ -f "$HYPR_DIR/keybinds.conf" ] || echo "# Diisi otomatis oleh me-shell saat start" >"$HYPR_DIR/keybinds.conf"
+    [ -f "$HYPR_DIR/user.conf" ] || echo "# Keybind dan setting Hyprland milikmu sendiri. me-shell tidak pernah menimpa file ini." >"$HYPR_DIR/user.conf"
+    ok "me-shell.conf, keybinds.conf, user.conf"
+}
+
+# Config minimal untuk yang belum punya hyprland.conf
+minimal_hyprland_conf() {
+    local term=kitty
+    for t in kitty foot alacritty wezterm ghostty; do
+        command -v "$t" >/dev/null && { term="$t"; break; }
+    done
+    cat <<EOF
+# Config Hyprland minimal dari me-shell. Bebas diubah.
+monitor = , preferred, auto, 1
+
+\$terminal = $term
+\$mainMod = SUPER
+
+input {
+    kb_layout = us
+    follow_mouse = 1
+}
+
+general {
+    gaps_in = 4
+    gaps_out = 8
+    border_size = 2
+    layout = dwindle
+}
+
+decoration {
+    rounding = 4
+}
+
+bind = \$mainMod, Return, exec, \$terminal
+bind = \$mainMod, Q, killactive
+bind = \$mainMod SHIFT, M, exit
+bind = \$mainMod, V, togglefloating
+bind = \$mainMod, F, fullscreen
+bind = \$mainMod, left, movefocus, l
+bind = \$mainMod, right, movefocus, r
+bind = \$mainMod, up, movefocus, u
+bind = \$mainMod, down, movefocus, d
+EOF
+    for i in 1 2 3 4 5 6 7 8 9; do
+        echo "bind = \$mainMod, $i, workspace, $i"
+        echo "bind = \$mainMod SHIFT, $i, movetoworkspace, $i"
+    done
+    cat <<EOF
+bindm = \$mainMod, mouse:272, movewindow
+bindm = \$mainMod, mouse:273, resizewindow
+
+$SOURCE_LINE
+EOF
+}
+
+setup_hyprland_conf() {
+    step "Hyprland ($HYPR_CONF)"
+    if [ -f "$CONF/hypr/hyprland.lua" ] && [ ! -f "$HYPR_CONF" ]; then
+        warn "Config Hyprland-mu pakai Lua (hyprland.lua). Tambahkan sendiri source ke:"
+        warn "  $HYPR_DIR/me-shell.conf"
+        return
+    fi
+    if [ ! -f "$HYPR_CONF" ]; then
+        mkdir -p "$(dirname "$HYPR_CONF")"
+        minimal_hyprland_conf >"$HYPR_CONF"
+        ok "Belum ada config, dibuatkan yang minimal"
+        return
+    fi
+    if grep -qxF "$SOURCE_LINE" "$HYPR_CONF"; then
+        ok "Baris source sudah ada"
+    else
+        cp "$HYPR_CONF" "$HYPR_CONF.me-shell.bak"
+        printf '\n# me-shell\n%s\n' "$SOURCE_LINE" >>"$HYPR_CONF"
+        ok "Baris source ditambahkan (backup: hyprland.conf.me-shell.bak)"
+    fi
+
+    # Bar/notif lain bentrok dengan me-shell; cari di semua file config Hyprland
+    local hits
+    hits="$(grep -rnE --include='*.conf' '^[[:space:]]*exec(-once)?[[:space:]]*=.*\b(waybar|swaync|mako|dunst|hyprpanel|ags)\b' "$CONF/hypr" 2>/dev/null | grep -v "$MARK" || true)"
+    if [ -n "$hits" ]; then
+        warn "Ditemukan program yang bentrok dengan me-shell:"
+        printf '%s\n' "$hits" | sed 's/^/      /'
+        if ask "Matikan baris-baris itu? (bisa dikembalikan lewat 'me-shell uninstall')"; then
+            printf '%s\n' "$hits" | cut -d: -f1 | sort -u | while read -r f; do
+                sed -i -E "s/^([[:space:]]*exec(-once)?[[:space:]]*=.*\b(waybar|swaync|mako|dunst|hyprpanel|ags)\b.*)$/$MARK \1/" "$f"
+            done
+            ok "Dimatikan"
+        fi
+    fi
+}
+
+# --- Shell --------------------------------------------------------------------
+
+in_hyprland() { [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; }
+
+stop_shell() {
+    pkill -f "qs -c me-shell" 2>/dev/null || true
+    pkill -f "quickshell -c me-shell" 2>/dev/null || true
+}
+
+start_shell() {
+    nohup qs -c me-shell >/dev/null 2>&1 &
+    disown || true
+}
+
+# --- Perintah -----------------------------------------------------------------
+
+cmd_install() {
+    banner
+    local root
+    root="$(repo_root)"
+
+    install_deps
+
+    step "Repo"
+    if [ "$root" = "$DATA" ]; then
+        if [ -d "$DATA/.git" ]; then
+            git -C "$DATA" pull --ff-only && ok "Diperbarui: $DATA"
+        else
+            git clone --depth 1 "$REPO_URL" "$DATA" && ok "Di-clone ke $DATA"
+        fi
+    else
+        ok "Pakai repo lokal: $root"
+    fi
+
+    step "Symlink"
+    link "$root" "$QS_LINK"
+    chmod +x "$root/scripts/me-shell"
+    link "$root/scripts/me-shell" "$BIN"
+    case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "~/.local/bin belum ada di PATH; tambahkan supaya perintah 'me-shell' bisa dipakai" ;; esac
+
+    write_hypr_files
+    setup_hyprland_conf
+
+    step "Selesai"
+    if in_hyprland; then
+        hyprctl reload >/dev/null && ok "Hyprland di-reload"
+        stop_shell
+        start_shell
+        ok "me-shell dinyalakan"
+    else
+        note "Login ke sesi Hyprland; me-shell akan jalan otomatis."
+    fi
+    if [ "${USER:-}" = "liveuser" ]; then
+        warn "User live tidak punya password, jadi lockscreen tidak bisa di-unlock."
+        warn "Jalankan 'passwd' dulu sebelum mengetes lockscreen."
+    fi
+    note "Perintah: me-shell update | restart | log | uninstall"
+}
+
+cmd_update() {
+    local root
+    root="$(repo_root)"
+    step "Update ($root)"
+    git -C "$root" pull --ff-only
+    cmd_restart
+}
+
+cmd_restart() {
+    stop_shell
+    sleep 0.5
+    start_shell
+    ok "me-shell di-restart"
+}
+
+cmd_log() {
+    mkdir -p "$STATE"
+    local log
+    log="$STATE/log-$(date +%Y%m%d-%H%M%S).txt"
+    stop_shell
+    step "Menjalankan me-shell, log disimpan ke $log (Ctrl+C untuk berhenti)"
+    qs -c me-shell 2>&1 | tee "$log" || true
+    note "Log: $log"
+    note "Jalankan 'me-shell restart' untuk menyalakan lagi di belakang."
+}
+
+cmd_uninstall() {
+    step "Uninstall"
+    ask "Lanjut uninstall me-shell?" || exit 0
+    stop_shell
+    if [ -f "$HYPR_CONF" ]; then
+        sed -i "\|^$SOURCE_LINE\$|d; /^# me-shell\$/d" "$HYPR_CONF"
+        ok "Baris source dihapus dari hyprland.conf"
+    fi
+    grep -rlF --include='*.conf' "$MARK" "$CONF/hypr" 2>/dev/null | while read -r f; do
+        sed -i "s/^$MARK //" "$f"
+        ok "Dikembalikan: $f"
+    done
+    rm -f "$QS_LINK" "$BIN"
+    ok "Symlink dihapus"
+    if ask "Hapus juga setting di $CONF/me-shell?"; then
+        rm -rf "$CONF/me-shell"
+        ok "Setting dihapus"
+    fi
+    if [ -d "$DATA" ] && ask "Hapus repo di $DATA?"; then
+        rm -rf "$DATA"
+        ok "Repo dihapus"
+    fi
+    in_hyprland && hyprctl reload >/dev/null || true
+    note "Selesai. Paket yang sudah ter-install tidak dihapus."
+}
+
+usage() {
+    cat <<EOF
+Pemakaian: me-shell <perintah> [-y]
+
+  install     install dependency, pasang shell, sambungkan ke Hyprland
+  update      git pull lalu restart shell
+  restart     matikan lalu nyalakan lagi shell
+  log         jalankan shell di terminal dan simpan log (untuk lapor error)
+  uninstall   lepas me-shell dari Hyprland dan hapus symlink
+
+  -y          jawab "ya" untuk semua pertanyaan
+EOF
+}
+
+main() {
+    local cmd="${1:-help}"
+    shift || true
+    for a in "$@"; do
+        [ "$a" = "-y" ] && YES=1
+    done
+    case "$cmd" in
+    install) cmd_install ;;
+    update) cmd_update ;;
+    restart) cmd_restart ;;
+    log) cmd_log ;;
+    uninstall) cmd_uninstall ;;
+    -h | --help | help) usage ;;
+    *) usage; exit 1 ;;
+    esac
+}
+
+main "$@"
