@@ -85,7 +85,7 @@ install_deps() {
     step "Dependency ($d)"
     case "$d" in
     arch)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cava ttf-jetbrains-mono qt6-svg qt6-shadertools)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cava ttf-jetbrains-mono qt6-svg qt6-imageformats qt6-shadertools)
         local aur=(quickshell matugen-bin)
         need_terminal && pkgs+=(kitty)
         note "pacman: ${pkgs[*]}"
@@ -111,7 +111,7 @@ install_deps() {
         fi
         ;;
     fedora)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cava jetbrains-mono-fonts qt6-qtsvg qt6-qtshadertools)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cava jetbrains-mono-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools)
         need_terminal && pkgs+=(kitty)
         # Hyprland dan matugen tidak ada di repo resmi Fedora (cek: Fedora 44); diambil dari COPR.
         # sdegler/hyprland punya build untuk Fedora 43-45 + rawhide, lionheartp/Hyprland cadangannya.
