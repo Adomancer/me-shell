@@ -1,0 +1,8 @@
+{
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "[qml]": {
+    "editor.tabSize": 4
+  }
+}

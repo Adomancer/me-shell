@@ -1,0 +1,9 @@
+# Di-generate Quickshell untuk qmlls (LSP), isinya path lokal
+.qmlls.ini
+
+# Editor / OS
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
