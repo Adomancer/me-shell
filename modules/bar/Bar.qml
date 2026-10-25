@@ -38,6 +38,7 @@ Item {
 
         StyledText {
             anchors.verticalCenter: parent.verticalCenter
+            visible: Config.barShowTitle
             width: Math.min(implicitWidth, 320)
             elide: Text.ElideRight
             text: ToplevelManager.activeToplevel?.title ?? ""
@@ -57,6 +58,7 @@ Item {
 
         Tray {
             anchors.verticalCenter: parent.verticalCenter
+            visible: Config.barShowTray
             window: root.window
         }
 

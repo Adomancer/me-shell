@@ -3,7 +3,7 @@ import QtQuick
 import qs.services
 import qs.utils
 
-// Popup notifikasi di kanan atas. Hilang setelah 5 detik (ditahan saat di-hover).
+// Popup notifikasi di kanan atas. Hilang setelah Config.notifTimeout detik (ditahan saat di-hover).
 ListView {
     id: root
 
@@ -32,7 +32,7 @@ ListView {
         }
 
         Timer {
-            interval: 5000
+            interval: Config.notifTimeout * 1000
             running: !card.critical && !hover.hovered
             onTriggered: Notifs.dismissPopup(card.modelData)
         }
