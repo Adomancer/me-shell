@@ -47,7 +47,7 @@ Scope {
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.namespace: "me-shell"
         WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.keyboardFocus: root.active !== "" ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: root.active !== "" ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         anchors {
             top: true
