@@ -22,6 +22,7 @@ Singleton {
     readonly property bool crtShader: adapter.crtShader
     readonly property bool pixelArt: adapter.pixelArt
     readonly property int launcherMaxResults: adapter.launcherMaxResults
+    readonly property string weatherLocation: adapter.weatherLocation
 
     FileView {
         path: `${Paths.config}/config.json`
@@ -43,6 +44,8 @@ Singleton {
             property bool crtShader: false
             property bool pixelArt: true
             property int launcherMaxResults: 8
+            // Kosong = otomatis dari IP. Contoh: "Jakarta"
+            property string weatherLocation: ""
         }
     }
 }
