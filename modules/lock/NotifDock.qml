@@ -33,12 +33,13 @@ Card {
             width: ListView.view.width
             notif: modelData
         }
-    }
 
-    StyledText {
-        visible: list.count === 0
-        text: "-- KOSONG --"
-        color: Appearance.colors.textDim
-        font.pixelSize: Appearance.font.size.small
+        StyledText {
+            anchors.centerIn: parent
+            visible: list.count === 0
+            text: "-- KOSONG --"
+            color: Appearance.colors.textDim
+            font.pixelSize: Appearance.font.size.small
+        }
     }
 }
