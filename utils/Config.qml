@@ -15,14 +15,15 @@ Singleton {
     readonly property bool barShowTray: adapter.barShowTray
     readonly property string clockFormat: adapter.clockFormat
     readonly property string dateFormat: adapter.dateFormat
-    readonly property bool blinkCursor: adapter.blinkCursor
     readonly property string fontFamily: adapter.fontFamily
+    readonly property string fontSans: adapter.fontSans
+    readonly property bool frameEnabled: adapter.frameEnabled
+    readonly property int frameThickness: adapter.frameThickness
     readonly property int workspaces: adapter.workspaces
     readonly property string wallpaperDir: Paths.expand(adapter.wallpaperDir)
     readonly property bool renderWallpaper: adapter.renderWallpaper
     readonly property string colorMode: adapter.colorMode
     readonly property bool crtShader: adapter.crtShader
-    readonly property bool pixelArt: adapter.pixelArt
     readonly property string animSpeed: adapter.animSpeed
     readonly property int launcherMaxResults: adapter.launcherMaxResults
     readonly property string weatherLocation: adapter.weatherLocation
@@ -50,19 +51,22 @@ Singleton {
         JsonAdapter {
             id: adapter
 
-            property int barHeight: 32
+            property int barHeight: 40
             property bool barShowTitle: true
             property bool barShowTray: true
             property string clockFormat: "hh:mm"
             property string dateFormat: "ddd, dd MMM"
-            property bool blinkCursor: true
+            // Font mono untuk angka dan jam; font sans untuk teks lain
             property string fontFamily: "JetBrains Mono"
+            property string fontSans: "Rubik"
+            // Bingkai di sekeliling layar tempat drawer menempel
+            property bool frameEnabled: true
+            property int frameThickness: 8
             property int workspaces: 5
             property string wallpaperDir: "~/Pictures/Wallpapers"
             property bool renderWallpaper: true
             property string colorMode: "dark"
             property bool crtShader: false
-            property bool pixelArt: true
             // "cepat", "normal", "lambat"
             property string animSpeed: "normal"
             property int launcherMaxResults: 8
