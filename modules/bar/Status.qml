@@ -3,7 +3,7 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Status gaya terminal: LABEL nilai
+// Status gaya terminal: LABEL nilai. Info lain ada di control panel.
 Row {
     id: root
 
@@ -42,35 +42,6 @@ Row {
     }
 
     spacing: Appearance.spacing.large
-
-    StatusItem {
-        visible: Notifs.dnd || Notifs.list.length > 0
-        label: Notifs.dnd ? "DND" : "MSG"
-        value: Notifs.dnd ? "" : Notifs.list.length
-        onClicked: DrawerState.toggle("panel")
-    }
-
-    StatusItem {
-        label: "NET"
-        value: Network.ethernet ? "ETH" : Network.connected ? `${Network.signal}%` : Network.wifiEnabled ? "--" : "OFF"
-        valueColor: Network.ethernet || Network.connected ? Appearance.colors.text : Appearance.colors.textDim
-        onClicked: DrawerState.toggle("panel")
-    }
-
-    StatusItem {
-        visible: BluetoothService.available && BluetoothService.enabled
-        label: "BT"
-        value: BluetoothService.devices.length > 0 ? BluetoothService.devices.length : "ON"
-        onClicked: DrawerState.toggle("panel")
-    }
-
-    StatusItem {
-        label: "VOL"
-        value: Audio.muted ? "MUTE" : `${Math.round(Audio.volume * 100)}%`
-        valueColor: Audio.muted ? Appearance.colors.textDim : Appearance.colors.text
-        onClicked: Audio.toggleMute()
-        onWheel: wheel => Audio.setVolume(Audio.volume + (wheel.angleDelta.y > 0 ? 0.05 : -0.05))
-    }
 
     StatusItem {
         visible: Battery.available
