@@ -1,28 +1,20 @@
 import Quickshell
+import Quickshell.Wayland
 import QtQuick
 import qs.components
-import qs.services
 import qs.utils
 
-PanelWindow {
+Item {
     id: root
 
-    required property ShellScreen modelData
+    // Window induk, dibutuhkan untuk membuka menu tray
+    property var window
 
-    screen: modelData
-    color: "transparent"
     implicitHeight: Config.barHeight
 
-    anchors {
-        top: true
-        left: true
-        right: true
-    }
-
-    StyledRect {
+    Rectangle {
         anchors.fill: parent
         color: Appearance.colors.surface
-        radius: Appearance.radius.none
 
         // Garis bawah tegas ala retro
         Rectangle {
@@ -34,32 +26,42 @@ PanelWindow {
         }
     }
 
-    // Kiri: nanti workspace
     Row {
         anchors.left: parent.left
         anchors.leftMargin: Appearance.spacing.large
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Appearance.spacing.normal
+        spacing: Appearance.spacing.large
+
+        Workspaces {
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        StyledText {
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, 320)
+            elide: Text.ElideRight
+            text: ToplevelManager.activeToplevel?.title ?? ""
+            color: Appearance.colors.textDim
+        }
     }
 
-    // Tengah: jam, nanti jadi pemicu control panel
-    StyledText {
+    Clock {
         anchors.centerIn: parent
-        text: Time.time
-        color: Appearance.colors.primary
-        font.bold: true
     }
 
-    // Kanan: nanti tray + status
     Row {
         anchors.right: parent.right
         anchors.rightMargin: Appearance.spacing.large
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Appearance.spacing.normal
+        spacing: Appearance.spacing.large
 
-        StyledText {
-            text: Time.dateText
-            color: Appearance.colors.textDim
+        Tray {
+            anchors.verticalCenter: parent.verticalCenter
+            window: root.window
+        }
+
+        Status {
+            anchors.verticalCenter: parent.verticalCenter
         }
     }
 }
