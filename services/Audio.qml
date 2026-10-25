@@ -46,6 +46,14 @@ Singleton {
             root.setVolume(root.volume - 0.05);
         }
 
+        function upPrecise(): void {
+            root.setVolume(root.volume + 0.01);
+        }
+
+        function downPrecise(): void {
+            root.setVolume(root.volume - 0.01);
+        }
+
         function mute(): void {
             root.toggleMute();
         }

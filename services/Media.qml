@@ -1,6 +1,7 @@
 pragma Singleton
 
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Mpris
 import QtQuick
 
@@ -18,5 +19,25 @@ Singleton {
         repeat: true
         running: root.playing
         onTriggered: root.active?.positionChanged()
+    }
+
+    IpcHandler {
+        target: "media"
+
+        function playPause(): void {
+            root.active?.togglePlaying();
+        }
+
+        function next(): void {
+            root.active?.next();
+        }
+
+        function previous(): void {
+            root.active?.previous();
+        }
+
+        function stop(): void {
+            root.active?.stop();
+        }
     }
 }
