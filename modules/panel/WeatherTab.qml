@@ -24,7 +24,7 @@ GridLayout {
         if (index === 0)
             return "HARI INI";
         const [y, m, d] = date.split("-").map(Number);
-        return Qt.formatDate(new Date(y, m - 1, d), "dddd").toUpperCase();
+        return new Date(y, m - 1, d).toLocaleDateString(Qt.locale(), "dddd").toUpperCase();
     }
 
     columns: 2

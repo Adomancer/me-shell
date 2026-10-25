@@ -157,7 +157,7 @@ ColumnLayout {
 
                         StyledText {
                             Layout.alignment: Qt.AlignHCenter
-                            text: Qt.formatDateTime(Time.date, "ddd dd").toUpperCase()
+                            text: Time.date.toLocaleString(Qt.locale(), "ddd dd").toUpperCase()
                             color: Appearance.colors.textDim
                             font.pixelSize: Appearance.font.size.small
                         }
