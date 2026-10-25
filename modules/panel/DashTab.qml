@@ -316,6 +316,11 @@ ColumnLayout {
                 active: !Audio.micMuted
                 onClicked: Audio.toggleMic()
             }
+
+            RetroButton {
+                text: "[CFG]"
+                onClicked: DrawerState.open("settings")
+            }
         }
     }
 }

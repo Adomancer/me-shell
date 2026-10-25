@@ -10,6 +10,7 @@ import qs.modules.launcher
 import qs.modules.session
 import qs.modules.notifs
 import qs.modules.osd
+import qs.modules.settings
 
 // Satu window transparan per monitor. Bar dan semua drawer hidup di permukaan yang sama,
 // input hanya ditangkap di area yang terlihat (mask).
@@ -70,6 +71,9 @@ Scope {
                     item: session.hitArea
                 },
                 Region {
+                    item: settings
+                },
+                Region {
                     item: popups
                 }
             ]
@@ -121,6 +125,13 @@ Scope {
 
             anchors.centerIn: parent
             shown: root.active === "launcher"
+        }
+
+        SettingsWindow {
+            id: settings
+
+            anchors.centerIn: parent
+            shown: root.active === "settings"
         }
 
         SessionMenu {
