@@ -14,6 +14,7 @@ Masih tahap awal dan belum pernah dites di mesin asli, jadi kemungkinan besar ma
 - notifikasi, OSD volume/brightness, menu power di tepi kanan
 - lockscreen tiga kolom: cuaca, info sistem, media, jam, foto profil, notifikasi, plus efek CRT
 - wallpaper + warna yang ikut wallpaper (pakai matugen)
+- menu settings buat ngatur semuanya, termasuk keybind
 
 ## Pasang
 
@@ -26,46 +27,42 @@ Script-nya jalan di Arch dan Fedora. Dia install dependency (ditanya dulu) lalu 
 
 Matikan dulu Waybar dan notification daemon lain (swaync, mako, dunst), soalnya shell ini sudah menggantikan semuanya.
 
-Tambahkan ini di `hyprland.conf`:
+Waktu jalan pertama kali, shell bikin folder `~/.config/me-shell/hypr/`. Polanya sama seperti JaKooLit, keybind dipecah ke beberapa file:
 
-```ini
-exec-once = qs -c me-shell
-
-misc {
-    allow_session_lock_restore = true
-}
-
-# Keybind mengikuti JaKooLit
-$qs = qs -c me-shell ipc call
-bind = SUPER, D, exec, $qs drawers toggle launcher
-bind = SUPER, W, exec, $qs drawers launcher :
-bind = SUPER SHIFT, E, exec, $qs drawers panel dash
-bind = SUPER SHIFT, N, exec, $qs drawers panel notif
-bind = CTRL ALT, L, exec, $qs lock lock
-bind = CTRL ALT, P, exec, $qs drawers toggle session
-bindel = , XF86AudioRaiseVolume, exec, $qs volume up
-bindel = , XF86AudioLowerVolume, exec, $qs volume down
-bindel = ALT, XF86AudioRaiseVolume, exec, $qs volume upPrecise
-bindel = ALT, XF86AudioLowerVolume, exec, $qs volume downPrecise
-bindl = , XF86AudioMute, exec, $qs volume mute
-bindl = , XF86AudioMicMute, exec, $qs volume mic
-bindl = , XF86AudioPlayPause, exec, $qs media playPause
-bindl = , XF86AudioPause, exec, $qs media playPause
-bindl = , XF86AudioPlay, exec, $qs media playPause
-bindl = , XF86AudioNext, exec, $qs media next
-bindl = , XF86AudioPrev, exec, $qs media previous
-bindl = , XF86AudioStop, exec, $qs media stop
-bindel = , XF86MonBrightnessUp, exec, $qs brightness up
-bindel = , XF86MonBrightnessDown, exec, $qs brightness down
+```
+~/.config/me-shell/hypr/
+  me-shell.conf    file utama, ini yang di-source
+  keybinds.conf    keybind shell, dibuat dari menu settings
+  user.conf        punyamu sendiri, tidak pernah ditimpa
 ```
 
-Keybind di atas sama dengan JaKooLit, jadi hapus dulu bind lama yang memanggil rofi, wlogout, swaync, dan script volume/media JaKooLit supaya tidak dobel. Screenshot, clipboard, dan emoji tidak diurus shell ini, jadi bind-nya biarkan saja.
+Di `hyprland.conf` cukup tambah satu baris:
+
+```ini
+source = ~/.config/me-shell/hypr/me-shell.conf
+```
+
+File itu sudah berisi `exec-once = qs -c me-shell` dan `allow_session_lock_restore`, jadi jangan ditulis dua kali. Kalau shell belum pernah jalan, jalankan `qs -c me-shell` sekali dulu supaya file-filenya dibuat.
+
+Keybind bawaannya mengikuti JaKooLit:
+
+| Tombol | Buka |
+|---|---|
+| `SUPER + D` | launcher |
+| `SUPER + W` | launcher mode wallpaper |
+| `SUPER + SHIFT + E` | control panel |
+| `SUPER + SHIFT + N` | control panel tab notifikasi |
+| `SUPER + I` | settings |
+| `CTRL + ALT + P` | menu power |
+| `CTRL + ALT + L` | lockscreen |
+
+Tombol volume, mic, media, dan brightness di keyboard juga sudah diurus. Semua kombinasi bisa diganti dari menu settings, tab KEYBIND, lalu klik TERAPKAN. Hapus dulu bind lama yang memanggil rofi, wlogout, swaync, dan script volume/media JaKooLit supaya tidak dobel. Screenshot, clipboard, dan emoji tidak diurus shell ini, jadi bind-nya biarkan saja.
 
 Jangan hapus `allow_session_lock_restore`. Kalau shell crash pas layar terkunci, opsi itu yang bikin lockscreen masih bisa dipulihkan.
 
 ## Setting
 
-Bikin `~/.config/me-shell/config.json` kalau mau ganti sesuatu. Semua key opsional, dan perubahannya langsung kebaca tanpa restart. Contoh:
+Paling gampang lewat menu settings (`SUPER + I`, atau tombol `[CFG]` di control panel). Semua perubahan langsung disimpan ke `~/.config/me-shell/config.json` dan langsung kepakai tanpa restart. File itu juga bisa diedit manual, contohnya:
 
 ```json
 {
