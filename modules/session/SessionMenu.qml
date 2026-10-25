@@ -2,49 +2,44 @@ import QtQuick
 import qs.components
 import qs.services
 import qs.utils
-import "../../utils/PixelIcons.js" as Icons
 
-// Menu power yang menempel di tepi kanan layar. Masuk patah-patah ala game 8-bit,
-// lalu tombolnya muncul satu per satu. Aksi berbahaya harus dikonfirmasi (klik/Enter dua kali).
+// Menu power yang menempel di tepi kanan. Aksi berbahaya harus dikonfirmasi (klik/Enter dua kali).
 Item {
     id: root
 
     property bool shown: false
-    // Area input untuk mask window; ukurannya 0 saat tertutup
-    readonly property Item hitArea: hit
     property int current: 0
     property string pending: ""
-    property bool blinkOn: true
 
     readonly property var actions: [
         {
             id: "lock",
-            label: "LOCK",
-            icon: Icons.lock,
+            label: "Kunci",
+            icon: "lock",
             confirm: false
         },
         {
             id: "logout",
-            label: "LOGOUT",
-            icon: Icons.logout,
+            label: "Keluar",
+            icon: "logout",
             confirm: true
         },
         {
             id: "suspend",
-            label: "SLEEP",
-            icon: Icons.suspend,
+            label: "Tidur",
+            icon: "bedtime",
             confirm: false
         },
         {
             id: "reboot",
-            label: "REBOOT",
-            icon: Icons.reboot,
+            label: "Restart",
+            icon: "restart_alt",
             confirm: true
         },
         {
             id: "poweroff",
-            label: "SHUTDOWN",
-            icon: Icons.power,
+            label: "Matikan",
+            icon: "power_settings_new",
             confirm: true
         }
     ]
@@ -82,241 +77,115 @@ Item {
         current = (current + delta + actions.length) % actions.length;
     }
 
+    implicitWidth: col.implicitWidth + Appearance.padding.large * 2
+    implicitHeight: col.implicitHeight + Appearance.padding.large * 2
+
     onShownChanged: {
         pending = "";
         current = 0;
         if (shown)
-            frame.forceActiveFocus();
+            col.forceActiveFocus();
     }
 
-    Item {
-        id: hit
+    Column {
+        id: col
 
-        width: root.shown ? root.width : 0
-        height: root.shown ? root.height : 0
-    }
+        anchors.centerIn: parent
+        spacing: Appearance.spacing.normal
+        focus: true
+        Keys.onEscapePressed: DrawerState.close()
+        Keys.onUpPressed: root.move(-1)
+        Keys.onDownPressed: root.move(1)
+        Keys.onTabPressed: root.move(1)
+        Keys.onReturnPressed: root.run(root.current)
+        Keys.onEnterPressed: root.run(root.current)
 
-    Timer {
-        interval: root.pending !== "" ? 250 : 530
-        repeat: true
-        running: root.shown
-        onTriggered: root.blinkOn = !root.blinkOn
-    }
+        Column {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 2
+            bottomPadding: Appearance.spacing.small
 
-    // Latar gelap + scanline
-    Item {
-        anchors.fill: parent
-        opacity: root.shown ? 1 : 0
-        visible: opacity > 0
+            MaterialIcon {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "schedule"
+                color: Appearance.colors.textDim
+            }
 
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Appearance.anim.duration.normal
+            StyledText {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: UserInfo.uptime
+                font.family: Appearance.font.family.mono
+                font.pixelSize: Appearance.font.size.small
+                color: Appearance.colors.textDim
             }
         }
 
-        Rectangle {
-            anchors.fill: parent
-            color: Appearance.colors.background
-            opacity: 0.55
-        }
+        Repeater {
+            model: root.actions
 
-        Image {
-            anchors.fill: parent
-            source: Qt.resolvedUrl("../../assets/scanlines.svg")
-            fillMode: Image.Tile
-            sourceSize: Qt.size(4, 4)
-            smooth: false
-            opacity: 0.6
-        }
+            StyledRect {
+                id: btn
 
-        MouseArea {
-            anchors.fill: parent
-            enabled: root.shown
-            onClicked: DrawerState.close()
-        }
-    }
+                required property var modelData
+                required property int index
+                readonly property bool isCurrent: root.current === index
+                readonly property bool isPending: root.pending === modelData.id
+                readonly property color ink: isPending ? Appearance.colors.errorContainerText : isCurrent ? Appearance.colors.primaryContainerText : Appearance.colors.text
 
-    Item {
-        id: panel
+                anchors.horizontalCenter: parent.horizontalCenter
+                implicitWidth: 76
+                implicitHeight: isCurrent ? 76 : 64
+                radius: isCurrent ? Appearance.radius.large : height / 2
+                color: isPending ? Appearance.colors.errorContainer : isCurrent ? Appearance.colors.primaryContainer : Appearance.colors.surfaceContainerHigh
 
-        property real progress: root.shown ? 1 : 0
-        // Dibulatkan ke 7 langkah supaya geraknya patah-patah
-        readonly property real stepped: Math.round(progress * 7) / 7
-        // Border kanan dan bayangan sengaja di luar layar supaya panel menempel di tepi
-        readonly property real visibleWidth: width - frame.so - frame.bw
-
-        width: frame.implicitWidth
-        height: frame.implicitHeight
-        anchors.verticalCenter: parent.verticalCenter
-        x: root.width - visibleWidth * stepped
-        visible: progress > 0
-
-        Behavior on progress {
-            NumberAnimation {
-                duration: 420
-            }
-        }
-
-        RetroFrame {
-            id: frame
-
-            title: root.pending !== "" ? "yakin?" : "system"
-            focus: true
-            Keys.onUpPressed: root.move(-1)
-            Keys.onDownPressed: root.move(1)
-            Keys.onReturnPressed: root.run(root.current)
-            Keys.onEnterPressed: root.run(root.current)
-            Keys.onEscapePressed: {
-                if (root.pending !== "")
-                    root.pending = "";
-                else
-                    DrawerState.close();
-            }
-
-            Column {
-                spacing: 6
-                leftPadding: Appearance.spacing.large
+                Behavior on implicitHeight {
+                    Anim {
+                        duration: Appearance.anim.durations.expressiveFast
+                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                    }
+                }
+                Behavior on radius {
+                    Anim {
+                        duration: Appearance.anim.durations.expressiveFast
+                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                    }
+                }
 
                 Column {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: Appearance.spacing.small
+                    anchors.centerIn: parent
+                    spacing: 2
 
-                    PixelIcon {
+                    MaterialIcon {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        rows: Icons.power
-                        pixel: 3
-                        color: Appearance.colors.primary
+                        text: btn.isPending ? "warning" : btn.modelData.icon
+                        font.pixelSize: btn.isCurrent ? 28 : 24
+                        fill: btn.isCurrent ? 1 : 0
+                        color: btn.ink
+
+                        Behavior on font.pixelSize {
+                            Anim {
+                                duration: Appearance.anim.durations.expressiveFast
+                                easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                            }
+                        }
                     }
 
                     StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: `UP ${UserInfo.uptime}`
-                        color: Appearance.colors.textDim
+                        text: btn.isPending ? "Yakin?" : btn.modelData.label
                         font.pixelSize: Appearance.font.size.small
+                        color: btn.ink
+                        opacity: btn.isCurrent || btn.isPending ? 1 : 0.8
                     }
                 }
 
-                Rectangle {
-                    width: 120
-                    height: Appearance.border.thin
-                    color: Appearance.colors.outline
-                }
-
-                Repeater {
-                    model: root.actions
-
-                    StyledRect {
-                        id: btn
-
-                        required property var modelData
-                        required property int index
-                        readonly property bool isCurrent: root.current === index
-                        readonly property bool isPending: root.pending === modelData.id
-                        readonly property color ink: isPending || isCurrent ? Appearance.colors.primaryText : Appearance.colors.text
-                        // Animasi muncul, dibulatkan ke 4 langkah
-                        property real progress: 0
-                        readonly property real stepped: Math.round(progress * 4) / 4
-
-                        width: 120
-                        height: 76
-                        color: isPending ? Appearance.colors.error : isCurrent ? Appearance.colors.primary : "transparent"
-                        border.width: Appearance.border.thin
-                        border.color: isPending ? Appearance.colors.error : isCurrent ? Appearance.colors.primary : Appearance.colors.outline
-                        opacity: stepped
-
-                        transform: Translate {
-                            x: (1 - btn.stepped) * 32
-                        }
-
-                        SequentialAnimation {
-                            id: popIn
-
-                            PropertyAction {
-                                target: btn
-                                property: "progress"
-                                value: 0
-                            }
-                            PauseAnimation {
-                                duration: 380 + btn.index * 70
-                            }
-                            NumberAnimation {
-                                target: btn
-                                property: "progress"
-                                to: 1
-                                duration: 240
-                            }
-                        }
-
-                        Connections {
-                            target: root
-
-                            function onShownChanged(): void {
-                                if (root.shown)
-                                    popIn.restart();
-                            }
-                        }
-
-                        Component.onCompleted: {
-                            if (root.shown)
-                                popIn.restart();
-                        }
-
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            PixelIcon {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                rows: btn.modelData.icon
-                                pixel: 3
-                                color: btn.ink
-                            }
-
-                            StyledText {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: btn.isPending ? "YAKIN?" : btn.modelData.label
-                                color: btn.ink
-                                opacity: btn.isPending && !root.blinkOn ? 0 : 1
-                                font.pixelSize: Appearance.font.size.small
-                                font.bold: true
-                                font.letterSpacing: 2
-                            }
-                        }
-
-                        // Kursor ">" berkedip di sebelah kiri tombol terpilih
-                        StyledText {
-                            anchors.right: parent.left
-                            anchors.rightMargin: 4
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: btn.isCurrent && !btn.isPending
-                            opacity: root.blinkOn ? 1 : 0
-                            text: ">"
-                            color: Appearance.colors.primary
-                            font.pixelSize: Appearance.font.size.large
-                            font.bold: true
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onEntered: {
-                                if (root.current !== btn.index) {
-                                    root.pending = "";
-                                    root.current = btn.index;
-                                }
-                            }
-                            onClicked: root.run(btn.index)
-                        }
+                StateLayer {
+                    color: btn.ink
+                    onEntered: {
+                        if (root.current !== btn.index)
+                            root.move(btn.index - root.current);
                     }
-                }
-
-                StyledText {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "↑↓ PILIH · ENTER"
-                    color: Appearance.colors.textDim
-                    font.pixelSize: Appearance.font.size.small
+                    onClicked: root.run(btn.index)
                 }
             }
         }
