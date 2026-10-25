@@ -44,17 +44,15 @@ Reveal {
         }
     }
 
-    property string tab: "dash"
+    // Disimpan di DrawerState supaya IPC `drawers panel <tab>` bisa memilih tab
+    readonly property string tab: DrawerState.panelTab
     readonly property var tabs: ["dash", "media", "perf", "weather", "notif"]
     readonly property int contentWidth: 856
     readonly property bool usingCava: shown && tab === "media"
     property real noise: 0
 
     function setTab(name: string): void {
-        if (name === tab)
-            return;
-        tab = name;
-        noiseAnim.restart();
+        DrawerState.panelTab = name;
     }
 
     function shiftTab(delta: int): void {
@@ -67,6 +65,7 @@ Reveal {
             frame.forceActiveFocus();
     }
     onUsingCavaChanged: Cava.users += usingCava ? 1 : -1
+    onTabChanged: noiseAnim.restart()
 
     NumberAnimation {
         id: noiseAnim
