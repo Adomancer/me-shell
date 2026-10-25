@@ -3,33 +3,57 @@ import qs.components
 import qs.services
 import qs.utils
 
-Reveal {
+// OSD volume + brightness yang menempel di tepi kanan. Bisa langsung digeser.
+Item {
     id: root
 
-    readonly property bool isVolume: OsdState.kind === "volume"
-    readonly property real value: isVolume ? (Audio.muted ? 0 : Audio.volume) : Brightness.value
+    implicitWidth: row.implicitWidth + Appearance.padding.normal * 2
+    implicitHeight: row.implicitHeight + Appearance.padding.normal * 2
 
-    edge: "bottom"
+    HoverHandler {
+        onHoveredChanged: hovered ? OsdState.hold() : OsdState.release()
+    }
 
-    RetroFrame {
-        Row {
-            spacing: Appearance.spacing.large
+    Row {
+        id: row
+
+        anchors.centerIn: parent
+        spacing: Appearance.spacing.normal
+
+        Column {
+            spacing: Appearance.spacing.small
+
+            VSlider {
+                value: Audio.muted ? 0 : Audio.volume
+                icon: Audio.muted ? "volume_off" : Audio.volume < 0.5 ? "volume_down" : "volume_up"
+                onMoved: v => Audio.setVolume(v)
+            }
 
             StyledText {
-                text: root.isVolume ? "VOL" : "LCD"
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: Audio.muted ? "--" : Math.round(Audio.volume * 100)
+                font.family: Appearance.font.family.mono
+                font.pixelSize: Appearance.font.size.smaller
                 color: Appearance.colors.textDim
-                font.bold: true
             }
+        }
 
-            BlockBar {
-                value: root.value
-                segments: 20
+        Column {
+            visible: Brightness.available
+            spacing: Appearance.spacing.small
+
+            VSlider {
+                value: Brightness.value
+                icon: "light_mode"
+                onMoved: v => Brightness.set(v)
             }
 
             StyledText {
-                width: 40
-                horizontalAlignment: Text.AlignRight
-                text: root.isVolume && Audio.muted ? "MUTE" : `${Math.round(root.value * 100)}%`
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: Math.round(Brightness.value * 100)
+                font.family: Appearance.font.family.mono
+                font.pixelSize: Appearance.font.size.smaller
+                color: Appearance.colors.textDim
             }
         }
     }
