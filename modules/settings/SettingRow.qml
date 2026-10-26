@@ -16,6 +16,8 @@ StyledRect {
     implicitHeight: Math.max(texts.implicitHeight, slot.childrenRect.height) + Appearance.padding.normal * 2 + 4
     radius: Appearance.radius.small - 4
     color: Appearance.colors.surfaceContainer
+    border.width: Appearance.border.thin
+    border.color: Appearance.colors.outlineVariant
 
     ColumnLayout {
         id: texts

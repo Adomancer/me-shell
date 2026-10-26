@@ -30,7 +30,7 @@ StyledRect {
 
     implicitWidth: row.implicitWidth + 4
     implicitHeight: 40
-    radius: height / 2
+    radius: Appearance.radius.small
     color: Appearance.colors.surfaceContainerHighest
 
     onValueChanged: swap.restart()

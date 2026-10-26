@@ -232,6 +232,7 @@ Item {
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Pengaturan"
+                        font.family: Appearance.font.family.title
                         font.pixelSize: Appearance.font.size.large
                         font.weight: Font.Medium
                     }
@@ -272,7 +273,7 @@ Item {
                         }
 
                         StateLayer {
-                            radius: height / 2
+                            radius: Appearance.radius.small
                             onClicked: root.open(item.modelData.id)
                         }
                     }
@@ -286,7 +287,7 @@ Item {
                 y: nav.y + navHeader.height + nav.spacing + root.index * (48 + nav.spacing)
                 width: nav.width
                 height: 48
-                radius: height / 2
+                radius: Appearance.radius.small
                 color: Appearance.colors.secondaryContainer
 
                 Behavior on y {
@@ -343,6 +344,7 @@ Item {
                         StyledText {
                             visible: root.current.id !== "about"
                             text: root.current.label
+                            font.family: Appearance.font.family.title
                             font.pixelSize: Appearance.font.size.extraLarge
                             font.weight: Font.Medium
                         }

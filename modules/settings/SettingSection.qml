@@ -4,7 +4,7 @@ import qs.components
 import qs.utils
 
 // Judul grup setting
-StyledText {
+Caption {
     property string title: ""
 
     Layout.fillWidth: true
@@ -12,6 +12,4 @@ StyledText {
     Layout.bottomMargin: Appearance.spacing.small
     Layout.leftMargin: Appearance.spacing.small
     text: title
-    color: Appearance.colors.primary
-    font.weight: Font.Medium
 }
