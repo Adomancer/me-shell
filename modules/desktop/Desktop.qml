@@ -55,37 +55,49 @@ Variants {
             height: win.vizHeight
         }
 
-        DesktopClock {
-            id: clock
+        // Memudar saat ada drawer terbuka di monitor ini, supaya tidak ada dua jam sekaligus
+        Item {
+            anchors.fill: parent
+            opacity: DrawerState.active !== "" && DrawerState.screen === win.modelData.name ? 0 : 1
 
-            visible: Config.desktopClock
-            align: win.pos.includes("kanan") ? Text.AlignRight : win.pos === "tengah" ? Text.AlignHCenter : Text.AlignLeft
-            x: win.pos.includes("kanan") ? parent.width - width - win.margin : win.pos === "tengah" ? (parent.width - width) / 2 : win.margin
-            y: win.pos.includes("atas") ? Config.barHeight + win.margin - Appearance.frame.thickness : win.pos === "tengah" ? (parent.height - height) / 2 : parent.height - height - win.margin - (Config.desktopVisualizer ? win.vizHeight / 3 : 0)
-            opacity: 0
-
-            transform: Translate {
-                id: rise
-
-                y: 24
+            Behavior on opacity {
+                Anim {
+                    duration: Appearance.anim.durations.normal
+                }
             }
 
-            // Masuk pelan dari bawah saat shell start
-            ParallelAnimation {
-                running: true
+            DesktopClock {
+                id: clock
 
-                Anim {
-                    target: clock
-                    property: "opacity"
-                    to: 1
-                    duration: Appearance.anim.durations.extraLarge
+                visible: Config.desktopClock
+                align: win.pos.includes("kanan") ? Text.AlignRight : win.pos === "tengah" ? Text.AlignHCenter : Text.AlignLeft
+                x: win.pos.includes("kanan") ? parent.width - width - win.margin : win.pos === "tengah" ? (parent.width - width) / 2 : win.margin
+                y: win.pos.includes("atas") ? Config.barHeight + win.margin - Appearance.frame.thickness : win.pos === "tengah" ? (parent.height - height) / 2 : parent.height - height - win.margin - (Config.desktopVisualizer ? win.vizHeight / 3 : 0)
+                opacity: 0
+
+                transform: Translate {
+                    id: rise
+
+                    y: 24
                 }
-                Anim {
-                    target: rise
-                    property: "y"
-                    to: 0
-                    duration: Appearance.anim.durations.extraLarge
-                    easing.bezierCurve: Appearance.anim.curves.emphasizedDecel
+
+                // Masuk pelan dari bawah saat shell start
+                ParallelAnimation {
+                    running: true
+
+                    Anim {
+                        target: clock
+                        property: "opacity"
+                        to: 1
+                        duration: Appearance.anim.durations.extraLarge
+                    }
+                    Anim {
+                        target: rise
+                        property: "y"
+                        to: 0
+                        duration: Appearance.anim.durations.extraLarge
+                        easing.bezierCurve: Appearance.anim.curves.emphasizedDecel
+                    }
                 }
             }
         }
