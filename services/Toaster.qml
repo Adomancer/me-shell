@@ -61,7 +61,8 @@ Singleton {
     IpcHandler {
         target: "toast"
 
-        function show(title: string, body: string): void {
+        // Bukan "show": nama itu bentrok dengan subcommand `qs ipc show`
+        function post(title: string, body: string): void {
             root.show("info", title, body, "");
         }
     }

@@ -35,6 +35,12 @@ Singleton {
         delay.restart();
     }
 
+    // hyprpicker membekukan layar sendiri; tunggu drawer tertutup dulu
+    function pickColor(): void {
+        DrawerState.close();
+        colorDelay.restart();
+    }
+
     function openPicker(mode: string): void {
         DrawerState.close();
         pickerMode = mode;
@@ -50,6 +56,26 @@ Singleton {
             proc.file = file;
             proc.command = ["sh", "-c", 'f="$1"; shift; mkdir -p "$(dirname "$f")" && grim "$@" "$f" && wl-copy --type image/png < "$f"', "sh", file, ...root.pending];
             proc.running = true;
+        }
+    }
+
+    Timer {
+        id: colorDelay
+
+        interval: 250
+        onTriggered: colorProc.running = true
+    }
+
+    Process {
+        id: colorProc
+
+        command: ["hyprpicker", "-a", "-f", "hex"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const c = text.trim();
+                if (c)
+                    Toaster.show("colorize", "Warna disalin", c, "");
+            }
         }
     }
 
