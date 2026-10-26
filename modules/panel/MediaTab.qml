@@ -12,12 +12,6 @@ Item {
     readonly property var player: Media.active
     // Tab sedang tampil; data cava hanya dialirkan saat itu
     property bool live: false
-    readonly property real progress: player && player.length > 0 ? Math.min(1, player.position / player.length) : 0
-
-    function fmt(seconds: real): string {
-        const s = Math.max(0, Math.floor(seconds));
-        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-    }
 
     RowLayout {
         anchors.fill: parent
@@ -25,12 +19,13 @@ Item {
         spacing: Appearance.spacing.huge + 12
 
         // Cover
-        StyledClippingRect {
+        CoverArt {
             Layout.alignment: Qt.AlignVCenter
             implicitWidth: 320
             implicitHeight: 320
-            radius: Appearance.radius.large
-            color: Appearance.colors.surfaceContainerHigh
+            source: root.player?.trackArtUrl ?? ""
+            title: root.player?.trackTitle ?? ""
+            progress: Media.progress
             scale: Media.playing ? 1 : 0.92
 
             Behavior on scale {
@@ -38,25 +33,6 @@ Item {
                     duration: Appearance.anim.durations.expressiveDefault
                     easing.bezierCurve: Appearance.anim.curves.expressiveDefault
                 }
-            }
-
-            Image {
-                id: art
-
-                anchors.fill: parent
-                source: root.player?.trackArtUrl ?? ""
-                sourceSize: Qt.size(600, 600)
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                visible: status === Image.Ready
-            }
-
-            MaterialIcon {
-                anchors.centerIn: parent
-                visible: !art.visible
-                text: "album"
-                font.pixelSize: 120
-                color: Appearance.colors.outline
             }
         }
 
@@ -123,7 +99,7 @@ Item {
                     segments: 56
                     thickness: 3
                     instant: seek.pressed
-                    value: seek.pressed ? seek.live : root.progress
+                    value: seek.pressed ? seek.live : Media.progress
                 }
 
                 MouseArea {
@@ -151,7 +127,7 @@ Item {
                 visible: (root.player?.length ?? 0) > 0
 
                 StyledText {
-                    text: root.fmt(root.player?.position ?? 0)
+                    text: Media.formatTime(Media.position)
                     color: Appearance.colors.textDim
                     font.family: Appearance.font.family.mono
                     font.pixelSize: Appearance.font.size.small
@@ -162,7 +138,7 @@ Item {
                 }
 
                 StyledText {
-                    text: root.fmt(root.player?.length ?? 0)
+                    text: Media.formatTime(Media.length)
                     color: Appearance.colors.textDim
                     font.family: Appearance.font.family.mono
                     font.pixelSize: Appearance.font.size.small

@@ -5,89 +5,63 @@ import qs.services
 import qs.utils
 import "../../utils/WeatherIcons.js" as WeatherIcons
 
-// Tab Dashboard ala Nothing/TE, tanpa kartu: jam dot-matrix besar + cuaca + user di kiri, kalender di
-// tengah, lagu di kanan, dipisah garis tipis. Di bawah: slider bersegmen dan toggle bulat.
+// Tab Dashboard ala Nothing/TE, tanpa kartu: sapaan + progres hari dot-matrix besar + cuaca + user di kiri
+// (jam sudah ada di bar), kalender di tengah, lagu di kanan, dipisah garis tipis. Di bawah: slider bersegmen
+// dan toggle bulat.
 ColumnLayout {
     id: root
 
-    // "12:06" -> ["12", "06"]; titik dua berkedip seperti jam di bar
-    readonly property var parts: Qt.formatDateTime(Time.date, "hh:mm").split(":")
-    property bool tick: true
     // Bagian hari yang sudah lewat (0..1)
     readonly property real dayProgress: (Time.date.getHours() * 60 + Time.date.getMinutes()) / 1440
 
     spacing: Appearance.spacing.large
-
-    Timer {
-        interval: 1000
-        repeat: true
-        running: root.visible
-        onTriggered: root.tick = !root.tick
-    }
 
     RowLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         spacing: Appearance.spacing.huge
 
-        // Kiri: jam, tanggal, cuaca, user
+        // Kiri: sapaan, progres hari, tanggal, cuaca, user
         ColumnLayout {
             Layout.preferredWidth: 250
             Layout.fillHeight: true
             spacing: Appearance.spacing.small
 
             Caption {
-                text: Time.date.toLocaleString(Qt.locale(), "dddd")
+                text: Time.greeting
                 color: Appearance.colors.primary
             }
 
+            // Progres hari ala TE: persen dot-matrix besar
             Row {
+                spacing: Appearance.spacing.small
+
                 DisplayText {
-                    text: root.parts[0]
+                    id: dayPct
+
+                    text: String(Math.round(root.dayProgress * 100)).padStart(2, "0")
                     font.pixelSize: 88
                 }
 
-                DisplayText {
-                    text: ":"
-                    color: Appearance.colors.primary
-                    font.pixelSize: 88
-                    opacity: root.tick ? 1 : 0.15
-
-                    Behavior on opacity {
-                        Anim {
-                            duration: Appearance.anim.durations.small
-                        }
-                    }
+                // Doto di ukuran kecil tidak terbaca; persen pakai font mono
+                StyledText {
+                    anchors.baseline: dayPct.baseline
+                    text: "%"
+                    color: Appearance.colors.outline
+                    font.family: Appearance.font.family.mono
+                    font.pixelSize: 28
                 }
+            }
 
-                DisplayText {
-                    text: root.parts[1]
-                    font.pixelSize: 88
-                }
+            Caption {
+                text: "Hari ini sudah lewat"
             }
 
             StyledText {
-                text: Time.date.toLocaleString(Qt.locale(), "d MMMM yyyy")
+                Layout.topMargin: Appearance.spacing.normal
+                text: Time.date.toLocaleString(Qt.locale(), "dddd, d MMMM yyyy")
                 color: Appearance.colors.textDim
                 font.pixelSize: Appearance.font.size.larger
-            }
-
-            // Progres hari ala TE
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: Appearance.spacing.large
-
-                Caption {
-                    Layout.fillWidth: true
-                    text: "Hari ini"
-                }
-
-                StyledText {
-                    text: `${Math.round(root.dayProgress * 100)}%`
-                    color: Appearance.colors.textDim
-                    font.family: Appearance.font.family.mono
-                    font.pixelSize: Appearance.font.size.small
-                }
             }
 
             SegmentBar {

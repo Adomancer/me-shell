@@ -4,17 +4,13 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Kartu lagu yang sedang diputar: cover bulat berputar seperti piringan saat lagu jalan.
+// Kartu lagu yang sedang diputar: cover bulat berputar seperti piringan saat lagu jalan. Tanpa cover:
+// cincin titik progres lagu.
 Card {
     id: root
 
     readonly property var player: Media.active
     property int artSize: 132
-
-    function fmt(sec: real): string {
-        const s = Math.max(0, Math.floor(sec));
-        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-    }
 
     // Cover berputar
     Item {
@@ -23,45 +19,30 @@ Card {
         implicitWidth: root.artSize
         implicitHeight: root.artSize
 
-        StyledClippingRect {
+        CoverArt {
             id: disc
 
             anchors.fill: parent
             radius: width / 2
-            color: Appearance.colors.surfaceContainerHigh
+            source: root.player?.trackArtUrl ?? ""
+            title: root.player?.trackTitle ?? ""
+            progress: Media.progress
 
-            Image {
-                id: art
-
-                anchors.fill: parent
-                source: root.player?.trackArtUrl ?? ""
-                sourceSize: Qt.size(root.artSize * 2, root.artSize * 2)
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                visible: status === Image.Ready
-            }
-
-            MaterialIcon {
-                anchors.centerIn: parent
-                visible: !art.visible
-                text: "album"
-                font.pixelSize: root.artSize * 0.5
-                color: Appearance.colors.outline
-            }
-
-            // Hanya berputar selama lagu jalan dan panel tampil; mulai lagi dari sudut terakhir, jadi tidak meloncat
+            // Hanya cover yang berputar, selama lagu jalan dan panel tampil; mulai lagi dari sudut terakhir,
+            // jadi tidak meloncat
             RotationAnimator on rotation {
                 from: disc.rotation % 360
                 to: disc.rotation % 360 + 360
                 duration: 12000
                 loops: Animation.Infinite
-                running: Media.playing && root.visible
+                running: Media.playing && root.visible && disc.hasArt
             }
         }
 
         // Lubang tengah piringan
         Rectangle {
             anchors.centerIn: parent
+            visible: disc.hasArt
             width: 18
             height: 18
             radius: 9
@@ -100,7 +81,7 @@ Card {
         SegmentBar {
             anchors.fill: parent
             segments: 32
-            value: root.player && root.player.length > 0 ? Math.min(1, root.player.position / root.player.length) : 0
+            value: Media.progress
         }
 
         MouseArea {
@@ -119,7 +100,7 @@ Card {
         visible: (root.player?.length ?? 0) > 0
 
         StyledText {
-            text: root.fmt(root.player?.position ?? 0)
+            text: Media.formatTime(Media.position)
             color: Appearance.colors.textDim
             font.family: Appearance.font.family.mono
             font.pixelSize: Appearance.font.size.small
@@ -130,7 +111,7 @@ Card {
         }
 
         StyledText {
-            text: root.fmt(root.player?.length ?? 0)
+            text: Media.formatTime(Media.length)
             color: Appearance.colors.textDim
             font.family: Appearance.font.family.mono
             font.pixelSize: Appearance.font.size.small

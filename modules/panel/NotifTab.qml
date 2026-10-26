@@ -77,13 +77,12 @@ ColumnLayout {
                 width: parent.width
                 spacing: Appearance.spacing.small
 
-                IconImage {
-                    readonly property string icon: group.items[0]?.appIcon ?? ""
+                AppIcon {
+                    readonly property string appIcon: group.items[0]?.appIcon ?? ""
 
-                    visible: icon !== ""
-                    implicitSize: 18
-                    source: icon ? Quickshell.iconPath(icon, true) : ""
-                    asynchronous: true
+                    visible: appIcon !== ""
+                    size: 18
+                    source: appIcon ? Quickshell.iconPath(appIcon, true) : ""
                 }
 
                 Caption {
