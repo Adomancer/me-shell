@@ -12,6 +12,8 @@ ColumnLayout {
     property bool shown: false
     // Lebar tetap; implicitWidth layout dihitung ulang oleh layout itu sendiri
     readonly property int pageWidth: 400
+    // Jumlah tile yang menyala, sama dengan yang tampil terisi di grid
+    readonly property int active: [Idle.inhibited, GameMode.enabled, Notifs.dnd, NightLight.enabled, Recorder.recording, !Audio.micMuted].filter(b => b).length
 
     // Toggle bulat + label mono di bawahnya; aktif = lingkaran aksen penuh
     component Tile: Item {
@@ -63,18 +65,27 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: Appearance.spacing.normal
 
-        MaterialIcon {
-            text: "widgets"
-            fill: 1
-            color: Appearance.colors.primary
+        // Jumlah toggle yang menyala, dot-matrix
+        DisplayText {
+            text: String(root.active).padStart(2, "0")
+            weight: 800
+            color: root.active > 0 ? Appearance.colors.primary : Appearance.colors.outline
+            font.pixelSize: 30
         }
 
-        StyledText {
+        Column {
             Layout.fillWidth: true
-            text: "Utilitas"
-            font.family: Appearance.font.family.title
-            font.pixelSize: Appearance.font.size.larger
-            font.weight: Font.Medium
+            spacing: 0
+
+            Caption {
+                text: "Utilitas"
+                color: Appearance.colors.text
+            }
+
+            Caption {
+                text: root.active > 0 ? "Aktif" : "Semua mati"
+                font.letterSpacing: 1
+            }
         }
 
         IconButton {
