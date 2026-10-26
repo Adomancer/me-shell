@@ -4,14 +4,19 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Tab Media tanpa kotak: cover besar, info lagu, visualizer cava dot-matrix, progress bersegmen yang bisa
-// digeser, dan kontrol.
+// Tab Media tanpa kotak: cover besar, info lagu, lirik tersinkron atau visualizer cava dot-matrix, progress
+// bersegmen yang bisa digeser, dan kontrol.
 Item {
     id: root
 
     readonly property var player: Media.active
-    // Tab sedang tampil; data cava hanya dialirkan saat itu
+    // Tab sedang tampil; data cava dan lirik hanya diambil saat itu
     property bool live: false
+    // Lirik menggantikan visualizer kalau ada; tombol di baris kontrol untuk beralih
+    property bool preferLyrics: true
+    readonly property bool showLyrics: preferLyrics && Lyrics.available
+
+    onLiveChanged: Lyrics.users += live ? 1 : -1
 
     RowLayout {
         anchors.fill: parent
@@ -73,17 +78,57 @@ Item {
 
                 DotColumns {
                     anchors.fill: parent
+                    visible: !root.showLyrics
                     columns: Cava.bars
                     rows: 9
-                    values: root.live && Media.playing ? Cava.values : []
+                    values: root.live && Media.playing && !root.showLyrics ? Cava.values : []
                 }
 
                 StyledText {
                     anchors.centerIn: parent
-                    visible: !Cava.available
+                    visible: !Cava.available && !root.showLyrics
                     text: "Install cava untuk visualizer"
                     color: Appearance.colors.textDim
                     font.pixelSize: Appearance.font.size.small
+                }
+
+                // Lirik: baris aktif di tengah, lebih besar; daftar bergulir halus mengikuti lagu
+                ListView {
+                    id: lyrics
+
+                    readonly property int rowHeight: 30
+
+                    anchors.fill: parent
+                    visible: root.showLyrics
+                    clip: true
+                    interactive: false
+                    model: Lyrics.lines
+                    currentIndex: Math.max(0, Lyrics.index)
+                    highlightRangeMode: ListView.StrictlyEnforceRange
+                    preferredHighlightBegin: (height - rowHeight) / 2
+                    preferredHighlightEnd: (height + rowHeight) / 2
+                    highlightMoveDuration: Appearance.anim.durations.normal
+
+                    delegate: StyledText {
+                        required property var modelData
+                        required property int index
+                        readonly property bool active: index === Lyrics.index
+
+                        width: ListView.view.width
+                        height: lyrics.rowHeight
+                        verticalAlignment: Text.AlignVCenter
+                        text: modelData.text || "♪"
+                        color: active ? Appearance.colors.text : Appearance.colors.outline
+                        font.pixelSize: active ? Appearance.font.size.large : Appearance.font.size.normal
+                        font.weight: active ? Font.Medium : Font.Normal
+                        elide: Text.ElideRight
+
+                        Behavior on font.pixelSize {
+                            Anim {
+                                duration: Appearance.anim.durations.small
+                            }
+                        }
+                    }
                 }
             }
 
@@ -175,6 +220,14 @@ Item {
 
                 Item {
                     Layout.fillWidth: true
+                }
+
+                // Lirik atau visualizer
+                IconButton {
+                    visible: Lyrics.available
+                    icon: "lyrics"
+                    toggled: root.preferLyrics
+                    onClicked: root.preferLyrics = !root.preferLyrics
                 }
 
                 // Player yang terdeteksi
