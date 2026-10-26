@@ -170,7 +170,7 @@ Scope {
                 y: win.selY + win.selH + height + 16 < win.height ? win.selY + win.selH + 8 : win.selY + win.selH - height - 8
                 implicitWidth: sizeText.implicitWidth + Appearance.padding.normal * 2
                 implicitHeight: 28
-                radius: height / 2
+                radius: Appearance.radius.small
                 color: Appearance.colors.surfaceContainerHigh
 
                 StyledText {
@@ -189,7 +189,7 @@ Scope {
                 y: Config.barHeight + Appearance.spacing.huge
                 implicitWidth: hint.implicitWidth + Appearance.padding.large * 2
                 implicitHeight: 44
-                radius: height / 2
+                radius: Appearance.radius.small
                 color: Appearance.colors.surface
 
                 Row {
@@ -208,6 +208,7 @@ Scope {
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
                         text: win.record ? "Rekam layar" : "Tangkap layar"
+                        font.family: Appearance.font.family.title
                         font.weight: Font.Medium
                     }
 
