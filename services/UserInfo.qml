@@ -3,6 +3,7 @@ pragma Singleton
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import qs.services
 import qs.utils
 
 // Info user dan sistem untuk kartu user dan FETCH: nama, avatar (~/.face), distro, kernel, uptime, jumlah paket.
@@ -50,10 +51,12 @@ Singleton {
         onLoaded: root.uptimeSeconds = Math.floor(Number(text().split(" ")[0]))
     }
 
+    // Uptime hanya tampil di dashboard, session menu, dan lockscreen
     Timer {
         interval: 60000
-        running: true
+        running: DrawerState.active === "panel" || DrawerState.active === "session" || Session.locked
         repeat: true
+        triggeredOnStart: true
         onTriggered: uptimeFile.reload()
     }
 

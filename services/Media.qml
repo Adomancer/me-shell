@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
 import QtQuick
+import qs.services
 
 Singleton {
     id: root
@@ -13,11 +14,15 @@ Singleton {
     readonly property MprisPlayer active: players.find(p => p.playbackState === MprisPlaybackState.Playing) ?? players[0] ?? null
     readonly property bool playing: active?.playbackState === MprisPlaybackState.Playing
 
-    // Posisi MPRIS tidak update sendiri, harus dipicu
+    // Ada yang sedang menampilkan posisi lagu (dashboard, popout media, lockscreen)
+    readonly property bool watched: DrawerState.active === "panel" || DrawerState.popout === "media" || Session.locked
+
+    // Posisi MPRIS tidak update sendiri, harus dipicu; hanya selama ada yang melihat
     Timer {
         interval: 1000
         repeat: true
-        running: root.playing
+        triggeredOnStart: true
+        running: root.playing && root.watched
         onTriggered: root.active?.positionChanged()
     }
 

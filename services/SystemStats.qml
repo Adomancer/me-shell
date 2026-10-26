@@ -5,7 +5,7 @@ import Quickshell.Io
 import QtQuick
 import qs.services
 
-// CPU, RAM, disk, suhu, dan jaringan. Hanya polling saat control panel terbuka atau layar terkunci.
+// CPU, RAM, disk, suhu, dan jaringan. Hanya polling saat tab Performa terbuka atau layar terkunci.
 Singleton {
     id: root
 
@@ -44,18 +44,28 @@ Singleton {
         return a.length > historyLength ? a.slice(-historyLength) : a;
     }
 
+    readonly property bool perfShown: DrawerState.active === "panel" && DrawerState.panelTab === "perf"
+    // Hitungan tick sejak mulai polling; disk cukup tiap 30 detik
+    property int ticks: 0
+
     Timer {
         interval: 2000
         repeat: true
         triggeredOnStart: true
-        running: DrawerState.active === "panel" || Session.locked
+        running: root.perfShown || Session.locked
+        onRunningChanged: root.ticks = 0
         onTriggered: {
             stat.reload();
             meminfo.reload();
-            netdev.reload();
-            diskProc.running = true;
             tempProc.running = true;
-            topProc.running = true;
+            if (root.ticks % 15 === 0)
+                diskProc.running = true;
+            // Jaringan dan proses hanya tampil di tab Performa
+            if (root.perfShown) {
+                netdev.reload();
+                topProc.running = true;
+            }
+            root.ticks++;
         }
     }
 

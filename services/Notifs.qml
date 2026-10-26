@@ -14,6 +14,15 @@ Singleton {
     // Notifikasi yang sedang tampil sebagai popup (terbaru di depan)
     property var popups: []
     readonly property var list: server.trackedNotifications.values
+    // { aplikasi: [notifikasi terbaru dulu] }, urutan kunci = aplikasi dengan notifikasi terbaru dulu
+    readonly property var groups: {
+        const g = {};
+        for (const n of [...list].reverse()) {
+            const k = n.appName || "Lainnya";
+            (g[k] = g[k] || []).push(n);
+        }
+        return g;
+    }
     // Waktu masuk per id notifikasi (ms), untuk label "5 mnt"
     property var times: ({})
     // Berdetak tiap menit supaya label waktu ikut diperbarui
@@ -53,7 +62,10 @@ Singleton {
             notif.tracked = true;
             root.times[notif.id] = Date.now();
             root.now = Date.now();
-            notif.closed.connect(() => root.dismissPopup(notif));
+            notif.closed.connect(() => {
+                root.dismissPopup(notif);
+                delete root.times[notif.id];
+            });
             if ((!root.dnd && !GameMode.enabled) || notif.urgency === NotificationUrgency.Critical)
                 root.popups = [notif, ...root.popups].slice(0, 5);
         }
