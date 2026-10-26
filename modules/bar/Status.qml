@@ -95,6 +95,15 @@ Row {
             text: root.netIcon
             color: Appearance.colors.text
         }
+
+        // VPN aktif: gembok kecil di samping ikon jaringan
+        MaterialIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: Network.vpnActive
+            text: "vpn_lock"
+            font.pixelSize: Appearance.font.size.normal
+            color: Appearance.colors.primary
+        }
     }
 
     StatusIcon {

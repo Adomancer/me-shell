@@ -5,6 +5,7 @@ import qs.services
 import qs.utils
 
 // Daftar Wi-Fi: klik untuk menyambung/memutus. Jaringan baru yang berpassword membuka kolom password.
+// Di bawahnya profil VPN/WireGuard kalau ada.
 ColumnLayout {
     id: root
 
@@ -161,6 +162,33 @@ ColumnLayout {
             text: "Pindai"
             disabled: Network.scanning
             onClicked: Network.scan()
+        }
+    }
+
+    // VPN dan WireGuard yang tersimpan di NetworkManager; klik = sambung/putus
+    ColumnLayout {
+        Layout.fillWidth: true
+        Layout.topMargin: Appearance.spacing.normal
+        visible: Network.vpns.length > 0
+        spacing: 2
+
+        Caption {
+            Layout.leftMargin: Appearance.padding.small
+            text: "VPN"
+        }
+
+        Repeater {
+            model: Network.vpns
+
+            ListRow {
+                required property var modelData
+
+                icon: modelData.active ? "vpn_lock" : "vpn_key"
+                title: modelData.name
+                subtitle: modelData.type === "wireguard" ? "WireGuard" : "VPN"
+                active: modelData.active
+                onClicked: Network.setVpn(modelData.name, !modelData.active)
+            }
         }
     }
 
