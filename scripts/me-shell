@@ -83,7 +83,7 @@ install_deps() {
     step "Dependency ($d)"
     case "$d" in
     arch)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava ttf-jetbrains-mono noto-fonts-emoji qt6-svg qt6-imageformats qt6-shadertools kitty starship)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava tesseract tesseract-data-eng tesseract-data-ind ttf-jetbrains-mono noto-fonts-emoji qt6-svg qt6-imageformats qt6-shadertools kitty starship)
         local aur=(quickshell matugen-bin)
         note "pacman: ${pkgs[*]}"
         note "AUR:    ${aur[*]}"
@@ -108,7 +108,7 @@ install_deps() {
         fi
         ;;
     fedora)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava jetbrains-mono-fonts google-noto-color-emoji-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools kitty)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava tesseract tesseract-langpack-ind jetbrains-mono-fonts google-noto-color-emoji-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools kitty)
         # Hyprland dan matugen tidak ada di repo resmi Fedora (cek: Fedora 44); diambil dari COPR.
         # sdegler/hyprland punya build untuk Fedora 43-45 + rawhide (juga hyprpicker dan hyprsunset),
         # lionheartp/Hyprland cadangannya.
@@ -141,7 +141,7 @@ install_deps() {
     *)
         warn "Distro tidak dikenal. Install manual: hyprland, quickshell, git, curl, brightnessctl,"
         warn "NetworkManager, bluez, wl-clipboard, cava, font JetBrains Mono, matugen,"
-        warn "grim, wf-recorder, cliphist, hyprpicker, hyprsunset (screenshot, rekam, clipboard, lampu malam)"
+        warn "grim, wf-recorder, cliphist, hyprpicker, hyprsunset, tesseract (screenshot, rekam, clipboard, lampu malam, OCR)"
         ;;
     esac
 }
