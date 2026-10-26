@@ -46,6 +46,12 @@ Singleton {
     readonly property bool desktopClock: adapter.desktopClock
     readonly property string desktopClockPosition: adapter.desktopClockPosition
     readonly property bool desktopVisualizer: adapter.desktopVisualizer
+    readonly property bool notifsInFullscreen: adapter.notifsInFullscreen
+    readonly property bool idleInhibitMedia: adapter.idleInhibitMedia
+    readonly property bool updateCheck: adapter.updateCheck
+    readonly property int focusMinutes: adapter.focusMinutes
+    readonly property int breakMinutes: adapter.breakMinutes
+    readonly property bool lyricsEnabled: adapter.lyricsEnabled
 
     // Ubah satu setting lalu simpan ke config.json
     function set(key: string, value: var): void {
@@ -119,6 +125,17 @@ Singleton {
             // "kiri bawah", "kanan bawah", "kiri atas", "tengah"
             property string desktopClockPosition: "kiri bawah"
             property bool desktopVisualizer: true
+            // Popup notifikasi tetap muncul di atas window fullscreen (kritis selalu muncul)
+            property bool notifsInFullscreen: false
+            // Jangan kunci/matikan layar selama ada lagu atau video yang diputar
+            property bool idleInhibitMedia: true
+            // Cek update paket (dnf/pacman) tiap jam
+            property bool updateCheck: true
+            // Pomodoro: menit fokus dan istirahat
+            property int focusMinutes: 25
+            property int breakMinutes: 5
+            // Lirik tersinkron dari lrclib.net di tab Media
+            property bool lyricsEnabled: true
         }
     }
 }
