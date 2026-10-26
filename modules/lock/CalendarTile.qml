@@ -7,7 +7,11 @@ import qs.utils
 Tile {
     id: root
 
-    readonly property date now: Time.date
+    // Bergantung pada Time.today supaya hanya dihitung ulang saat hari berganti
+    readonly property date now: {
+        Time.today;
+        return new Date();
+    }
     readonly property int today: now.getDate()
     readonly property var cells: {
         const first = new Date(now.getFullYear(), now.getMonth(), 1);

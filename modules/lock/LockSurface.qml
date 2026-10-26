@@ -36,6 +36,8 @@ Item {
             anchors.fill: parent
             source: Wallpaper.current ? `file://${Wallpaper.current}` : ""
             fillMode: Image.PreserveAspectCrop
+            // Didekode seukuran layar, bukan resolusi asli file (wallpaper 8K = ratusan MB)
+            sourceSize: Qt.size(width, height)
             asynchronous: true
             visible: false
         }
@@ -74,6 +76,8 @@ Item {
         active: Config.crtShader
 
         sourceComponent: ShaderEffect {
+            id: crt
+
             property variant source: ShaderEffectSource {
                 sourceItem: scene
                 hideSource: true
@@ -85,11 +89,12 @@ Item {
 
             fragmentShader: Qt.resolvedUrl("../../assets/shaders/crt.frag.qsb")
 
-            NumberAnimation on time {
-                from: 0
-                to: 1000
-                duration: 1000000
-                loops: Animation.Infinite
+            // ~20 fps cukup untuk kedip scanline; animasi biasa memaksa render penuh setiap frame
+            Timer {
+                interval: 50
+                repeat: true
+                running: true
+                onTriggered: crt.time += 0.05
             }
         }
     }
