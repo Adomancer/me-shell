@@ -2,7 +2,7 @@ import QtQuick
 import qs.utils
 
 // Visualizer dot-matrix: tiap kolom = tumpukan titik, yang menyala sesuai level (0..1) dari bawah.
-// Level dianimasikan, jadi titik naik-turun halus.
+// Tanpa animasi per kolom: cava sudah menghaluskan, dan titik toh hanya menyala per baris.
 Item {
     id: root
 
@@ -25,19 +25,11 @@ Item {
             id: column
 
             required property int index
-            property real level: Math.max(0, Math.min(1, root.values[index] ?? 0))
-            readonly property int lit: Math.round(level * root.rows)
+            readonly property int lit: Math.round(Math.max(0, Math.min(1, root.values[index] ?? 0)) * root.rows)
 
             x: index * root.cellW
             width: root.cellW
             height: root.height
-
-            Behavior on level {
-                Anim {
-                    duration: 140
-                    easing.bezierCurve: Appearance.anim.curves.standardDecel
-                }
-            }
 
             Repeater {
                 model: root.rows
