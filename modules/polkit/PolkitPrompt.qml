@@ -72,6 +72,8 @@ Scope {
                 property real shake: 0
                 // polkit tidak selalu mengirim pesan saat gagal, jadi dicatat sendiri
                 property bool wrong: false
+                // Password sudah dikirim, menunggu jawaban polkit
+                readonly property bool busy: root.flow !== null && !root.flow.isResponseRequired
 
                 anchors.centerIn: parent
                 anchors.horizontalCenterOffset: shake
@@ -137,36 +139,36 @@ Scope {
                     anchors.margins: Appearance.padding.large
                     spacing: Appearance.spacing.normal
 
-                    StyledRect {
+                    // Perisai di dalam cincin titik; cincin berputar selama password diperiksa
+                    DotRing {
                         Layout.alignment: Qt.AlignHCenter
-                        implicitWidth: 56
-                        implicitHeight: 56
-                        radius: Appearance.radius.normal
-                        color: Appearance.colors.primaryContainer
+                        size: 76
+                        dots: 28
+                        value: card.busy ? 0.3 : card.wrong ? 1 : 0
+                        spinning: card.busy
+                        onColor: card.wrong ? Appearance.colors.error : Appearance.colors.primary
 
                         MaterialIcon {
                             anchors.centerIn: parent
-                            text: "admin_panel_settings"
-                            fill: 1
-                            font.pixelSize: Appearance.font.size.extraLarge
-                            color: Appearance.colors.primaryContainerText
+                            text: card.wrong ? "gpp_bad" : "shield_lock"
+                            font.pixelSize: 30
+                            color: card.wrong ? Appearance.colors.error : Appearance.colors.primary
                         }
                     }
 
-                    StyledText {
-                        Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignHCenter
-                        text: "Butuh izin admin"
-                        font.family: Appearance.font.family.title
-                        font.pixelSize: Appearance.font.size.large
-                        font.weight: Font.Medium
+                    Caption {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.topMargin: Appearance.spacing.small
+                        text: "Izin admin"
+                        color: Appearance.colors.primary
                     }
 
                     StyledText {
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                         text: root.flow?.message ?? ""
-                        color: Appearance.colors.textDim
+                        font.pixelSize: Appearance.font.size.larger
+                        font.weight: Font.Medium
                         wrapMode: Text.Wrap
                     }
 
@@ -181,23 +183,32 @@ Scope {
                         elide: Text.ElideMiddle
                     }
 
-                    StyledRect {
+                    // Kolom password tanpa kotak: garis bawah yang menebal dan menyala saat fokus
+                    Item {
                         Layout.fillWidth: true
-                        Layout.topMargin: Appearance.spacing.small
+                        Layout.topMargin: Appearance.spacing.normal
                         implicitHeight: 48
-                        radius: Appearance.radius.small
-                        color: Appearance.colors.surfaceContainerHighest
-                        border.width: password.activeFocus ? 2 : 0
-                        border.color: Appearance.colors.primary
+
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+                            height: password.activeFocus ? 2 : 1
+                            radius: 1
+                            color: card.wrong ? Appearance.colors.error : password.activeFocus ? Appearance.colors.primary : Appearance.colors.hairline
+
+                            Behavior on color {
+                                CAnim {}
+                            }
+                        }
 
                         MaterialIcon {
                             id: keyIcon
 
                             anchors.left: parent.left
-                            anchors.leftMargin: Appearance.padding.normal + 2
                             anchors.verticalCenter: parent.verticalCenter
                             text: "key"
-                            color: Appearance.colors.primary
+                            color: password.activeFocus ? Appearance.colors.primary : Appearance.colors.textDim
                         }
 
                         TextInput {
@@ -213,6 +224,10 @@ Scope {
                             color: Appearance.colors.text
                             font.family: Appearance.font.family.sans
                             font.pixelSize: Appearance.font.size.larger
+                            font.letterSpacing: echoMode === TextInput.Password ? 4 : 0
+                            passwordCharacter: "●"
+                            selectionColor: Appearance.colors.primary
+                            selectedTextColor: Appearance.colors.primaryText
                             clip: true
                             enabled: root.flow?.isResponseRequired ?? false
                             Keys.onReturnPressed: root.flow?.submit(text)
