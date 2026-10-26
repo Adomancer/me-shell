@@ -1,6 +1,7 @@
 import Quickshell.Hyprland
 import QtQuick
 import qs.components
+import qs.services
 import qs.utils
 
 // Workspace ala end_4: workspace berisi window disambung jadi satu pita, indikator aktif
@@ -121,6 +122,12 @@ StyledRect {
                 onClicked: Hyprland.dispatch(`workspace ${cell.index + 1}`)
             }
         }
+    }
+
+    // Klik kanan = overview
+    TapHandler {
+        acceptedButtons: Qt.RightButton
+        onTapped: DrawerState.toggle("overview")
     }
 
     WheelHandler {

@@ -14,6 +14,7 @@ import qs.modules.launcher
 import qs.modules.session
 import qs.modules.notifs
 import qs.modules.osd
+import qs.modules.overview
 import qs.modules.settings
 import qs.modules.utilities
 
@@ -126,6 +127,9 @@ Scope {
                     item: utilities
                 },
                 Region {
+                    item: overview
+                },
+                Region {
                     item: cornerZone
                 },
                 Region {
@@ -222,6 +226,10 @@ Scope {
                     edge: "bottom"
                 }
                 PanelShape {
+                    wrapper: overview
+                    edge: "top"
+                }
+                PanelShape {
                     wrapper: session
                     edge: "right"
                 }
@@ -262,6 +270,21 @@ Scope {
 
             ControlPanel {
                 shown: dash.shown
+            }
+        }
+
+        Wrapper {
+            id: overview
+
+            edge: "top"
+            shown: root.active === "overview"
+            x: Math.round((parent.width - width) / 2)
+            y: Config.barHeight
+
+            Overview {
+                shown: overview.shown
+                screenWidth: win.width
+                screenHeight: win.height
             }
         }
 
