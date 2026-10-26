@@ -157,6 +157,7 @@ Scope {
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                         text: "Butuh izin admin"
+                        font.family: Appearance.font.family.title
                         font.pixelSize: Appearance.font.size.large
                         font.weight: Font.Medium
                     }
@@ -184,7 +185,7 @@ Scope {
                         Layout.fillWidth: true
                         Layout.topMargin: Appearance.spacing.small
                         implicitHeight: 48
-                        radius: height / 2
+                        radius: Appearance.radius.small
                         color: Appearance.colors.surfaceContainerHighest
                         border.width: password.activeFocus ? 2 : 0
                         border.color: Appearance.colors.primary
