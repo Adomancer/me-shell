@@ -8,6 +8,7 @@ import qs.components
 import qs.services
 import qs.utils
 import qs.modules.bar
+import qs.modules.bar.popouts
 import qs.modules.panel
 import qs.modules.launcher
 import qs.modules.session
@@ -101,8 +102,17 @@ Scope {
                 },
                 Region {
                     item: settings
+                },
+                Region {
+                    item: popout
                 }
             ]
+        }
+
+        // Kafein: tahan idle (juga untuk hypridle kalau dipakai)
+        IdleInhibitor {
+            window: win
+            enabled: Idle.inhibited
         }
 
         // Klik di luar drawer = tutup
@@ -150,6 +160,10 @@ Scope {
                 }
                 CornerShape {
                     wrapper: popups
+                }
+                PanelShape {
+                    wrapper: popout
+                    edge: "top"
                 }
             }
         }
@@ -226,6 +240,30 @@ Scope {
 
                 active: root.focused
             }
+        }
+
+        // Popout bar: turun dari bar di bawah ikon yang di-hover. Titik tengahnya meluncur dengan pegas
+        // saat kursor pindah ikon, ukurannya ikut halaman yang tampil.
+        Wrapper {
+            id: popout
+
+            property real cx: DrawerState.popoutX
+
+            edge: "top"
+            shown: Config.barPopouts && DrawerState.popout !== "" && DrawerState.popoutScreen === root.modelData.name
+            x: Math.round(Math.max(root.frame + Appearance.frame.rounding, Math.min(win.width - root.frame - Appearance.frame.rounding - width, cx - width / 2)))
+            y: Config.barHeight
+
+            Behavior on cx {
+                enabled: popout.visible
+
+                Anim {
+                    duration: Appearance.anim.durations.expressiveDefault
+                    easing.bezierCurve: Appearance.anim.curves.expressiveDefault
+                }
+            }
+
+            Popouts {}
         }
 
         SettingsWindow {
