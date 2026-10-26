@@ -32,21 +32,33 @@ ColumnLayout {
 
         SettingCycle {
             labelWidth: 160
-            options: ["Rubik", "Inter", "Outfit", "Noto Sans"]
+            options: ["Space Grotesk", "Rubik", "Inter", "Noto Sans"]
             value: Config.fontSans
             onPicked: v => Config.set("fontSans", v)
         }
     }
 
     SettingRow {
-        label: "Font angka"
-        description: "Font monospace untuk jam dan angka"
+        label: "Font label"
+        description: "Font monospace untuk label kecil dan angka"
 
         SettingCycle {
             labelWidth: 160
-            options: ["JetBrains Mono", "Departure Mono", "IBM Plex Mono", "Fira Code"]
+            options: ["Space Mono", "JetBrains Mono", "IBM Plex Mono", "Fira Code"]
             value: Config.fontFamily
             onPicked: v => Config.set("fontFamily", v)
+        }
+    }
+
+    SettingRow {
+        label: "Font angka besar"
+        description: "Jam dan persen utama; Doto = dot-matrix"
+
+        SettingCycle {
+            labelWidth: 160
+            options: ["Doto", "Space Mono", "JetBrains Mono"]
+            value: Config.fontDisplay
+            onPicked: v => Config.set("fontDisplay", v)
         }
     }
 
