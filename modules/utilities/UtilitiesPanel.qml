@@ -15,7 +15,7 @@ ColumnLayout {
     // Jumlah tile yang menyala, sama dengan yang tampil terisi di grid
     readonly property int active: [Idle.inhibited, GameMode.enabled, Notifs.dnd, NightLight.enabled, Recorder.recording, !Audio.micMuted].filter(b => b).length
 
-    // Toggle bulat + label mono di bawahnya; aktif = lingkaran aksen penuh
+    // Toggle bulat + label mono di bawahnya; aktif = lingkaran terisi dengan ikon dan label aksen
     component Tile: Item {
         id: tile
 
