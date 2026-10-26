@@ -8,6 +8,7 @@ import qs.modules.desktop
 import qs.modules.drawers
 import qs.modules.lock
 import qs.modules.picker
+import qs.modules.polkit
 
 ShellRoot {
     Component.onCompleted: {
@@ -24,6 +25,8 @@ ShellRoot {
     Lock {}
 
     Picker {}
+
+    PolkitPrompt {}
 
     // Bar + drawer untuk setiap monitor
     Variants {
