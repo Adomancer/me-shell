@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
 import QtQuick
+import qs.services
 
 // Notification server. Jangan jalankan bersama swaync/mako/dunst.
 Singleton {
@@ -30,6 +31,11 @@ Singleton {
         popups = popups.filter(p => p !== notif);
     }
 
+    function toggleDnd(): void {
+        dnd = !dnd;
+        Toaster.show(dnd ? "notifications_off" : "notifications_active", dnd ? "Jangan ganggu aktif" : "Jangan ganggu mati", dnd ? "Popup notifikasi disembunyikan" : "", "");
+    }
+
     function clearAll(): void {
         for (const n of [...list])
             n.dismiss();
@@ -48,7 +54,7 @@ Singleton {
             root.times[notif.id] = Date.now();
             root.now = Date.now();
             notif.closed.connect(() => root.dismissPopup(notif));
-            if (!root.dnd || notif.urgency === NotificationUrgency.Critical)
+            if ((!root.dnd && !GameMode.enabled) || notif.urgency === NotificationUrgency.Critical)
                 root.popups = [notif, ...root.popups].slice(0, 5);
         }
     }
@@ -64,7 +70,7 @@ Singleton {
         target: "notifs"
 
         function dnd(): void {
-            root.dnd = !root.dnd;
+            root.toggleDnd();
         }
 
         function clear(): void {
