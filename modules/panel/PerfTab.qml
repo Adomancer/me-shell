@@ -89,6 +89,12 @@ ColumnLayout {
                 label: "Suhu"
                 value: `${Math.round(SystemStats.temp)}°C`
             }
+
+            Detail {
+                visible: SystemStats.gpuTemp > 0
+                label: "GPU"
+                value: `${Math.round(SystemStats.gpuTemp)}°C`
+            }
         }
 
         RingCard {
