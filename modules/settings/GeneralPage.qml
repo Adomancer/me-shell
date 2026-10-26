@@ -47,6 +47,20 @@ ColumnLayout {
     }
 
     SettingSection {
+        title: "Drawer"
+    }
+
+    SettingRow {
+        label: "Buka dengan hover"
+        description: "Jam = dashboard, pojok kanan bawah = utilitas, tepi kanan = slider"
+
+        SettingToggle {
+            checked: Config.hoverOpen
+            onToggled: v => Config.set("hoverOpen", v)
+        }
+    }
+
+    SettingSection {
         title: "Launcher"
     }
 

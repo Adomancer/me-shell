@@ -31,6 +31,12 @@ Item {
             icon: "toolbar"
         },
         {
+            id: "desktop",
+            label: "Desktop",
+            desc: "Widget di atas wallpaper",
+            icon: "desktop_windows"
+        },
+        {
             id: "wallpaper",
             label: "Wallpaper",
             desc: "Wallpaper dan warna yang ikut wallpaper",
@@ -41,6 +47,12 @@ Item {
             label: "Keybind",
             desc: "Klik Ubah lalu tekan kombinasi baru. Esc untuk batal",
             icon: "keyboard"
+        },
+        {
+            id: "system",
+            label: "Sistem",
+            desc: "Idle, lampu malam, tangkap layar, dan clipboard",
+            icon: "settings_power"
         },
         {
             id: "services",
@@ -125,6 +137,18 @@ Item {
         id: barPage
 
         BarPage {}
+    }
+
+    Component {
+        id: desktopPage
+
+        DesktopPage {}
+    }
+
+    Component {
+        id: systemPage
+
+        SystemPage {}
     }
 
     Component {
@@ -336,7 +360,9 @@ Item {
                                     general: generalPage,
                                     look: lookPage,
                                     bar: barPage,
+                                    desktop: desktopPage,
                                     wallpaper: wallpaperPage,
+                                    system: systemPage,
                                     keys: keysPage,
                                     services: servicesPage,
                                     about: aboutPage

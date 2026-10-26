@@ -30,6 +30,26 @@ ColumnLayout {
     }
 
     SettingRow {
+        label: "Lagu yang diputar"
+        description: "Judul lagu di kanan; klik untuk putar/jeda"
+
+        SettingToggle {
+            checked: Config.barShowMedia
+            onToggled: v => Config.set("barShowMedia", v)
+        }
+    }
+
+    SettingRow {
+        label: "Popout saat hover"
+        description: "Wi-Fi, Bluetooth, suara, baterai, dan pratinjau window"
+
+        SettingToggle {
+            checked: Config.barPopouts
+            onToggled: v => Config.set("barPopouts", v)
+        }
+    }
+
+    SettingRow {
         label: "System tray"
         description: "Ikon aplikasi di kanan"
 
