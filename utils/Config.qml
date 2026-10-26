@@ -29,6 +29,20 @@ Singleton {
     readonly property string weatherLocation: adapter.weatherLocation
     readonly property int notifTimeout: adapter.notifTimeout
     readonly property bool cavaEnabled: adapter.cavaEnabled
+    readonly property bool barShowMedia: adapter.barShowMedia
+    readonly property bool barPopouts: adapter.barPopouts
+    readonly property bool hoverOpen: adapter.hoverOpen
+    readonly property int idleLockMinutes: adapter.idleLockMinutes
+    readonly property int idleScreenOffMinutes: adapter.idleScreenOffMinutes
+    readonly property int idleSuspendMinutes: adapter.idleSuspendMinutes
+    readonly property int nightLightTemp: adapter.nightLightTemp
+    readonly property string screenshotDir: Paths.expand(adapter.screenshotDir)
+    readonly property string recordingDir: Paths.expand(adapter.recordingDir)
+    readonly property bool recordAudio: adapter.recordAudio
+    readonly property bool clipboardHistory: adapter.clipboardHistory
+    readonly property bool desktopClock: adapter.desktopClock
+    readonly property string desktopClockPosition: adapter.desktopClockPosition
+    readonly property bool desktopVisualizer: adapter.desktopVisualizer
 
     // Ubah satu setting lalu simpan ke config.json
     function set(key: string, value: var): void {
@@ -75,6 +89,28 @@ Singleton {
             // Detik sebelum popup notifikasi hilang
             property int notifTimeout: 5
             property bool cavaEnabled: true
+            // Lagu yang diputar di bar (kiri jam)
+            property bool barShowMedia: true
+            // Popout saat kursor di atas ikon bar
+            property bool barPopouts: true
+            // Buka drawer dengan menyentuh tepi/pojok layar
+            property bool hoverOpen: true
+            // Menit diam sebelum aksi idle; 0 = mati
+            property int idleLockMinutes: 10
+            property int idleScreenOffMinutes: 15
+            property int idleSuspendMinutes: 0
+            // Kelvin untuk lampu malam (hyprsunset)
+            property int nightLightTemp: 4000
+            property string screenshotDir: "~/Pictures/Screenshots"
+            property string recordingDir: "~/Videos/Recordings"
+            property bool recordAudio: false
+            // Riwayat clipboard lewat cliphist
+            property bool clipboardHistory: true
+            // Widget di atas wallpaper
+            property bool desktopClock: true
+            // "kiri bawah", "kanan bawah", "kiri atas", "tengah"
+            property string desktopClockPosition: "kiri bawah"
+            property bool desktopVisualizer: true
         }
     }
 }
