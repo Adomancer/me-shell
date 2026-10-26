@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # Generate palet warna dari wallpaper dengan matugen.
-# Pemakaian: gen-colors.sh <gambar> [dark|light]
+# Pemakaian: gen-colors.sh <gambar atau #rrggbb> [dark|light]
 set -eu
 
 img="$1"
@@ -40,7 +40,11 @@ input_path = "$root/assets/matugen/starship.template.toml"
 output_path = "$state/starship.toml"
 EOF
 
-matugen image "$img" --config "$cfg" --mode "$mode"
+# Argumen "#rrggbb" = palet dari satu warna (dipakai installer kalau belum ada wallpaper)
+case "$img" in
+"#"*) matugen color hex "$img" --config "$cfg" --mode "$mode" ;;
+*) matugen image "$img" --config "$cfg" --mode "$mode" ;;
+esac
 
 # kitty yang sedang terbuka membaca ulang config (termasuk warna baru)
 pkill -USR1 -x kitty 2>/dev/null || true

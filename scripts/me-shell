@@ -77,20 +77,14 @@ distro() {
     esac
 }
 
-need_terminal() {
-    for t in kitty foot alacritty wezterm ghostty; do command -v "$t" >/dev/null && return 1; done
-    return 0
-}
-
 install_deps() {
     local d
     d="$(distro)"
     step "Dependency ($d)"
     case "$d" in
     arch)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava ttf-jetbrains-mono noto-fonts-emoji qt6-svg qt6-imageformats qt6-shadertools starship)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava ttf-jetbrains-mono noto-fonts-emoji qt6-svg qt6-imageformats qt6-shadertools kitty starship)
         local aur=(quickshell matugen-bin)
-        need_terminal && pkgs+=(kitty)
         note "pacman: ${pkgs[*]}"
         note "AUR:    ${aur[*]}"
         ask "Install sekarang?" || { warn "Dependency dilewati"; return; }
@@ -114,12 +108,11 @@ install_deps() {
         fi
         ;;
     fedora)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava jetbrains-mono-fonts google-noto-color-emoji-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools)
-        need_terminal && pkgs+=(kitty)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava jetbrains-mono-fonts google-noto-color-emoji-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools kitty)
         # Hyprland dan matugen tidak ada di repo resmi Fedora (cek: Fedora 44); diambil dari COPR.
         # sdegler/hyprland punya build untuk Fedora 43-45 + rawhide (juga hyprpicker dan hyprsunset),
         # lionheartp/Hyprland cadangannya.
-        note "COPR:   errornointernet/quickshell, sdegler/hyprland"
+        note "COPR:   errornointernet/quickshell, sdegler/hyprland, atim/starship"
         note "dnf:    ${pkgs[*]}"
         ask "Install sekarang?" || { warn "Dependency dilewati"; return; }
         sudo dnf install -y dnf-plugins-core
@@ -139,6 +132,11 @@ install_deps() {
         command -v Hyprland >/dev/null || command -v hyprland >/dev/null || die "Hyprland gagal ter-install, cek pesan dnf di atas."
         command -v qs >/dev/null || die "Quickshell gagal ter-install, cek pesan dnf di atas."
         command -v matugen >/dev/null || note "matugen tidak ter-install; shell memakai warna amber bawaan"
+        # starship tidak ada di repo resmi Fedora; prompt terminal opsional, jadi gagal pun lanjut
+        if ! command -v starship >/dev/null; then
+            { sudo dnf copr enable -y atim/starship && sudo dnf install -y starship; } ||
+                warn "starship gagal di-install; terminal tetap jalan dengan prompt biasa"
+        fi
         ;;
     *)
         warn "Distro tidak dikenal. Install manual: hyprland, quickshell, git, curl, brightnessctl,"
@@ -303,26 +301,38 @@ setup_hyprland_conf() {
 
 # --- Terminal -----------------------------------------------------------------
 
-# Gaya kitty + prompt starship. Warna digenerate gen-colors.sh ke $STATE (kitty-colors.conf, starship.toml).
+# Gaya kitty + prompt starship, dipasang otomatis. Warna digenerate gen-colors.sh ke $STATE
+# (kitty-colors.conf, starship.toml); tanpa wallpaper dipakai warna amber bawaan.
 setup_terminal() {
-    local root="$1" inc rc line
+    local root="$1" inc rc line wall
     inc="include $root/assets/kitty/me-shell.conf"
     step "Terminal"
+
+    if [ ! -f "$STATE/kitty-colors.conf" ] || [ ! -f "$STATE/starship.toml" ]; then
+        wall="$(sed -n 's/.*"path": *"\([^"]*\)".*/\1/p' "$STATE/wallpaper.json" 2>/dev/null || true)"
+        [ -f "$wall" ] || wall="#f8bb71"
+        if sh "$root/scripts/gen-colors.sh" "$wall" dark >/dev/null 2>&1; then
+            ok "Warna terminal dibuat"
+        else
+            warn "Warna terminal gagal dibuat (matugen?); kitty memakai warna bawaannya"
+        fi
+    fi
+
     if command -v kitty >/dev/null; then
         if [ -f "$KITTY_CONF" ] && grep -qxF "$inc" "$KITTY_CONF"; then
             ok "kitty sudah memakai gaya me-shell"
-        elif ask "Pakai gaya terminal me-shell untuk kitty?"; then
+        else
             mkdir -p "$(dirname "$KITTY_CONF")"
             [ -f "$KITTY_CONF" ] && cp "$KITTY_CONF" "$KITTY_CONF.me-shell.bak"
             printf '\n# me-shell\n%s\n' "$inc" >>"$KITTY_CONF"
-            ok "Ditambahkan ke kitty.conf (backup: kitty.conf.me-shell.bak)"
+            ok "kitty memakai gaya me-shell (backup: kitty.conf.me-shell.bak)"
         fi
     else
-        note "kitty tidak ada, gaya terminal dilewati"
+        warn "kitty tidak ter-install, gaya terminal dilewati"
     fi
 
     if ! command -v starship >/dev/null; then
-        note "Pasang starship (https://starship.rs) untuk prompt bergaya me-shell, lalu jalankan install lagi"
+        warn "starship tidak ter-install, prompt tetap bawaan shell"
         return 0
     fi
     case "$(basename "${SHELL:-bash}")" in
@@ -333,7 +343,7 @@ setup_terminal() {
     esac
     if grep -qF "starship init" "$rc" 2>/dev/null; then
         ok "starship sudah aktif di $rc"
-    elif ask "Aktifkan prompt starship di $rc?"; then
+    else
         mkdir -p "$(dirname "$rc")"
         printf '\n# me-shell\n%s\n' "$line" >>"$rc"
         ok "starship ditambahkan ke $rc"
