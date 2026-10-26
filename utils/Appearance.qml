@@ -14,7 +14,9 @@ Singleton {
         return Qt.rgba(c.r, c.g, c.b, a);
     }
 
-    // Peran warna Material 3 dari matugen (scripts/gen-colors.sh). Fallback = palet amber.
+    // Peran warna dari matugen (scripts/gen-colors.sh). Fallback = palet amber.
+    // Gaya retro lembut: latar gelap polos + SATU warna aksen (primary). Peran secondary, tertiary,
+    // dan container dipetakan ke netral/aksen di sini, jadi module tidak perlu tahu.
     readonly property QtObject colors: QtObject {
         readonly property color background: scheme.background || "#18120c"
         readonly property color surface: scheme.surface || "#18120c"
@@ -32,16 +34,16 @@ Singleton {
         readonly property color outlineVariant: scheme.outlineVariant || "#504539"
         readonly property color primary: scheme.primary || "#f8bb71"
         readonly property color primaryText: scheme.primaryText || "#472a00"
-        readonly property color primaryContainer: scheme.primaryContainer || "#653e00"
-        readonly property color primaryContainerText: scheme.primaryContainerText || "#ffddb8"
-        readonly property color secondary: scheme.secondary || "#dfc2a2"
-        readonly property color secondaryText: scheme.secondaryText || "#3f2d17"
-        readonly property color secondaryContainer: scheme.secondaryContainer || "#57432b"
-        readonly property color secondaryContainerText: scheme.secondaryContainerText || "#fcddbd"
-        readonly property color tertiary: scheme.tertiary || "#bbcd9e"
-        readonly property color tertiaryText: scheme.tertiaryText || "#273513"
-        readonly property color tertiaryContainer: scheme.tertiaryContainer || "#3d4c28"
-        readonly property color tertiaryContainerText: scheme.tertiaryContainerText || "#d7e9b8"
+        readonly property color primaryContainer: scheme.surfaceContainerHighest || "#3b332b"
+        readonly property color primaryContainerText: scheme.primary || "#f8bb71"
+        readonly property color secondary: scheme.text || "#eee0d4"
+        readonly property color secondaryText: scheme.surface || "#18120c"
+        readonly property color secondaryContainer: scheme.surfaceContainerHighest || "#3b332b"
+        readonly property color secondaryContainerText: scheme.primary || "#f8bb71"
+        readonly property color tertiary: scheme.primary || "#f8bb71"
+        readonly property color tertiaryText: scheme.primaryText || "#472a00"
+        readonly property color tertiaryContainer: scheme.surfaceContainerHighest || "#3b332b"
+        readonly property color tertiaryContainerText: scheme.primary || "#f8bb71"
         readonly property color error: scheme.error || "#ffb4ab"
         readonly property color errorText: scheme.errorText || "#690005"
         readonly property color errorContainer: scheme.errorContainer || "#93000a"
@@ -59,6 +61,8 @@ Singleton {
             // Angka, jam, dan statistik (aksen retro)
             readonly property string mono: Config.fontFamily
             readonly property string icon: "Material Symbols Rounded"
+            // Judul dan label kecil ikut mono (aksen retro)
+            readonly property string title: Config.fontFamily
         }
         readonly property QtObject size: QtObject {
             readonly property int small: 11
@@ -87,9 +91,10 @@ Singleton {
 
     readonly property QtObject radius: QtObject {
         readonly property int none: 0
-        readonly property int small: 10
-        readonly property int normal: 16
-        readonly property int large: 24
+        // Sudut kecil ala retro; full hanya untuk yang memang bulat (riak, piringan lagu)
+        readonly property int small: 4
+        readonly property int normal: 6
+        readonly property int large: 8
         readonly property int full: 1000
     }
 
@@ -101,7 +106,7 @@ Singleton {
     // Bingkai di sekeliling layar tempat bar dan drawer menempel
     readonly property QtObject frame: QtObject {
         readonly property int thickness: Config.frameEnabled ? Config.frameThickness : 0
-        readonly property int rounding: 24
+        readonly property int rounding: 8
     }
 
     readonly property QtObject anim: QtObject {
