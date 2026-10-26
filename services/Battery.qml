@@ -31,6 +31,10 @@ Singleton {
     readonly property int profile: PowerProfiles.profile
     readonly property bool hasPerformance: PowerProfiles.hasPerformanceProfile
 
+    // Sudah diperingatkan di level ini; direset saat charger dicolok
+    property bool warnedLow: false
+    property bool warnedCritical: false
+
     function setProfile(p: int): void {
         PowerProfiles.profile = p;
     }
@@ -39,7 +43,25 @@ Singleton {
         return p === PowerProfile.PowerSaver ? "Hemat daya" : p === PowerProfile.Performance ? "Performa" : "Seimbang";
     }
 
+    // Peringatan lewat notifikasi sungguhan supaya ikut riwayat; 5% = kritis (tidak hilang sendiri)
+    onPercentageChanged: {
+        if (!available || charging)
+            return;
+        if (percentage <= 0.05 && !warnedCritical) {
+            warnedCritical = true;
+            warnedLow = true;
+            Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "me-shell", "-i", "battery-caution", "Baterai hampir habis", `${Math.round(percentage * 100)}% tersisa. Colokkan charger sekarang.`]);
+        } else if (percentage <= 0.15 && !warnedLow) {
+            warnedLow = true;
+            Quickshell.execDetached(["notify-send", "-a", "me-shell", "-i", "battery-low", "Baterai lemah", `${Math.round(percentage * 100)}% tersisa`]);
+        }
+    }
+
     onChargingChanged: {
+        if (charging) {
+            warnedLow = false;
+            warnedCritical = false;
+        }
         if (available)
             Toaster.show(charging ? "power" : "power_off", charging ? "Charger tersambung" : "Charger dilepas", `${Math.round(percentage * 100)}%`, "");
     }
