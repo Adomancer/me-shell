@@ -75,6 +75,13 @@ Singleton {
             cmd: "drawers launcher ';'"
         },
         {
+            id: "emoji",
+            label: "Pemilih emoji",
+            mods: "SUPER",
+            key: "PERIOD",
+            cmd: "drawers launcher ."
+        },
+        {
             id: "screenshot",
             label: "Screenshot area / window",
             mods: "SUPER SHIFT",
@@ -235,7 +242,10 @@ Singleton {
                     [Qt.Key_Left]: "LEFT",
                     [Qt.Key_Right]: "RIGHT",
                     [Qt.Key_Up]: "UP",
-                    [Qt.Key_Down]: "DOWN"
+                    [Qt.Key_Down]: "DOWN",
+                    [Qt.Key_Period]: "PERIOD",
+                    [Qt.Key_Comma]: "COMMA",
+                    [Qt.Key_Slash]: "SLASH"
                 })[k] ?? event.text.toUpperCase();
         return key ? {
             mods: mods.join(" "),
