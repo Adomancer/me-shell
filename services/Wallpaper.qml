@@ -3,6 +3,7 @@ pragma Singleton
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import qs.services
 import qs.utils
 
 // Wallpaper aktif disimpan di ~/.local/state/me-shell/wallpaper.json.
@@ -17,6 +18,7 @@ Singleton {
         adapter.path = p;
         file.writeAdapter();
         Quickshell.execDetached(["sh", `${Paths.shell}/scripts/gen-colors.sh`, p, Config.colorMode]);
+        Toaster.show("wallpaper", "Wallpaper diganti", p.split("/").pop(), p);
     }
 
     FileView {
