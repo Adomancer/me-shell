@@ -1,4 +1,6 @@
 # Prompt starship bergaya me-shell (Nothing / TE, simbol geometris ala Caelestia).
+# Diadaptasi dari starship.toml milik caelestia-dots/caelestia (GPL-3.0); diubah: palet dari matugen,
+# modul sudo dan fill dibuang, folder dan git pindah ke kiri, modul bahasa dikurangi.
 # Dibuat matugen lewat scripts/gen-colors.sh, ditimpa setiap ganti wallpaper. Dipakai kitty lewat
 # STARSHIP_CONFIG (assets/kitty/me-shell.conf). Kiri: durasi, host (ssh), user (kalau bukan default),
 # folder, git, titik prompt. Kanan: versi bahasa, baterai, jam.
