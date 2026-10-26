@@ -109,6 +109,11 @@ Item {
             run: () => Screenshot.pickColor()
         },
         {
+            icon: "document_scanner",
+            title: "Salin teks dari layar (OCR)",
+            run: () => Screenshot.openPicker("ocr")
+        },
+        {
             icon: "coffee",
             title: Idle.inhibited ? "Matikan kafein" : "Kafein (tahan layar menyala)",
             run: () => Idle.toggleInhibit()
