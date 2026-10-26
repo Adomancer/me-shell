@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Widgets
 import QtQuick
 import Qt.labs.folderlistmodel
@@ -9,7 +10,7 @@ import "../../utils/Calc.js" as Calc
 import "../../utils/Fuzzy.js" as Fuzzy
 
 // Launcher yang muncul dari tepi bawah, dengan mode prefix:
-//   (kosong) aplikasi   / aksi shell   ; clipboard   : wallpaper   = kalkulator   > perintah shell
+//   (kosong) aplikasi   / aksi shell   ; clipboard   . emoji   : wallpaper   = kalkulator   > perintah shell
 // Mode wallpaper memakai carousel mendatar; launcher melebar mengikutinya.
 Item {
     id: root
@@ -22,11 +23,14 @@ Item {
             ">": "run",
             ":": "wall",
             "/": "action",
-            ";": "clip"
+            ";": "clip",
+            ".": "emoji"
         })[query.charAt(0)] ?? "apps"
     readonly property string term: mode === "apps" ? query.trim() : query.slice(1).trim()
     readonly property bool carousel: mode === "wall"
     readonly property bool showEmpty: results.length === 0 && query !== ""
+    // [[emoji, nama]] dari assets/emoji.txt, dimuat sekali
+    property var emojis: []
     readonly property int rowHeight: 56
     readonly property int maxRows: Config.launcherMaxResults
 
@@ -193,6 +197,16 @@ Item {
                     };
                 });
             }
+        case "emoji":
+            {
+                const words = term.toLowerCase().split(/\s+/).filter(w => w);
+                return emojis.filter(e => words.every(w => e[1].includes(w))).slice(0, maxRows).map(e => ({
+                            kind: "emoji",
+                            glyph: e[0],
+                            title: e[1],
+                            subtitle: ""
+                        }));
+            }
         case "wall":
             {
                 const out = [];
@@ -254,6 +268,10 @@ Item {
         case "clip":
             Clipboard.copy(r.line);
             break;
+        case "emoji":
+            Quickshell.execDetached(["wl-copy", r.glyph]);
+            Toaster.show("mood", "Emoji disalin", `${r.glyph}  ${r.title}`, "");
+            break;
         case "wall":
             Wallpaper.set(r.path);
             break;
@@ -281,6 +299,11 @@ Item {
             list.lastMouse = Qt.point(-1, -1);
             input.forceActiveFocus();
         }
+    }
+
+    FileView {
+        path: `${Paths.shell}/assets/emoji.txt`
+        onLoaded: root.emojis = text().split("\n").filter(l => l.includes("\t")).map(l => l.split("\t"))
     }
 
     FolderListModel {
@@ -482,9 +505,16 @@ Item {
                                 asynchronous: true
                             }
 
+                            StyledText {
+                                anchors.centerIn: parent
+                                visible: row.modelData.kind === "emoji"
+                                text: row.modelData.glyph ?? ""
+                                font.pixelSize: 26
+                            }
+
                             StyledRect {
                                 anchors.fill: parent
-                                visible: row.modelData.kind !== "app"
+                                visible: row.modelData.kind !== "app" && row.modelData.kind !== "emoji"
                                 radius: row.modelData.kind === "action" ? height / 2 : Appearance.radius.small
                                 color: row.modelData.kind === "action" ? Appearance.colors.primaryContainer : Appearance.colors.tertiaryContainer
 
@@ -581,7 +611,8 @@ Item {
                         run: "terminal",
                         wall: "wallpaper",
                         action: "bolt",
-                        clip: "content_paste"
+                        clip: "content_paste",
+                        emoji: "mood"
                     })[root.mode]
                 color: Appearance.colors.primary
             }
@@ -627,7 +658,7 @@ Item {
                 StyledText {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: input.text === ""
-                    text: "Cari aplikasi    / aksi    ; clipboard    : wallpaper    = hitung    > perintah"
+                    text: "Cari aplikasi   / aksi   ; clipboard   . emoji   : wallpaper   = hitung   > perintah"
                     color: Appearance.colors.textDim
                 }
             }
