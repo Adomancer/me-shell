@@ -9,6 +9,7 @@ import qs.services
 import qs.utils
 import qs.modules.bar
 import qs.modules.bar.popouts
+import qs.modules.cheatsheet
 import qs.modules.panel
 import qs.modules.launcher
 import qs.modules.session
@@ -124,6 +125,9 @@ Scope {
                     item: settings
                 },
                 Region {
+                    item: cheatsheet
+                },
+                Region {
                     item: popout
                 },
                 Region {
@@ -187,10 +191,10 @@ Scope {
             onContainsMouseChanged: containsMouse ? OsdState.peek() : OsdState.release()
         }
 
-        // Kafein: tahan idle (juga untuk hypridle kalau dipakai)
+        // Kafein atau media yang diputar: tahan idle (juga untuk hypridle kalau dipakai)
         IdleInhibitor {
             window: win
-            enabled: Idle.inhibited
+            enabled: Idle.holding
         }
 
         // Klik di luar drawer = tutup
@@ -392,6 +396,13 @@ Scope {
 
             anchors.centerIn: parent
             shown: root.active === "settings"
+        }
+
+        Cheatsheet {
+            id: cheatsheet
+
+            anchors.centerIn: parent
+            shown: root.active === "cheatsheet"
         }
     }
 }
