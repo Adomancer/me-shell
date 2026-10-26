@@ -15,6 +15,7 @@ import qs.modules.session
 import qs.modules.notifs
 import qs.modules.osd
 import qs.modules.settings
+import qs.modules.utilities
 
 // Satu window transparan per monitor. Bar, bingkai layar, dan semua drawer digambar sebagai satu
 // bentuk menyatu; drawer tumbuh dari tepi bingkai. Input hanya ditangkap di area yang terlihat (mask).
@@ -105,6 +106,9 @@ Scope {
                 },
                 Region {
                     item: popout
+                },
+                Region {
+                    item: utilities
                 }
             ]
         }
@@ -164,6 +168,10 @@ Scope {
                 PanelShape {
                     wrapper: popout
                     edge: "top"
+                }
+                CornerShape {
+                    wrapper: utilities
+                    edge: "bottom"
                 }
             }
         }
@@ -264,6 +272,20 @@ Scope {
             }
 
             Popouts {}
+        }
+
+        // Pojok kanan bawah: toast dari shell, plus panel utilitas saat dibuka
+        Wrapper {
+            id: utilities
+
+            edge: "bottom"
+            shown: root.active === "utilities" || (Toaster.toasts.length > 0 && root.focused)
+            x: parent.width - root.frame - width
+            y: parent.height - root.frame - height
+
+            UtilitiesDrawer {
+                open: root.active === "utilities"
+            }
         }
 
         SettingsWindow {

@@ -68,6 +68,13 @@ Item {
 
         IconButton {
             anchors.verticalCenter: parent.verticalCenter
+            icon: "widgets"
+            toggled: DrawerState.active === "utilities"
+            onClicked: DrawerState.toggle("utilities")
+        }
+
+        IconButton {
+            anchors.verticalCenter: parent.verticalCenter
             icon: "power_settings_new"
             toggled: DrawerState.active === "session"
             onClicked: DrawerState.toggle("session")
