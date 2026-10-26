@@ -16,13 +16,14 @@ Sudah dites di Fedora 44 (VM), tapi belum di laptop asli dan belum di Arch, jadi
 - panel utilitas di pojok kanan bawah: kafein, mode game, jangan ganggu, lampu malam, screenshot, rekam layar, ambil warna, mic, power profile. Toast kecil dari shell juga muncul di pojok ini
 - overview workspace (`SUPER + Tab`) dengan pratinjau live tiap window, window bisa diseret ke workspace lain
 - screenshot dan rekam layar pakai pemilih area sendiri: arahkan ke window buat milih window itu, seret buat milih area bebas
-- launcher: cari aplikasi (yang sering dibuka naik ke atas), `/` buat aksi shell, `;` buat riwayat clipboard, `.` buat emoji, `:` buat carousel wallpaper, `=` buat ngitung, `>` buat jalanin perintah
+- launcher: kosong langsung nampilin aplikasi yang paling sering dibuka, ketik buat nyari. Pindah mode pakai `Tab` atau prefix: `/` aksi shell, `;` riwayat clipboard, `.` emoji, `:` wallpaper, `=` ngitung (hasilnya angka dot-matrix gede), `>` jalanin perintah
 - jam besar dan visualizer di atas wallpaper
 - idle bawaan (kunci layar, matiin layar, suspend), jadi hypridle nggak perlu lagi
 - dialog password admin sendiri (agen polkit), jadi hyprpolkitagent atau polkit-gnome juga nggak perlu
-- notifikasi (bisa di-swipe), OSD volume/brightness, menu power di tepi kanan
-- lockscreen tiga kolom: cuaca, info sistem, media, jam, foto profil, notifikasi, plus efek CRT opsional
-- wallpaper + warna yang ikut wallpaper (pakai matugen)
+- notifikasi (bisa di-swipe), OSD volume/brightness, menu power di tepi kanan (restart dan matikan harus ditahan dulu biar nggak kepencet)
+- lockscreen bento: jam, cuaca, kalender, media, info sistem, resource, notifikasi, plus efek CRT opsional
+- wallpaper + warna yang ikut wallpaper (pakai matugen), termasuk warna terminal
+- terminal kitty yang udah di-style dari awal, plus prompt starship yang warnanya ikut wallpaper
 - menu settings buat ngatur semuanya, termasuk keybind
 
 Beberapa panel bisa dibuka cukup dengan nyentuh layar: diam sebentar di atas jam buat dashboard, pojok kanan bawah buat utilitas, tepi kanan buat slider volume. Kalau ganggu, matiin "Buka dengan hover" di settings.
@@ -38,9 +39,10 @@ curl -fsSL https://raw.githubusercontent.com/Adomancer/me-shell/main/scripts/ins
 Script-nya nanya sekali sebelum install paket, lalu:
 
 - install Hyprland (kalau belum ada), Quickshell, dan semua dependency lain, termasuk grim, wf-recorder, cliphist, hyprpicker, dan hyprsunset buat screenshot, rekam, clipboard, dan lampu malam
-- unduh font Material Symbols dan Rubik ke `~/.local/share/fonts/me-shell`
+- unduh font Material Symbols, Doto, Space Grotesk, dan Space Mono ke `~/.local/share/fonts/me-shell`
 - clone repo ke `~/.local/share/me-shell` dan pasang perintah `me-shell` di `~/.local/bin`
 - bikin `~/.config/me-shell/hypr/` dan nambahin satu baris `source` ke `hyprland.conf` (ada backup-nya). Kalau belum punya `hyprland.conf`, dibuatin yang minimal
+- pasang kitty dan starship, nyambungin gaya me-shell ke `kitty.conf` (ada backup-nya), dan nyalain starship di `.bashrc`/`.zshrc`/`config.fish`
 - nawarin buat matiin Waybar, swaync, mako, dunst, hypridle, atau agen polkit lain kalau ketemu di config, soalnya bentrok
 
 Setelah itu tinggal login ke Hyprland. Kalau install dari live USB, jalankan `passwd` dulu, soalnya user live nggak punya password dan lockscreen jadi nggak bisa di-unlock.
