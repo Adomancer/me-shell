@@ -135,7 +135,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 implicitWidth: 76
                 implicitHeight: isCurrent ? 76 : 64
-                radius: isCurrent ? Appearance.radius.large : height / 2
+                radius: isCurrent ? Appearance.radius.large : Appearance.radius.small
                 color: isPending ? Appearance.colors.errorContainer : isCurrent ? Appearance.colors.primaryContainer : Appearance.colors.surfaceContainerHigh
 
                 Behavior on implicitHeight {
