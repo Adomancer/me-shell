@@ -20,6 +20,7 @@ Scope {
             required property ShellScreen modelData
             readonly property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
             readonly property bool record: Screenshot.pickerMode === "record"
+            readonly property bool ocr: Screenshot.pickerMode === "ocr"
 
             // Kotak pilihan (koordinat lokal layar ini)
             property real selX: 0
@@ -200,14 +201,14 @@ Scope {
 
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: win.record ? "screen_record" : "screenshot_region"
+                        text: win.record ? "screen_record" : win.ocr ? "document_scanner" : "screenshot_region"
                         fill: 1
                         color: win.record ? Appearance.colors.error : Appearance.colors.primary
                     }
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: win.record ? "Rekam layar" : "Tangkap layar"
+                        text: win.record ? "Rekam layar" : win.ocr ? "Salin teks dari layar" : "Tangkap layar"
                         font.family: Appearance.font.family.title
                         font.weight: Font.Medium
                     }
