@@ -6,12 +6,13 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Workspace ala end_4: workspace berisi window disambung jadi satu pita, indikator aktif
-// meregang lalu menyusul saat pindah (ujung depan cepat, ujung belakang lambat).
-StyledRect {
+// Workspace sebagai titik: kosong = cincin, berisi = titik redup, aktif = kapsul aksen yang meregang
+// lalu menyusul saat pindah (ujung depan cepat, ujung belakang lambat). Tanpa kotak.
+Item {
     id: root
 
-    readonly property int slot: 26
+    readonly property int slot: 18
+    readonly property int dot: 6
     readonly property int count: Config.workspaces
     readonly property int activeIndex: Math.max(0, Math.min(count - 1, (Hyprland.focusedWorkspace?.id ?? 1) - 1))
     // Dua ujung indikator dengan kecepatan berbeda
@@ -22,12 +23,8 @@ StyledRect {
         return Hyprland.workspaces.values.some(w => w.id === i + 1 && (w.toplevels?.values?.length ?? 1) > 0);
     }
 
-    implicitWidth: slot * count + 4
-    implicitHeight: slot + 4
-    radius: Appearance.radius.small
-    border.width: Appearance.border.thin
-    border.color: Appearance.colors.outlineVariant
-    color: Appearance.colors.surfaceContainer
+    implicitWidth: slot * count
+    implicitHeight: Config.barHeight - 10
 
     Behavior on lead {
         Anim {
@@ -40,50 +37,6 @@ StyledRect {
             duration: Appearance.anim.durations.large
             easing.bezierCurve: Appearance.anim.curves.emphasizedDecel
         }
-    }
-
-    // Pita workspace yang berisi window
-    Repeater {
-        model: root.count
-
-        StyledRect {
-            id: occ
-
-            required property int index
-            readonly property bool filled: root.occupied(index)
-            readonly property bool joinLeft: filled && index > 0 && root.occupied(index - 1)
-            readonly property bool joinRight: filled && index < root.count - 1 && root.occupied(index + 1)
-
-            x: 2 + index * root.slot
-            y: 2
-            width: root.slot
-            height: root.slot
-            color: Appearance.colors.secondaryContainer
-            opacity: filled ? 1 : 0
-            topLeftRadius: joinLeft ? 0 : Appearance.radius.small
-            bottomLeftRadius: joinLeft ? 0 : Appearance.radius.small
-            topRightRadius: joinRight ? 0 : Appearance.radius.small
-            bottomRightRadius: joinRight ? 0 : Appearance.radius.small
-
-            Behavior on opacity {
-                Anim {
-                    duration: Appearance.anim.durations.small
-                }
-            }
-        }
-    }
-
-    // Indikator aktif
-    Rectangle {
-        readonly property real from: Math.min(root.lead, root.trail)
-        readonly property real to: Math.max(root.lead, root.trail)
-
-        x: 2 + from * root.slot
-        y: 2
-        width: (to - from + 1) * root.slot
-        height: root.slot
-        radius: Appearance.radius.small
-        color: Appearance.colors.primary
     }
 
     Repeater {
@@ -99,36 +52,29 @@ StyledRect {
             readonly property string appId: Config.barWorkspaceIcons ? (Hyprland.toplevels.values.find(t => t.workspace?.id === index + 1)?.wayland?.appId ?? "") : ""
             readonly property string appIcon: appId ? (DesktopEntries.heuristicLookup(appId)?.icon || "application-x-executable") : ""
 
-            x: 2 + index * root.slot
-            y: 2
+            x: index * root.slot
             width: root.slot
-            height: root.slot
+            height: root.height
+
+            // Kosong = cincin tipis, berisi = titik penuh redup
+            Rectangle {
+                anchors.centerIn: parent
+                visible: cell.appIcon === ""
+                width: root.dot
+                height: root.dot
+                radius: root.dot / 2
+                color: cell.filled ? Appearance.colors.textDim : "transparent"
+                border.width: cell.filled ? 0 : 1
+                border.color: Appearance.colors.outline
+            }
 
             IconImage {
                 anchors.centerIn: parent
                 visible: cell.appIcon !== ""
-                implicitSize: 16
+                implicitSize: 14
                 source: cell.appIcon ? Quickshell.iconPath(cell.appIcon, "application-x-executable") : ""
                 asynchronous: true
-            }
-
-            StyledText {
-                anchors.centerIn: parent
-                visible: (cell.filled || cell.isActive) && cell.appIcon === ""
-                text: cell.index + 1
-                font.family: Appearance.font.family.mono
-                font.pixelSize: Appearance.font.size.smaller
-                font.bold: cell.isActive
-                color: cell.isActive ? Appearance.colors.primaryText : Appearance.colors.secondaryContainerText
-            }
-
-            Rectangle {
-                anchors.centerIn: parent
-                visible: !cell.filled && !cell.isActive
-                width: 5
-                height: 5
-                radius: 1
-                color: Appearance.colors.outline
+                opacity: cell.isActive ? 1 : 0.6
             }
 
             MouseArea {
@@ -137,6 +83,20 @@ StyledRect {
                 onClicked: Hyprland.dispatch(`workspace ${cell.index + 1}`)
             }
         }
+    }
+
+    // Kapsul aktif: lebarnya mengikuti jarak dua ujung, jadi melar saat berpindah
+    Rectangle {
+        readonly property real from: Math.min(root.lead, root.trail)
+        readonly property real to: Math.max(root.lead, root.trail)
+
+        visible: !Config.barWorkspaceIcons
+        anchors.verticalCenter: parent.verticalCenter
+        x: from * root.slot + (root.slot - 14) / 2
+        width: (to - from) * root.slot + 14
+        height: root.dot + 2
+        radius: height / 2
+        color: Appearance.colors.primary
     }
 
     // Klik kanan = overview

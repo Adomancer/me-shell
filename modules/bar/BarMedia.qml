@@ -3,7 +3,7 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Lagu yang diputar di bar: batang equalizer kecil + judul. Hover = popout media, klik = putar/jeda.
+// Lagu yang diputar di bar, tanpa kotak: batang equalizer kecil + judul. Hover = popout media, klik = putar/jeda.
 StyledRect {
     id: root
 
@@ -11,10 +11,7 @@ StyledRect {
 
     implicitWidth: row.implicitWidth + Appearance.padding.normal * 2
     implicitHeight: Config.barHeight - 10
-    radius: Appearance.radius.small
-    border.width: Appearance.border.thin
-    border.color: Appearance.colors.outlineVariant
-    color: Appearance.colors.surfaceContainer
+    radius: height / 2
 
     Row {
         id: row

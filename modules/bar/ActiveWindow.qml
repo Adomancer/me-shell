@@ -1,11 +1,10 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Widgets
 import QtQuick
 import qs.components
 import qs.utils
 
-// Ikon + judul window aktif. Saat window berganti, judul lama turun memudar lalu yang baru naik.
+// Nama app (label mono) + judul window aktif. Saat window berganti, judul lama turun memudar lalu yang baru naik.
 // Hover = popout pratinjau window.
 Item {
     id: root
@@ -15,7 +14,7 @@ Item {
     readonly property string appId: toplevel?.appId ?? ""
     readonly property var entry: appId ? DesktopEntries.heuristicLookup(appId) : null
     property string shownTitle: title
-    property string shownIcon: entry?.icon ?? ""
+    property string shownApp: entry?.name ?? appId
 
     implicitWidth: label.implicitWidth
     implicitHeight: Math.max(label.implicitHeight, Config.barHeight - 10)
@@ -42,7 +41,7 @@ Item {
         ScriptAction {
             script: {
                 root.shownTitle = root.title;
-                root.shownIcon = root.entry?.icon ?? "";
+                root.shownApp = root.entry?.name ?? root.appId;
                 shift.y = -6;
             }
         }
@@ -80,18 +79,16 @@ Item {
 
             spacing: Appearance.spacing.small
 
-            IconImage {
+            Caption {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: root.shownTitle !== "" && source !== ""
-                implicitSize: 18
-                // true = string kosong kalau ikon tidak ada di tema
-                source: root.shownIcon ? Quickshell.iconPath(root.shownIcon, true) : ""
-                asynchronous: true
+                visible: root.shownTitle !== ""
+                text: root.shownApp
+                color: Appearance.colors.text
             }
 
             StyledText {
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.min(implicitWidth, 300)
+                width: Math.min(implicitWidth, 280)
                 elide: Text.ElideRight
                 text: root.shownTitle
                 color: Appearance.colors.textDim
@@ -100,8 +97,8 @@ Item {
     }
 
     StateLayer {
-        anchors.margins: -4
-        radius: Appearance.radius.small
+        anchors.margins: -6
+        radius: height / 2
         onClicked: trigger.pin()
     }
 

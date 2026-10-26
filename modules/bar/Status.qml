@@ -3,9 +3,9 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Ikon status: jaringan, bluetooth, volume, baterai. Hover tiap ikon memunculkan popout-nya,
-// klik menyematkan popout itu. Scroll di ikon mana pun mengubah volume.
-StyledRect {
+// Ikon status tanpa kotak: jaringan, bluetooth, volume (+ angka), baterai (5 segmen + angka).
+// Hover tiap ikon memunculkan popout-nya, klik menyematkan popout itu. Scroll mengubah volume.
+Row {
     id: root
 
     readonly property string netIcon: {
@@ -19,14 +19,8 @@ StyledRect {
         return s > 75 ? "signal_wifi_4_bar" : s > 50 ? "network_wifi_3_bar" : s > 25 ? "network_wifi_2_bar" : "network_wifi_1_bar";
     }
     readonly property string volIcon: Audio.muted ? "volume_off" : Audio.volume < 0.01 ? "volume_mute" : Audio.volume < 0.5 ? "volume_down" : "volume_up"
-    readonly property string batIcon: {
-        if (Battery.charging)
-            return "battery_charging_full";
-        const p = Battery.percentage;
-        return p > 0.95 ? "battery_full" : `battery_${Math.max(0, Math.min(6, Math.floor(p * 7)))}_bar`;
-    }
 
-    component StatusIcon: Item {
+    component StatusIcon: StyledRect {
         id: item
 
         required property string popout
@@ -34,18 +28,18 @@ StyledRect {
         readonly property bool open: DrawerState.popout === popout
 
         anchors.verticalCenter: parent.verticalCenter
-        implicitWidth: inner.implicitWidth + Appearance.padding.small * 2
-        implicitHeight: root.height - 6
+        implicitWidth: inner.implicitWidth + Appearance.padding.small * 2 + 2
+        implicitHeight: Config.barHeight - 10
+        radius: height / 2
 
         Row {
             id: inner
 
             anchors.centerIn: parent
-            spacing: 2
+            spacing: 4
         }
 
         StateLayer {
-            radius: Appearance.radius.small
             onClicked: Config.barPopouts ? trigger.pin() : DrawerState.togglePanel("dash")
             onWheel: event => Audio.setVolume(Math.max(0, Math.min(1, Audio.volume + (event.angleDelta.y > 0 ? 0.05 : -0.05))))
         }
@@ -55,68 +49,96 @@ StyledRect {
 
             popout: item.popout
         }
+
+        ActiveDot {
+            active: item.open && DrawerState.popoutPinned
+        }
     }
 
-    implicitWidth: row.implicitWidth + Appearance.padding.small * 2
-    implicitHeight: Config.barHeight - 10
-    radius: Appearance.radius.small
-    border.width: Appearance.border.thin
-    border.color: Appearance.colors.outlineVariant
-    color: Appearance.colors.surfaceContainer
+    // Angka kecil di samping ikon
+    component Value: StyledText {
+        anchors.verticalCenter: parent.verticalCenter
+        font.family: Appearance.font.family.mono
+        font.pixelSize: Appearance.font.size.smaller
+        color: Appearance.colors.textDim
+    }
 
-    Row {
-        id: row
+    spacing: 0
 
-        anchors.centerIn: parent
-        spacing: 0
+    StatusIcon {
+        popout: "network"
 
-        StatusIcon {
-            popout: "network"
+        MaterialIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.netIcon
+            color: Appearance.colors.text
+        }
+    }
+
+    StatusIcon {
+        visible: BluetoothService.available
+        popout: "bluetooth"
+
+        MaterialIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            text: BluetoothService.enabled ? (BluetoothService.devices.length > 0 ? "bluetooth_connected" : "bluetooth") : "bluetooth_disabled"
+            color: Appearance.colors.text
+        }
+    }
+
+    StatusIcon {
+        popout: "audio"
+
+        MaterialIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.volIcon
+            color: Appearance.colors.text
+        }
+
+        Value {
+            text: Audio.muted ? "--" : Math.round(Audio.volume * 100)
+        }
+    }
+
+    StatusIcon {
+        visible: Battery.available
+        popout: "battery"
+
+        // Baterai sebagai 5 segmen dalam bingkai tipis
+        Item {
+            anchors.verticalCenter: parent.verticalCenter
+            implicitWidth: 24
+            implicitHeight: 12
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 3
+                color: "transparent"
+                border.width: 1
+                border.color: !Battery.charging && Battery.percentage < 0.15 ? Appearance.colors.error : Appearance.colors.outline
+            }
+
+            SegmentBar {
+                anchors.fill: parent
+                anchors.margins: 3
+                segments: 5
+                thickness: 2.5
+                value: Battery.percentage
+                onColor: !Battery.charging && Battery.percentage < 0.15 ? Appearance.colors.error : Appearance.colors.text
+            }
 
             MaterialIcon {
-                text: root.netIcon
+                anchors.centerIn: parent
+                visible: Battery.charging
+                text: "bolt"
                 fill: 1
-                color: Appearance.colors.text
+                font.pixelSize: 12
+                color: Appearance.colors.primary
             }
         }
 
-        StatusIcon {
-            visible: BluetoothService.available
-            popout: "bluetooth"
-
-            MaterialIcon {
-                text: BluetoothService.enabled ? (BluetoothService.devices.length > 0 ? "bluetooth_connected" : "bluetooth") : "bluetooth_disabled"
-                color: Appearance.colors.text
-            }
-        }
-
-        StatusIcon {
-            popout: "audio"
-
-            MaterialIcon {
-                text: root.volIcon
-                fill: 1
-                color: Appearance.colors.text
-            }
-        }
-
-        StatusIcon {
-            visible: Battery.available
-            popout: "battery"
-
-            MaterialIcon {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.batIcon
-                rotation: 90
-                color: !Battery.charging && Battery.percentage < 0.15 ? Appearance.colors.error : Appearance.colors.text
-            }
-
-            StyledText {
-                anchors.verticalCenter: parent.verticalCenter
-                text: `${Math.round(Battery.percentage * 100)}%`
-                font.family: Appearance.font.family.mono
-                font.pixelSize: Appearance.font.size.smaller
-            }
+        Value {
+            text: Math.round(Battery.percentage * 100)
         }
     }
 }

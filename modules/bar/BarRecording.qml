@@ -3,14 +3,13 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Indikator rekam layar: titik merah berdenyut + durasi. Klik untuk berhenti.
+// Indikator rekam layar ala Nothing: titik merah berdenyut + "REC" + durasi, tanpa kotak. Klik untuk berhenti.
 StyledRect {
     id: root
 
     implicitWidth: row.implicitWidth + Appearance.padding.normal * 2
     implicitHeight: Config.barHeight - 10
-    radius: Appearance.radius.small
-    color: Appearance.colors.errorContainer
+    radius: height / 2
 
     Row {
         id: row
@@ -20,9 +19,9 @@ StyledRect {
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            width: 10
-            height: 10
-            radius: 5
+            width: 8
+            height: 8
+            radius: 4
             color: Appearance.colors.error
 
             SequentialAnimation on opacity {
@@ -40,24 +39,22 @@ StyledRect {
             }
         }
 
+        Caption {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "REC"
+            color: Appearance.colors.error
+        }
+
         StyledText {
             anchors.verticalCenter: parent.verticalCenter
             text: Recorder.elapsedText
-            color: Appearance.colors.errorContainerText
             font.family: Appearance.font.family.mono
-            font.bold: true
-        }
-
-        MaterialIcon {
-            anchors.verticalCenter: parent.verticalCenter
-            text: "stop"
-            fill: 1
-            color: Appearance.colors.errorContainerText
+            font.pixelSize: Appearance.font.size.smaller
         }
     }
 
     StateLayer {
-        color: Appearance.colors.errorContainerText
+        color: Appearance.colors.error
         onClicked: Recorder.stop()
     }
 }
