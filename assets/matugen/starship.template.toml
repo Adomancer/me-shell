@@ -1,0 +1,205 @@
+# Prompt starship bergaya me-shell (Nothing / TE, simbol geometris ala Caelestia).
+# Dibuat matugen lewat scripts/gen-colors.sh, ditimpa setiap ganti wallpaper. Dipakai kitty lewat
+# STARSHIP_CONFIG (assets/kitty/me-shell.conf). Kiri: durasi, host (ssh), user (kalau bukan default),
+# titik prompt. Kanan: folder, git, versi bahasa, jam.
+
+add_newline = false
+palette = "meshell"
+continuation_prompt = "[▸ ](faint)"
+
+format = """($nix_shell$container$fill$git_metrics\n)$cmd_duration\
+$hostname\
+$localip\
+$shlvl\
+$jobs\
+$sudo\
+$username\
+$character"""
+
+right_format = """
+$directory\
+$git_branch\
+$git_commit\
+$git_state\
+$git_status\
+$docker_context\
+$package\
+$c\
+$golang\
+$java\
+$lua\
+$nodejs\
+$python\
+$rust\
+$zig\
+$status\
+$battery\
+$time"""
+
+[palettes.meshell]
+accent = "{{colors.primary.default.hex}}"
+text = "{{colors.on_surface.default.hex | set_saturation: 4.0}}"
+soft = "{{colors.on_surface_variant.default.hex | set_saturation: 4.0}}"
+faint = "{{colors.outline.default.hex | set_saturation: 4.0}}"
+err = "{{colors.error.default.hex}}"
+good = "{{colors.green.default.hex}}"
+bad = "{{colors.red.default.hex}}"
+
+[fill]
+symbol = " "
+
+[character]
+format = "$symbol "
+success_symbol = "[●](bold accent)"
+error_symbol = "[○](bold err)"
+vimcmd_symbol = "[■](faint)"
+vimcmd_replace_one_symbol = "[◌](faint)"
+vimcmd_replace_symbol = "[□](faint)"
+vimcmd_visual_symbol = "[▼](faint)"
+
+[sudo]
+format = "[$symbol]($style)"
+style = "bold accent"
+symbol = "⋈┈"
+disabled = false
+
+[username]
+style_user = "bold soft"
+style_root = "bold err"
+format = "[◯ $user]($style) "
+show_always = false
+
+[hostname]
+ssh_only = true
+format = "[@$hostname](faint) "
+
+[localip]
+ssh_only = true
+format = "[◯ $localipv4](faint) "
+disabled = false
+
+[shlvl]
+format = "[$symbol$shlvl](faint) "
+symbol = "↕"
+
+[jobs]
+format = "[$symbol$number](soft) "
+symbol = "▶"
+
+[cmd_duration]
+min_time = 500
+format = "[◄ $duration](italic faint) "
+
+[directory]
+home_symbol = "⌂"
+truncation_length = 2
+truncation_symbol = "□ "
+read_only = " ◈"
+use_os_path_sep = true
+style = "italic soft"
+read_only_style = "err"
+format = "[$path]($style)[$read_only]($read_only_style)"
+repo_root_style = "bold text"
+repo_root_format = "[$before_root_path]($before_repo_root_style)[$repo_root]($repo_root_style)[$path]($style)[$read_only]($read_only_style) [△](bold accent)"
+
+[git_branch]
+format = " [$branch(:$remote_branch)]($style)"
+style = "italic accent"
+truncation_symbol = "⋯"
+truncation_length = 14
+only_attached = true
+
+[git_commit]
+format = " [◇ $hash$tag]($style)"
+style = "italic faint"
+
+[git_state]
+format = " [$state( $progress_current/$progress_total)]($style)"
+style = "bold err"
+
+[git_metrics]
+format = "([▴$added]($added_style))([▿$deleted]($deleted_style))"
+added_style = "italic good"
+deleted_style = "italic bad"
+ignore_submodules = true
+disabled = false
+
+[git_status]
+style = "soft"
+format = "([ ⎪$ahead_behind$staged$modified$untracked$renamed$deleted$conflicted$stashed⎥]($style))"
+conflicted = "[◪](err)"
+ahead = "[▴$count](good)"
+behind = "[▿$count](bad)"
+diverged = "[◇ ▴$ahead_count ▿$behind_count](accent)"
+untracked = "[◌](soft)"
+stashed = "[◈](faint)"
+modified = "[●](accent)"
+staged = "[▪$count](good)"
+renamed = "[◎](soft)"
+deleted = "[✕](bad)"
+
+[docker_context]
+format = " [docker](italic faint) [◧ $context](soft)"
+
+[package]
+format = " [pkg](italic faint) [◨ $version](soft)"
+version_format = "${raw}"
+
+[c]
+format = " [c](italic faint) [ℂ $version](soft)"
+version_format = "${raw}"
+
+[golang]
+format = " [go](italic faint) [∩ $version](soft)"
+version_format = "${raw}"
+
+[java]
+format = " [java](italic faint) [∪ $version](soft)"
+version_format = "${raw}"
+
+[lua]
+format = " [lua](italic faint) [⨀ $version](soft)"
+version_format = "${raw}"
+
+[nodejs]
+format = " [node](italic faint) [◫ $version](soft)"
+version_format = "${raw}"
+detect_files = ["package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb"]
+detect_folders = ["node_modules"]
+detect_extensions = []
+
+[python]
+format = " [py](italic faint) [⌉⌊ $version( $virtualenv)](soft)"
+version_format = "${raw}"
+
+[rust]
+format = " [rs](italic faint) [⊃ $version](soft)"
+version_format = "${raw}"
+
+[zig]
+format = " [zig](italic faint) [◇ $version](soft)"
+version_format = "${raw}"
+
+[nix_shell]
+format = "[✶ nix⎪$state⎪](bold faint) [$name](italic faint)"
+
+[status]
+disabled = false
+format = " [✕ $status](err)"
+
+[battery]
+format = " [$percentage $symbol]($style)"
+full_symbol = "█"
+charging_symbol = "↑"
+discharging_symbol = "↓"
+unknown_symbol = "░"
+empty_symbol = "▃"
+
+[[battery.display]]
+threshold = 20
+style = "bold err"
+
+[time]
+disabled = false
+format = " [$time](faint)"
+time_format = "%H:%M"

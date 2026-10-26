@@ -12,13 +12,32 @@ Singleton {
     id: root
 
     readonly property string current: adapter.path
+    // Warna terminal (kitty, starship) belum pernah dibuat, misalnya setelah update dari versi lama
+    property bool termColorsMissing: false
+    readonly property bool regenTerm: termColorsMissing && current !== ""
+
+    function generate(p: string): void {
+        Quickshell.execDetached(["sh", `${Paths.shell}/scripts/gen-colors.sh`, p, Config.colorMode]);
+    }
 
     function set(path: string): void {
         const p = Paths.expand(path);
         adapter.path = p;
         file.writeAdapter();
-        Quickshell.execDetached(["sh", `${Paths.shell}/scripts/gen-colors.sh`, p, Config.colorMode]);
+        generate(p);
         Toaster.show("wallpaper", "Wallpaper diganti", p.split("/").pop(), p);
+    }
+
+    onRegenTermChanged: {
+        if (regenTerm) {
+            termColorsMissing = false;
+            generate(current);
+        }
+    }
+
+    FileView {
+        path: `${Paths.state}/kitty-colors.conf`
+        onLoadFailed: root.termColorsMissing = true
     }
 
     FileView {
