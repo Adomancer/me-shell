@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import QtQuick
 import qs.components
@@ -18,7 +19,9 @@ Variants {
         readonly property int margin: Appearance.frame.thickness + 56
         readonly property int vizHeight: Math.round(height * 0.18)
         readonly property string pos: Config.desktopClockPosition
-        property bool usingCava: Config.desktopVisualizer
+        // Window fullscreen menutupi visualizer; cava tidak perlu jalan untuknya
+        readonly property bool covered: Hyprland.monitorFor(modelData)?.activeWorkspace?.hasFullscreen ?? false
+        property bool usingCava: Config.desktopVisualizer && !covered
 
         screen: modelData
         color: "transparent"
