@@ -27,6 +27,7 @@ Singleton {
     readonly property bool crtShader: adapter.crtShader
     readonly property string animSpeed: adapter.animSpeed
     readonly property int launcherMaxResults: adapter.launcherMaxResults
+    readonly property bool launcherMonoIcons: adapter.launcherMonoIcons
     readonly property string weatherLocation: adapter.weatherLocation
     readonly property int notifTimeout: adapter.notifTimeout
     readonly property bool cavaEnabled: adapter.cavaEnabled
@@ -87,6 +88,8 @@ Singleton {
             // "cepat", "normal", "lambat"
             property string animSpeed: "normal"
             property int launcherMaxResults: 8
+            // Ikon aplikasi abu-abu, berwarna saat dipilih
+            property bool launcherMonoIcons: true
             // Kosong = otomatis dari IP. Contoh: "Jakarta"
             property string weatherLocation: ""
             // Detik sebelum popup notifikasi hilang

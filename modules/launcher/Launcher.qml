@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
 import QtQuick
+import QtQuick.Effects
 import Qt.labs.folderlistmodel
 import qs.components
 import qs.services
@@ -9,30 +10,85 @@ import qs.utils
 import "../../utils/Calc.js" as Calc
 import "../../utils/Fuzzy.js" as Fuzzy
 
-// Launcher yang muncul dari tepi bawah, dengan mode prefix:
+// Launcher dari tepi bawah. Atas ke bawah: tab mode + penghitung, kolom cari, isi, petunjuk tombol.
+// Mode lewat prefix (atau Tab / klik tab):
 //   (kosong) aplikasi   / aksi shell   ; clipboard   . emoji   : wallpaper   = kalkulator   > perintah shell
-// Mode wallpaper memakai carousel mendatar; launcher melebar mengikutinya.
+// Isi tampil sebagai daftar bernomor, grid (aplikasi favorit, emoji, wallpaper), atau angka besar (kalkulator).
 Item {
     id: root
 
     property bool shown: false
 
+    readonly property var modes: [
+        {
+            key: "apps",
+            prefix: "",
+            label: "Apps",
+            icon: "search",
+            hint: "Cari aplikasi"
+        },
+        {
+            key: "action",
+            prefix: "/",
+            label: "Aksi",
+            icon: "bolt",
+            hint: "Cari aksi shell"
+        },
+        {
+            key: "clip",
+            prefix: ";",
+            label: "Clip",
+            icon: "content_paste",
+            hint: "Cari di clipboard"
+        },
+        {
+            key: "emoji",
+            prefix: ".",
+            label: "Emoji",
+            icon: "mood",
+            hint: "Cari emoji (inggris)"
+        },
+        {
+            key: "wall",
+            prefix: ":",
+            label: "Wall",
+            icon: "wallpaper",
+            hint: "Cari wallpaper"
+        },
+        {
+            key: "calc",
+            prefix: "=",
+            label: "Hitung",
+            icon: "calculate",
+            hint: "Tulis hitungan, misalnya 12*(3+4)"
+        },
+        {
+            key: "run",
+            prefix: ">",
+            label: "Run",
+            icon: "terminal",
+            hint: "Perintah shell"
+        }
+    ]
+
     readonly property string query: input.text
-    readonly property string mode: ({
-            "=": "calc",
-            ">": "run",
-            ":": "wall",
-            "/": "action",
-            ";": "clip",
-            ".": "emoji"
-        })[query.charAt(0)] ?? "apps"
+    readonly property var modeInfo: modes.find(m => m.prefix !== "" && query.charAt(0) === m.prefix) ?? modes[0]
+    readonly property string mode: modeInfo.key
     readonly property string term: mode === "apps" ? query.trim() : query.slice(1).trim()
-    readonly property bool carousel: mode === "wall"
-    readonly property bool showEmpty: results.length === 0 && query !== ""
+    // "list", "grid", atau "calc"
+    readonly property string view: mode === "calc" ? "calc" : mode === "wall" || mode === "emoji" || (mode === "apps" && term === "") ? "grid" : "list"
+    readonly property bool showEmpty: results.length === 0 && view !== "calc" && (query !== "" || mode === "clip")
+
+    readonly property int pad: Appearance.padding.large
+    readonly property int rowHeight: 52
+    readonly property int maxRows: Config.launcherMaxResults
+    readonly property int gridCols: mode === "wall" ? 4 : mode === "emoji" ? 10 : 6
+    readonly property int gridRows: mode === "emoji" ? 4 : 2
+    readonly property real cellW: Math.floor((width - pad * 2) / gridCols)
+    readonly property real cellH: mode === "wall" ? Math.round(cellW * 0.7) : mode === "emoji" ? cellW : 96
+
     // [[emoji, nama]] dari assets/emoji.txt, dimuat sekali
     property var emojis: []
-    readonly property int rowHeight: 56
-    readonly property int maxRows: Config.launcherMaxResults
 
     // Aksi untuk mode "/". run dipanggil setelah launcher tertutup; keep = launcher tetap terbuka.
     readonly property var actions: [
@@ -178,9 +234,9 @@ Item {
                             a,
                             s: Fuzzy.score(term, a.title)
                         })).filter(r => r.s > 0);
-                return (term ? scored.sort((x, y) => y.s - x.s) : scored).slice(0, maxRows).map(r => Object.assign({
+                return (term ? scored.sort((x, y) => y.s - x.s) : scored).slice(0, 40).map(r => Object.assign({
                         kind: "action",
-                        subtitle: ""
+                        subtitle: r.a.subtitle ?? ""
                     }, r.a));
             }
         case "clip":
@@ -190,7 +246,7 @@ Item {
                     const img = e.text.match(/binary data .*? (\w+) (\d+x\d+)/);
                     return {
                         kind: "clip",
-                        icon: e.image ? "image" : "content_paste",
+                        icon: e.image ? "image" : "notes",
                         title: img ? `Gambar ${img[1].toUpperCase()} ${img[2].replace("x", " × ")}` : e.text.replace(/\s+/g, " ").trim(),
                         subtitle: e.image ? "Enter untuk menyalin lagi" : "",
                         line: e.line
@@ -200,11 +256,10 @@ Item {
         case "emoji":
             {
                 const words = term.toLowerCase().split(/\s+/).filter(w => w);
-                return emojis.filter(e => words.every(w => e[1].includes(w))).slice(0, maxRows).map(e => ({
+                return emojis.filter(e => words.every(w => e[1].includes(w))).slice(0, 200).map(e => ({
                             kind: "emoji",
                             glyph: e[0],
-                            title: e[1],
-                            subtitle: ""
+                            title: e[1]
                         }));
             }
         case "wall":
@@ -220,26 +275,61 @@ Item {
                             path: walls.get(i, "filePath")
                         });
                 }
-                return out.slice(0, 100);
+                return out;
             }
         default:
-            return Apps.search(term, maxRows).map(a => ({
-                        kind: "app",
-                        title: a.name,
-                        subtitle: a.comment || a.genericName || "",
-                        icon: a.icon,
-                        entry: a
-                    }));
+            {
+                const apps = Apps.search(term, term ? maxRows : gridCols * gridRows).map(a => ({
+                            kind: "app",
+                            title: a.name,
+                            subtitle: a.comment || a.genericName || "",
+                            icon: a.icon,
+                            entry: a
+                        }));
+                // Hitungan langsung di mode aplikasi kalau yang diketik jelas rumus ("12*4", bukan "12")
+                const r = /[-+*/%^]/.test(term) ? Calc.evaluate(term) : null;
+                return r === null ? apps : [
+                    {
+                        kind: "calc",
+                        icon: "calculate",
+                        title: String(r),
+                        subtitle: `${term} =`
+                    },
+                    ...apps
+                ];
+            }
         }
     }
 
+    readonly property var current: results[currentIndex()] ?? null
+    readonly property string sectionTitle: ({
+            apps: term ? "Hasil" : "Sering dipakai",
+            action: "Aksi shell",
+            clip: "Riwayat clipboard",
+            emoji: "Emoji",
+            wall: "Wallpaper",
+            calc: "Kalkulator",
+            run: "Perintah"
+        })[mode]
+
     function currentIndex(): int {
-        return carousel ? wallView.currentIndex : list.currentIndex;
+        return view === "grid" ? grid.currentIndex : view === "list" ? list.currentIndex : 0;
     }
 
     function setQuery(q: string): void {
         input.text = q;
         input.cursorPosition = q.length;
+    }
+
+    // Pindah mode dengan Tab / klik tab; kata kunci yang sudah diketik dibawa
+    function setMode(i: int): void {
+        const m = modes[(i + modes.length) % modes.length];
+        setQuery(m.prefix + term);
+        input.forceActiveFocus();
+    }
+
+    function cycleMode(d: int): void {
+        setMode(modes.indexOf(modeInfo) + d);
     }
 
     function activate(i: int): void {
@@ -261,6 +351,7 @@ Item {
             break;
         case "calc":
             Quickshell.execDetached(["wl-copy", r.title]);
+            Toaster.show("calculate", "Hasil disalin", r.title, "");
             break;
         case "run":
             Quickshell.execDetached(["sh", "-c", r.title]);
@@ -279,14 +370,15 @@ Item {
         DrawerState.close();
     }
 
-    implicitWidth: carousel ? 940 : 620
-    implicitHeight: col.implicitHeight + Appearance.padding.large * 2
+    implicitWidth: mode === "wall" ? 920 : 700
+    implicitHeight: col.implicitHeight + pad * 2
 
     onResultsChanged: {
         list.currentIndex = 0;
-        // Wallpaper aktif jadi pilihan awal carousel (setelah model carousel ikut berganti)
-        if (carousel)
-            Qt.callLater(() => wallView.currentIndex = Math.max(0, results.findIndex(r => r.path === Wallpaper.current)));
+        grid.currentIndex = 0;
+        // Wallpaper aktif jadi pilihan awal (setelah model grid ikut berganti)
+        if (mode === "wall")
+            Qt.callLater(() => grid.currentIndex = Math.max(0, results.findIndex(r => r.path === Wallpaper.current)));
     }
     onModeChanged: {
         if (mode === "clip")
@@ -296,8 +388,94 @@ Item {
         if (shown) {
             setQuery(DrawerState.launcherQuery);
             DrawerState.launcherQuery = "";
-            list.lastMouse = Qt.point(-1, -1);
+            hoverGuard.last = Qt.point(-1, -1);
             input.forceActiveFocus();
+        }
+    }
+
+    // Ikon aplikasi; monokrom (sesuai setting) dan berwarna saat dipilih
+    component AppIcon: Item {
+        id: appIcon
+
+        property string icon
+        property bool lit: false
+        property int size: 32
+
+        implicitWidth: size
+        implicitHeight: size
+
+        IconImage {
+            id: img
+
+            anchors.fill: parent
+            visible: false
+            implicitSize: appIcon.size
+            // iconPath(nama, fallback) dengan nama kosong menghasilkan path rusak
+            source: Quickshell.iconPath(appIcon.icon || "application-x-executable", "application-x-executable")
+            asynchronous: true
+        }
+
+        MultiEffect {
+            anchors.fill: img
+            source: img
+            saturation: !Config.launcherMonoIcons || appIcon.lit ? 0 : -1
+            brightness: !Config.launcherMonoIcons || appIcon.lit ? 0 : -0.08
+
+            Behavior on saturation {
+                Anim {}
+            }
+            Behavior on brightness {
+                Anim {}
+            }
+        }
+    }
+
+    // Petunjuk tombol di kaki: tuts kecil + label
+    component Hint: Row {
+        id: hint
+
+        property string key
+        property string label
+
+        spacing: Appearance.spacing.small
+
+        StyledRect {
+            anchors.verticalCenter: parent.verticalCenter
+            implicitWidth: Math.max(20, keyText.implicitWidth + 10)
+            implicitHeight: 20
+            radius: Appearance.radius.small
+            color: Appearance.colors.surfaceContainerHigh
+
+            StyledText {
+                id: keyText
+
+                anchors.centerIn: parent
+                text: hint.key
+                color: Appearance.colors.text
+                font.family: Appearance.font.family.mono
+                font.pixelSize: Appearance.font.size.small - 1
+            }
+        }
+
+        Caption {
+            anchors.verticalCenter: parent.verticalCenter
+            text: hint.label
+            font.letterSpacing: 1
+        }
+    }
+
+    // Pilih item di bawah kursor hanya kalau mouse benar-benar bergerak, bukan saat isi bergeser
+    QtObject {
+        id: hoverGuard
+
+        // Koordinat window; x < 0 = belum tercatat sejak dibuka
+        property point last: Qt.point(-1, -1)
+
+        function moved(item: Item, x: real, y: real): bool {
+            const p = item.mapToItem(null, x, y);
+            const m = last.x >= 0 && (p.x !== last.x || p.y !== last.y);
+            last = p;
+            return m;
         }
     }
 
@@ -317,296 +495,103 @@ Item {
     Column {
         id: col
 
-        x: Appearance.padding.large
-        y: Appearance.padding.large
-        width: root.width - Appearance.padding.large * 2
+        x: root.pad
+        y: root.pad
+        width: root.width - root.pad * 2
         spacing: Appearance.spacing.normal
 
-        // Carousel wallpaper: yang di tengah membesar, sisanya mengecil dan meredup
-        ListView {
-            id: wallView
-
-            readonly property int itemWidth: 300
-
-            width: parent.width
-            height: root.carousel && count > 0 ? 230 : 0
-            visible: height > 0
-            orientation: ListView.Horizontal
-            clip: true
-            spacing: Appearance.spacing.normal
-            model: root.carousel ? root.results : []
-            highlightRangeMode: ListView.StrictlyEnforceRange
-            preferredHighlightBegin: (width - itemWidth) / 2
-            preferredHighlightEnd: (width + itemWidth) / 2
-            highlightMoveDuration: Appearance.anim.durations.normal
-            boundsBehavior: Flickable.StopAtBounds
-
-            delegate: Item {
-                id: wall
-
-                required property var modelData
-                required property int index
-                readonly property bool current: ListView.isCurrentItem
-                readonly property bool active: modelData.path === Wallpaper.current
-
-                width: wallView.itemWidth
-                height: wallView.height
-
-                StyledClippingRect {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: (parent.height - 30 - height) / 2
-                    width: parent.width * (wall.current ? 1 : 0.84)
-                    height: (parent.height - 30) * (wall.current ? 1 : 0.84)
-                    radius: wall.current ? Appearance.radius.large : Appearance.radius.normal
-                    color: Appearance.colors.surfaceContainerHigh
-                    opacity: wall.current ? 1 : 0.6
-
-                    Behavior on width {
-                        Anim {
-                            duration: Appearance.anim.durations.expressiveFast
-                            easing.bezierCurve: Appearance.anim.curves.expressiveDefault
-                        }
-                    }
-                    Behavior on height {
-                        Anim {
-                            duration: Appearance.anim.durations.expressiveFast
-                            easing.bezierCurve: Appearance.anim.curves.expressiveDefault
-                        }
-                    }
-                    Behavior on opacity {
-                        Anim {}
-                    }
-
-                    Image {
-                        anchors.fill: parent
-                        source: wall.modelData.path ? `file://${wall.modelData.path}` : ""
-                        sourceSize: Qt.size(600, 400)
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                    }
-
-                    // Penanda wallpaper yang sedang dipakai
-                    StyledRect {
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: Appearance.padding.small
-                        visible: wall.active
-                        implicitWidth: 28
-                        implicitHeight: 28
-                        radius: Appearance.radius.small
-                        color: Appearance.colors.primary
-
-                        MaterialIcon {
-                            anchors.centerIn: parent
-                            text: "check"
-                            font.pixelSize: Appearance.font.size.larger
-                            color: Appearance.colors.primaryText
-                        }
-                    }
-                }
-
-                StyledText {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: parent.bottom
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: wall.modelData.title
-                    color: wall.current ? Appearance.colors.text : Appearance.colors.textDim
-                    font.pixelSize: Appearance.font.size.small
-                    elide: Text.ElideMiddle
-                    opacity: wall.current ? 1 : 0
-
-                    Behavior on opacity {
-                        Anim {}
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: wall.current ? root.activate(wall.index) : wallView.currentIndex = wall.index
-                }
-            }
-        }
-
+        // Tab mode + penghitung hasil dot-matrix
         Item {
             width: parent.width
-            height: root.showEmpty ? empty.implicitHeight : root.carousel ? 0 : list.height
-            visible: height > 0
+            height: 34
 
-            ListView {
-                id: list
+            Row {
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Appearance.spacing.huge
 
-                // Posisi mouse terakhir (koordinat window); x < 0 = belum tercatat sejak dibuka
-                property point lastMouse: Qt.point(-1, -1)
+                Repeater {
+                    model: root.modes
 
-                width: parent.width
-                height: Math.min(count, root.maxRows) * root.rowHeight
-                visible: count > 0
-                clip: true
-                model: root.carousel ? [] : root.results
-                verticalLayoutDirection: ListView.BottomToTop
-                highlightFollowsCurrentItem: false
-                boundsBehavior: Flickable.StopAtBounds
+                    Item {
+                        id: tab
 
-                // Sorotan: fill tipis + batang aksen di kiri, meluncur dengan pegas
-                highlight: StyledRect {
-                    width: list.width
-                    height: root.rowHeight
-                    y: list.currentItem?.y ?? 0
-                    radius: Appearance.radius.normal
-                    color: Appearance.colors.surfaceContainerHigh
+                        required property var modelData
+                        required property int index
+                        readonly property bool active: root.mode === modelData.key
 
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 3
-                        height: parent.height * 0.5
-                        radius: 1.5
-                        color: Appearance.colors.primary
-                    }
+                        implicitWidth: tabLabel.implicitWidth
+                        implicitHeight: 34
 
-                    Behavior on y {
-                        Anim {
-                            duration: Appearance.anim.durations.expressiveFast
-                            easing.bezierCurve: Appearance.anim.curves.expressiveFast
-                        }
-                    }
-                }
+                        Caption {
+                            id: tabLabel
 
-                populate: Transition {
-                    Anim {
-                        property: "opacity"
-                        from: 0
-                        to: 1
-                        duration: Appearance.anim.durations.small
-                    }
-                }
-
-                delegate: Item {
-                    id: row
-
-                    required property var modelData
-                    required property int index
-                    readonly property bool current: ListView.isCurrentItem
-                    readonly property color ink: current ? Appearance.colors.primary : Appearance.colors.text
-                    readonly property bool mono: modelData.kind === "calc" || modelData.kind === "run"
-
-                    width: ListView.view.width
-                    height: root.rowHeight
-
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: Appearance.padding.normal
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: Appearance.spacing.large
-
-                        Item {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 36
-                            height: 36
+                            text: tab.modelData.label
+                            color: tab.active ? Appearance.colors.primary : tabMouse.containsMouse ? Appearance.colors.text : Appearance.colors.textDim
+                        }
 
-                            IconImage {
-                                anchors.centerIn: parent
-                                visible: row.modelData.kind === "app"
-                                implicitSize: 32
-                                // iconPath(nama, fallback) dengan nama kosong menghasilkan path rusak
-                                source: visible ? Quickshell.iconPath(row.modelData.icon || "application-x-executable", "application-x-executable") : ""
-                                asynchronous: true
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.top: tabLabel.bottom
+                            anchors.topMargin: 4
+                            width: tab.active ? 14 : 4
+                            height: 3
+                            radius: 1.5
+                            color: Appearance.colors.primary
+                            opacity: tab.active ? 1 : 0
+
+                            Behavior on width {
+                                Anim {
+                                    duration: Appearance.anim.durations.expressiveFast
+                                    easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                                }
                             }
-
-                            StyledText {
-                                anchors.centerIn: parent
-                                visible: row.modelData.kind === "emoji"
-                                text: row.modelData.glyph ?? ""
-                                font.pixelSize: 26
-                            }
-
-                            StyledRect {
-                                anchors.fill: parent
-                                visible: row.modelData.kind !== "app" && row.modelData.kind !== "emoji"
-                                radius: Appearance.radius.small
-                                color: row.modelData.kind === "action" ? Appearance.colors.primaryContainer : Appearance.colors.tertiaryContainer
-
-                                MaterialIcon {
-                                    anchors.centerIn: parent
-                                    text: row.modelData.icon ?? ""
-                                    color: row.modelData.kind === "action" ? Appearance.colors.primaryContainerText : Appearance.colors.tertiaryContainerText
+                            Behavior on opacity {
+                                Anim {
+                                    duration: Appearance.anim.durations.small
                                 }
                             }
                         }
 
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: row.width - 36 - Appearance.spacing.large - Appearance.padding.normal * 2
+                        MouseArea {
+                            id: tabMouse
 
-                            StyledText {
-                                width: parent.width
-                                text: row.modelData.title
-                                color: row.ink
-                                font.pixelSize: row.modelData.kind === "calc" ? Appearance.font.size.large : Appearance.font.size.normal
-                                font.family: row.mono ? Appearance.font.family.mono : Appearance.font.family.sans
-                                font.weight: Font.Medium
-                                elide: Text.ElideRight
-                                maximumLineCount: 1
-                            }
-
-                            StyledText {
-                                width: parent.width
-                                visible: text !== ""
-                                text: row.modelData.subtitle ?? ""
-                                color: Appearance.colors.textDim
-                                font.pixelSize: Appearance.font.size.small
-                                elide: Text.ElideRight
-                            }
+                            anchors.fill: parent
+                            anchors.margins: -6
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.setMode(tab.index)
                         }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        // Pilih hanya kalau mouse benar-benar bergerak, bukan saat daftar bergeser di bawah kursor
-                        onPositionChanged: mouse => {
-                            const p = mapToItem(null, mouse.x, mouse.y);
-                            const moved = list.lastMouse.x >= 0 && (p.x !== list.lastMouse.x || p.y !== list.lastMouse.y);
-                            list.lastMouse = p;
-                            if (moved)
-                                list.currentIndex = row.index;
-                        }
-                        onClicked: root.activate(row.index)
                     }
                 }
             }
 
-            Column {
-                id: empty
-
-                anchors.horizontalCenter: parent.horizontalCenter
-                visible: root.showEmpty
+            Row {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: Appearance.spacing.small
-                topPadding: Appearance.spacing.large
-                bottomPadding: Appearance.spacing.large
 
-                MaterialIcon {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: root.mode === "clip" ? "content_paste_off" : "search_off"
-                    font.pixelSize: Appearance.font.size.extraLarge
-                    color: Appearance.colors.textDim
+                Caption {
+                    anchors.baseline: counter.baseline
+                    text: root.view === "calc" ? "Hasil" : "Item"
                 }
 
-                StyledText {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: root.mode === "clip" && !Clipboard.available ? "Install cliphist untuk riwayat clipboard" : root.mode === "clip" ? "Clipboard masih kosong" : "Tidak ada hasil"
-                    color: Appearance.colors.textDim
+                DisplayText {
+                    id: counter
+
+                    text: root.view === "calc" ? (root.results.length > 0 ? "01" : "00") : String(Math.min(root.results.length, 99)).padStart(2, "0")
+                    weight: 800
+                    font.pixelSize: 26
+                    color: root.results.length > 0 ? Appearance.colors.text : Appearance.colors.outline
                 }
             }
         }
 
-        // Kolom cari tanpa kotak: hanya garis bawah
+        // Kolom cari tanpa kotak: ikon mode, teks besar, garis bawah
         Item {
             width: parent.width
-            height: 48
+            height: 54
 
             Divider {
                 anchors.left: parent.left
@@ -618,17 +603,9 @@ Item {
                 id: modeIcon
 
                 anchors.left: parent.left
-                anchors.leftMargin: Appearance.padding.normal + 2
                 anchors.verticalCenter: parent.verticalCenter
-                text: ({
-                        apps: "search",
-                        calc: "calculate",
-                        run: "terminal",
-                        wall: "wallpaper",
-                        action: "bolt",
-                        clip: "content_paste",
-                        emoji: "mood"
-                    })[root.mode]
+                text: root.modeInfo.icon
+                font.pixelSize: 24
                 color: Appearance.colors.primary
             }
 
@@ -636,19 +613,18 @@ Item {
                 id: input
 
                 anchors.left: modeIcon.right
-                anchors.leftMargin: Appearance.spacing.normal
+                anchors.leftMargin: Appearance.spacing.large
                 anchors.right: parent.right
-                anchors.rightMargin: Appearance.padding.large
                 anchors.verticalCenter: parent.verticalCenter
                 color: Appearance.colors.text
                 font.family: Appearance.font.family.sans
-                font.pixelSize: Appearance.font.size.larger
+                font.pixelSize: 21
                 selectByMouse: true
                 selectionColor: Appearance.colors.primary
                 selectedTextColor: Appearance.colors.primaryText
-                // Kursor blok berkedip ala terminal lama
+                clip: true
                 cursorDelegate: Rectangle {
-                    width: 9
+                    width: 2
                     color: Appearance.colors.primary
 
                     SequentialAnimation on opacity {
@@ -671,15 +647,16 @@ Item {
                 }
 
                 Keys.onEscapePressed: DrawerState.close()
-                Keys.onUpPressed: list.incrementCurrentIndex()
-                Keys.onDownPressed: list.decrementCurrentIndex()
-                Keys.onTabPressed: root.carousel ? wallView.incrementCurrentIndex() : list.incrementCurrentIndex()
+                Keys.onTabPressed: root.cycleMode(1)
+                Keys.onBacktabPressed: root.cycleMode(-1)
                 Keys.onReturnPressed: root.activate(root.currentIndex())
                 Keys.onEnterPressed: root.activate(root.currentIndex())
+                Keys.onUpPressed: root.view === "grid" ? grid.moveCurrentIndexUp() : list.decrementCurrentIndex()
+                Keys.onDownPressed: root.view === "grid" ? grid.moveCurrentIndexDown() : list.incrementCurrentIndex()
                 Keys.onPressed: event => {
-                    // Panah kiri/kanan menggeser carousel, bukan kursor teks
-                    if (root.carousel && (event.key === Qt.Key_Left || event.key === Qt.Key_Right)) {
-                        event.key === Qt.Key_Left ? wallView.decrementCurrentIndex() : wallView.incrementCurrentIndex();
+                    // Di grid, panah kiri/kanan menggeser pilihan, bukan kursor teks
+                    if (root.view === "grid" && (event.key === Qt.Key_Left || event.key === Qt.Key_Right)) {
+                        event.key === Qt.Key_Left ? grid.moveCurrentIndexLeft() : grid.moveCurrentIndexRight();
                         event.accepted = true;
                     } else if (root.mode === "clip" && event.key === Qt.Key_Delete) {
                         const r = root.results[list.currentIndex];
@@ -691,10 +668,506 @@ Item {
 
                 StyledText {
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: input.text === ""
-                    text: "Cari aplikasi   / aksi   ; clipboard   . emoji   : wallpaper   = hitung   > perintah"
-                    color: Appearance.colors.textDim
+                    // Teks setelah prefix kosong: tampilkan petunjuk mode
+                    visible: root.term === "" && (input.text === "" || input.text === root.modeInfo.prefix)
+                    x: input.text === "" ? 0 : input.positionToRectangle(1).x + 6
+                    text: root.modeInfo.hint
+                    color: Appearance.colors.outline
+                    font: input.font
                 }
+            }
+        }
+
+        // Judul bagian + detail item terpilih (untuk grid yang tanpa teks)
+        Item {
+            width: parent.width
+            height: 16
+            visible: !root.showEmpty
+
+            Caption {
+                anchors.left: parent.left
+                text: root.sectionTitle
+            }
+
+            StyledText {
+                anchors.right: parent.right
+                width: parent.width / 2
+                horizontalAlignment: Text.AlignRight
+                visible: root.view === "grid"
+                text: root.current?.title ?? ""
+                color: Appearance.colors.primary
+                font.family: Appearance.font.family.mono
+                font.pixelSize: Appearance.font.size.small
+                elide: Text.ElideMiddle
+            }
+        }
+
+        // Daftar bernomor
+        ListView {
+            id: list
+
+            width: parent.width
+            height: Math.min(count, root.maxRows) * root.rowHeight
+            visible: root.view === "list" && count > 0
+            clip: true
+            model: root.view === "list" ? root.results : []
+            highlightFollowsCurrentItem: false
+            boundsBehavior: Flickable.StopAtBounds
+            onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
+
+            highlight: StyledRect {
+                width: list.width
+                height: root.rowHeight
+                y: list.currentItem?.y ?? 0
+                radius: Appearance.radius.normal
+                color: Appearance.colors.surfaceContainerHigh
+
+                Behavior on y {
+                    Anim {
+                        duration: Appearance.anim.durations.expressiveFast
+                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                    }
+                }
+            }
+
+            populate: Transition {
+                id: pop
+
+                SequentialAnimation {
+                    PropertyAction {
+                        property: "opacity"
+                        value: 0
+                    }
+                    PauseAnimation {
+                        duration: Math.min(pop.ViewTransition.index, 8) * 14
+                    }
+                    Anim {
+                        property: "opacity"
+                        to: 1
+                        duration: Appearance.anim.durations.small
+                    }
+                }
+            }
+
+            delegate: Item {
+                id: row
+
+                required property var modelData
+                required property int index
+                readonly property bool current: ListView.isCurrentItem
+                readonly property string kind: modelData.kind
+                readonly property bool mono: kind === "calc" || kind === "run"
+
+                width: ListView.view.width
+                height: root.rowHeight
+
+                // Nomor urut ala TE
+                StyledText {
+                    id: num
+
+                    anchors.left: parent.left
+                    anchors.leftMargin: Appearance.padding.normal
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 22
+                    text: String(row.index + 1).padStart(2, "0")
+                    color: row.current ? Appearance.colors.primary : Appearance.colors.outline
+                    font.family: Appearance.font.family.mono
+                    font.pixelSize: Appearance.font.size.small
+                }
+
+                Item {
+                    id: glyph
+
+                    anchors.left: num.right
+                    anchors.leftMargin: Appearance.spacing.normal
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 32
+                    height: 32
+
+                    AppIcon {
+                        anchors.centerIn: parent
+                        visible: row.kind === "app"
+                        icon: visible ? row.modelData.icon ?? "" : ""
+                        lit: row.current
+                    }
+
+                    MaterialIcon {
+                        anchors.centerIn: parent
+                        visible: row.kind !== "app"
+                        text: row.modelData.icon ?? ""
+                        font.pixelSize: 22
+                        fill: row.current ? 1 : 0
+                        color: row.current ? Appearance.colors.primary : Appearance.colors.textDim
+                    }
+                }
+
+                Column {
+                    anchors.left: glyph.right
+                    anchors.leftMargin: Appearance.spacing.large
+                    anchors.right: enter.left
+                    anchors.rightMargin: Appearance.spacing.normal
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    StyledText {
+                        width: parent.width
+                        text: row.modelData.title
+                        color: Appearance.colors.text
+                        font.pixelSize: row.kind === "calc" ? Appearance.font.size.large : Appearance.font.size.normal
+                        font.family: row.mono ? Appearance.font.family.mono : Appearance.font.family.sans
+                        font.weight: Font.Medium
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                    }
+
+                    StyledText {
+                        width: parent.width
+                        visible: text !== ""
+                        text: row.modelData.subtitle ?? ""
+                        color: Appearance.colors.textDim
+                        font.pixelSize: Appearance.font.size.small
+                        elide: Text.ElideRight
+                    }
+                }
+
+                MaterialIcon {
+                    id: enter
+
+                    anchors.right: parent.right
+                    anchors.rightMargin: Appearance.padding.normal
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "keyboard_return"
+                    color: Appearance.colors.primary
+                    opacity: row.current ? 1 : 0
+
+                    transform: Translate {
+                        x: row.current ? 0 : -6
+
+                        Behavior on x {
+                            Anim {
+                                duration: Appearance.anim.durations.expressiveFast
+                                easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                            }
+                        }
+                    }
+
+                    Behavior on opacity {
+                        Anim {
+                            duration: Appearance.anim.durations.small
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onPositionChanged: mouse => {
+                        if (hoverGuard.moved(row, mouse.x, mouse.y))
+                            list.currentIndex = row.index;
+                    }
+                    onClicked: root.activate(row.index)
+                }
+            }
+        }
+
+        // Grid: aplikasi favorit, emoji, wallpaper
+        GridView {
+            id: grid
+
+            width: root.cellW * root.gridCols
+            height: Math.min(Math.ceil(count / root.gridCols), root.gridRows) * root.cellH
+            visible: root.view === "grid" && count > 0
+            clip: true
+            model: root.view === "grid" ? root.results : []
+            cellWidth: root.cellW
+            cellHeight: root.cellH
+            keyNavigationWraps: false
+            highlightFollowsCurrentItem: false
+            boundsBehavior: Flickable.StopAtBounds
+            // Baris terpilih selalu kelihatan
+            onCurrentIndexChanged: positionViewAtIndex(currentIndex, GridView.Contain)
+
+            highlight: StyledRect {
+                visible: root.mode !== "wall"
+                width: grid.cellWidth
+                height: grid.cellHeight
+                x: grid.currentItem?.x ?? 0
+                y: grid.currentItem?.y ?? 0
+                radius: Appearance.radius.normal
+                color: Appearance.colors.surfaceContainerHigh
+
+                Behavior on x {
+                    Anim {
+                        duration: Appearance.anim.durations.expressiveFast
+                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                    }
+                }
+                Behavior on y {
+                    Anim {
+                        duration: Appearance.anim.durations.expressiveFast
+                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                    }
+                }
+            }
+
+            populate: Transition {
+                id: gridPop
+
+                SequentialAnimation {
+                    PropertyAction {
+                        property: "scale"
+                        value: 0.6
+                    }
+                    PropertyAction {
+                        property: "opacity"
+                        value: 0
+                    }
+                    PauseAnimation {
+                        duration: Math.min(gridPop.ViewTransition.index, 20) * 12
+                    }
+                    ParallelAnimation {
+                        Anim {
+                            property: "opacity"
+                            to: 1
+                            duration: Appearance.anim.durations.small
+                        }
+                        Anim {
+                            property: "scale"
+                            to: 1
+                            duration: Appearance.anim.durations.expressiveFast
+                            easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                        }
+                    }
+                }
+            }
+
+            delegate: Item {
+                id: cell
+
+                required property var modelData
+                required property int index
+                readonly property bool current: GridView.isCurrentItem
+                readonly property string kind: modelData.kind
+
+                width: grid.cellWidth
+                height: grid.cellHeight
+
+                // Aplikasi: ikon + nama
+                Column {
+                    anchors.centerIn: parent
+                    visible: cell.kind === "app"
+                    spacing: Appearance.spacing.small
+
+                    AppIcon {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        icon: cell.kind === "app" ? cell.modelData.icon ?? "" : ""
+                        lit: cell.current
+                        size: 44
+                        scale: cell.current ? 1.08 : 1
+
+                        Behavior on scale {
+                            Anim {
+                                duration: Appearance.anim.durations.expressiveFast
+                                easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                            }
+                        }
+                    }
+
+                    StyledText {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: grid.cellWidth - Appearance.padding.normal * 2
+                        horizontalAlignment: Text.AlignHCenter
+                        text: cell.modelData.title
+                        color: cell.current ? Appearance.colors.text : Appearance.colors.textDim
+                        font.pixelSize: Appearance.font.size.small
+                        elide: Text.ElideRight
+                    }
+                }
+
+                StyledText {
+                    anchors.centerIn: parent
+                    visible: cell.kind === "emoji"
+                    text: cell.modelData.glyph ?? ""
+                    font.pixelSize: cell.current ? 34 : 28
+
+                    Behavior on font.pixelSize {
+                        Anim {
+                            duration: Appearance.anim.durations.expressiveFast
+                            easing.bezierCurve: Appearance.anim.curves.expressiveFast
+                        }
+                    }
+                }
+
+                // Wallpaper: yang terpilih penuh, sisanya mengecil dan meredup
+                StyledClippingRect {
+                    anchors.centerIn: parent
+                    visible: cell.kind === "wall"
+                    width: (parent.width - Appearance.spacing.normal) * (cell.current ? 1 : 0.9)
+                    height: (parent.height - Appearance.spacing.normal) * (cell.current ? 1 : 0.9)
+                    radius: cell.current ? Appearance.radius.large : Appearance.radius.normal
+                    color: Appearance.colors.surfaceContainerHigh
+                    opacity: cell.current ? 1 : 0.55
+
+                    Behavior on width {
+                        Anim {
+                            duration: Appearance.anim.durations.expressiveFast
+                            easing.bezierCurve: Appearance.anim.curves.expressiveDefault
+                        }
+                    }
+                    Behavior on height {
+                        Anim {
+                            duration: Appearance.anim.durations.expressiveFast
+                            easing.bezierCurve: Appearance.anim.curves.expressiveDefault
+                        }
+                    }
+                    Behavior on radius {
+                        Anim {}
+                    }
+                    Behavior on opacity {
+                        Anim {}
+                    }
+
+                    Image {
+                        anchors.fill: parent
+                        source: cell.kind === "wall" && cell.modelData.path ? `file://${cell.modelData.path}` : ""
+                        sourceSize: Qt.size(480, 320)
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
+
+                    // Penanda wallpaper yang sedang dipakai
+                    StyledRect {
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: Appearance.padding.small + 2
+                        visible: cell.kind === "wall" && cell.modelData.path === Wallpaper.current
+                        implicitWidth: 26
+                        implicitHeight: 26
+                        radius: 13
+                        color: Appearance.colors.primary
+
+                        MaterialIcon {
+                            anchors.centerIn: parent
+                            text: "check"
+                            font.pixelSize: Appearance.font.size.larger
+                            color: Appearance.colors.primaryText
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onPositionChanged: mouse => {
+                        if (hoverGuard.moved(cell, mouse.x, mouse.y))
+                            grid.currentIndex = cell.index;
+                    }
+                    onClicked: root.activate(cell.index)
+                }
+            }
+        }
+
+        // Kalkulator: hasil sebagai angka dot-matrix besar
+        Item {
+            width: parent.width
+            height: 132
+            visible: root.view === "calc"
+
+            Column {
+                anchors.left: parent.left
+                anchors.leftMargin: Appearance.padding.normal
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Appearance.spacing.small
+
+                StyledText {
+                    width: parent.width
+                    text: root.term === "" ? "Contoh: 2^10, 15% * 80, (3+4)/2" : `${root.term} =`
+                    color: Appearance.colors.textDim
+                    font.family: Appearance.font.family.mono
+                    font.pixelSize: Appearance.font.size.normal
+                    elide: Text.ElideLeft
+                }
+
+                DisplayText {
+                    width: parent.width
+                    text: root.results[0]?.title ?? (root.term === "" ? "0" : "--")
+                    color: root.results.length > 0 ? Appearance.colors.text : Appearance.colors.outline
+                    font.pixelSize: 64
+                    weight: 800
+                    elide: Text.ElideLeft
+                }
+            }
+        }
+
+        // Kosong
+        Column {
+            width: parent.width
+            visible: root.showEmpty
+            spacing: Appearance.spacing.small
+            topPadding: Appearance.spacing.huge
+            bottomPadding: Appearance.spacing.huge
+
+            DisplayText {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "00"
+                color: Appearance.colors.outline
+                font.pixelSize: 48
+            }
+
+            Caption {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: root.mode === "clip" && !Clipboard.available ? "Install cliphist untuk riwayat clipboard" : root.mode === "clip" ? "Clipboard masih kosong" : root.mode === "wall" ? `Tidak ada gambar di ${Config.wallpaperDir}` : "Tidak ada hasil"
+            }
+        }
+
+        // Petunjuk tombol
+        Item {
+            width: parent.width
+            height: 28
+
+            Divider {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+            }
+
+            Row {
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                spacing: Appearance.spacing.huge
+
+                Hint {
+                    visible: root.view !== "calc"
+                    key: root.view === "grid" ? "↑↓←→" : "↑↓"
+                    label: "Pilih"
+                }
+                Hint {
+                    key: "↵"
+                    label: ({
+                            app: "Buka",
+                            action: "Jalankan",
+                            run: "Jalankan",
+                            wall: "Pasang"
+                        })[root.current?.kind] ?? "Salin"
+                }
+                Hint {
+                    key: "Tab"
+                    label: "Mode"
+                }
+                Hint {
+                    visible: root.mode === "clip"
+                    key: "Del"
+                    label: "Hapus"
+                }
+            }
+
+            Hint {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                key: "Esc"
+                label: "Tutup"
             }
         }
     }
