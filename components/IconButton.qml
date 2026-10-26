@@ -2,7 +2,8 @@ import QtQuick
 import qs.utils
 
 // Tombol ikon bulat. type: "text" (tanpa latar), "tonal" (cincin tipis), "filled".
-// toggled = aktif: lingkaran aksen penuh (untuk "text": ikon jadi warna aksen saja).
+// toggled = aktif. "tonal" aktif = lingkaran netral terisi dengan ikon aksen (toggle); "filled" = lingkaran
+// aksen penuh, khusus satu aksi utama per permukaan (putar/jeda, kirim password). "text" aktif = ikon aksen saja.
 StyledRect {
     id: root
 
@@ -13,7 +14,8 @@ StyledRect {
     property int padding: Appearance.padding.small
     property bool disabled: false
 
-    readonly property bool solid: toggled && type !== "text"
+    readonly property bool solid: toggled && type === "filled"
+    readonly property bool tonalOn: toggled && type === "tonal"
     readonly property color ink: solid ? Appearance.colors.primaryText : toggled ? Appearance.colors.primary : type === "text" ? Appearance.colors.textDim : Appearance.colors.text
 
     signal clicked
@@ -22,8 +24,8 @@ StyledRect {
     implicitWidth: Math.max(label.implicitWidth, label.implicitHeight) + padding * 2
     implicitHeight: implicitWidth
     radius: height / 2
-    color: solid ? Appearance.colors.primary : "transparent"
-    border.width: type === "tonal" && !solid ? 1 : 0
+    color: solid ? Appearance.colors.primary : tonalOn ? Appearance.colors.secondaryContainer : "transparent"
+    border.width: type === "tonal" && !toggled ? 1 : 0
     border.color: Appearance.colors.hairline
     opacity: disabled ? 0.38 : 1
 
