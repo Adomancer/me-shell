@@ -1,13 +1,12 @@
 import QtQuick
-import QtQuick.Effects
 import QtQuick.Layouts
 import qs.components
 import qs.services
 import qs.utils
 
-// Tab Media: cover besar dengan latar buram dari cover itu sendiri, info lagu, visualizer cava,
-// progress yang bisa digeser, dan kontrol.
-StyledClippingRect {
+// Tab Media tanpa kotak: cover besar, info lagu, visualizer cava dot-matrix, progress bersegmen yang bisa
+// digeser, dan kontrol.
+Item {
     id: root
 
     readonly property var player: Media.active
@@ -18,60 +17,18 @@ StyledClippingRect {
         return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     }
 
-    radius: Appearance.radius.normal
-    color: Appearance.colors.surfaceContainer
-
-    // Latar: cover yang diburamkan dan digelapkan
-    Image {
-        id: backdrop
-
-        anchors.fill: parent
-        source: root.player?.trackArtUrl ?? ""
-        sourceSize: Qt.size(128, 128)
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
-        visible: false
-    }
-
-    MultiEffect {
-        anchors.fill: parent
-        source: backdrop
-        visible: backdrop.status === Image.Ready
-        blurEnabled: true
-        blur: 1
-        blurMax: 64
-        saturation: 0.2
-        opacity: 0.35
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-
-            GradientStop {
-                position: 0
-                color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.3)
-            }
-            GradientStop {
-                position: 0.6
-                color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.9)
-            }
-        }
-    }
-
     RowLayout {
         anchors.fill: parent
-        anchors.margins: Appearance.padding.large
-        spacing: Appearance.spacing.huge + 8
+        anchors.topMargin: Appearance.spacing.normal
+        spacing: Appearance.spacing.huge + 12
 
         // Cover
         StyledClippingRect {
             Layout.alignment: Qt.AlignVCenter
-            implicitWidth: 300
-            implicitHeight: 300
+            implicitWidth: 320
+            implicitHeight: 320
             radius: Appearance.radius.large
-            color: Appearance.colors.secondaryContainer
+            color: Appearance.colors.surfaceContainerHigh
             scale: Media.playing ? 1 : 0.92
 
             Behavior on scale {
@@ -95,9 +52,9 @@ StyledClippingRect {
             MaterialIcon {
                 anchors.centerIn: parent
                 visible: !art.visible
-                text: "music_note"
+                text: "album"
                 font.pixelSize: 120
-                color: Appearance.colors.secondaryContainerText
+                color: Appearance.colors.outline
             }
         }
 
@@ -156,47 +113,15 @@ StyledClippingRect {
             Item {
                 Layout.fillWidth: true
                 Layout.topMargin: Appearance.spacing.normal
-                implicitHeight: 16
+                implicitHeight: 18
                 visible: (root.player?.length ?? 0) > 0
 
-                StyledRect {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    height: 6
-                    radius: 3
-                    color: Appearance.colors.secondaryContainer
-                }
-
-                StyledRect {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: seek.pressed ? seek.live * parent.width : root.progress * parent.width
-                    height: 6
-                    radius: 3
-                    color: Appearance.colors.primary
-
-                    Behavior on width {
-                        enabled: !seek.pressed
-
-                        Anim {
-                            duration: 1000
-                            easing.type: Easing.Linear
-                        }
-                    }
-                }
-
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: (seek.pressed ? seek.live : root.progress) * parent.width - width / 2
-                    width: seek.containsMouse || seek.pressed ? 16 : 12
-                    height: width
-                    radius: 1
-                    color: Appearance.colors.primary
-
-                    Behavior on width {
-                        Anim {
-                            duration: Appearance.anim.durations.small
-                        }
-                    }
+                SegmentBar {
+                    anchors.fill: parent
+                    segments: 56
+                    thickness: 3
+                    instant: seek.pressed
+                    value: seek.pressed ? seek.live : root.progress
                 }
 
                 MouseArea {
@@ -283,7 +208,7 @@ StyledClippingRect {
 
                         icon: modelData === root.player ? "graphic_eq" : "music_note"
                         text: modelData.identity
-                        color: modelData === root.player ? Appearance.colors.secondaryContainer : Appearance.colors.surfaceContainerHigh
+                        color: modelData === root.player ? Appearance.colors.surfaceContainerHigh : "transparent"
                     }
                 }
             }

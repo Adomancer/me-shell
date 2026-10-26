@@ -28,7 +28,7 @@ Card {
 
             anchors.fill: parent
             radius: width / 2
-            color: Appearance.colors.secondaryContainer
+            color: Appearance.colors.surfaceContainerHigh
 
             Image {
                 id: art
@@ -46,7 +46,7 @@ Card {
                 visible: !art.visible
                 text: "album"
                 font.pixelSize: root.artSize * 0.5
-                color: Appearance.colors.secondaryContainerText
+                color: Appearance.colors.outline
             }
 
             RotationAnimator on rotation {
@@ -95,27 +95,13 @@ Card {
     Item {
         Layout.fillWidth: true
         Layout.topMargin: Appearance.spacing.small
-        implicitHeight: 6
+        implicitHeight: 8
         visible: (root.player?.length ?? 0) > 0
 
-        StyledRect {
+        SegmentBar {
             anchors.fill: parent
-            radius: 3
-            color: Appearance.colors.secondaryContainer
-        }
-
-        StyledRect {
-            width: parent.width * (root.player && root.player.length > 0 ? Math.min(1, root.player.position / root.player.length) : 0)
-            height: parent.height
-            radius: 3
-            color: Appearance.colors.primary
-
-            Behavior on width {
-                Anim {
-                    duration: 1000
-                    easing.type: Easing.Linear
-                }
-            }
+            segments: 32
+            value: root.player && root.player.length > 0 ? Math.min(1, root.player.position / root.player.length) : 0
         }
 
         MouseArea {

@@ -3,7 +3,7 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Tab Material 3: ikon + label, indikator di bawah yang meluncur dan sedikit melar saat pindah.
+// Tab ala Nothing/TE: nomor + label mono, pil aksen kecil di bawah yang melar saat berpindah.
 Item {
     id: root
 
@@ -11,7 +11,7 @@ Item {
     readonly property var items: [
         {
             name: "dash",
-            label: "Dashboard",
+            label: "Dash",
             icon: "dashboard"
         },
         {
@@ -31,7 +31,7 @@ Item {
         },
         {
             name: "notif",
-            label: "Notifikasi",
+            label: "Notif",
             icon: "notifications"
         }
     ]
@@ -78,41 +78,41 @@ Item {
                     anchors.centerIn: parent
                     spacing: Appearance.spacing.small
 
-                    MaterialIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: tab.modelData.icon
-                        fill: tab.isActive ? 1 : 0
-                        color: tab.ink
-                    }
-
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: tab.modelData.label
-                        color: tab.ink
-                        font.family: Appearance.font.family.title
-                        font.capitalization: Font.AllUppercase
-                        font.letterSpacing: 1
-                        font.weight: tab.isActive ? Font.DemiBold : Font.Normal
+                        text: String(tab.index + 1).padStart(2, "0")
+                        color: tab.isActive ? Appearance.colors.primary : Appearance.colors.outline
+                        font.family: Appearance.font.family.mono
+                        font.pixelSize: Appearance.font.size.small
                     }
 
-                    // Jumlah notifikasi
-                    StyledRect {
+                    Caption {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: tab.modelData.label
+                        color: tab.isActive ? Appearance.colors.text : Appearance.colors.textDim
+                        font.pixelSize: Appearance.font.size.smaller
+                    }
+
+                    // Jumlah notifikasi: titik aksen + angka
+                    Row {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: tab.modelData.name === "notif" && Notifs.list.length > 0
-                        implicitWidth: Math.max(implicitHeight, count.implicitWidth + 10)
-                        implicitHeight: 18
-                        radius: Appearance.radius.small
-                        color: Appearance.colors.error
+                        spacing: 4
+
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 6
+                            height: 6
+                            radius: 3
+                            color: Appearance.colors.primary
+                        }
 
                         StyledText {
-                            id: count
-
-                            anchors.centerIn: parent
+                            anchors.verticalCenter: parent.verticalCenter
                             text: Notifs.list.length
-                            color: Appearance.colors.errorText
+                            color: Appearance.colors.primary
                             font.family: Appearance.font.family.mono
                             font.pixelSize: Appearance.font.size.small
-                            font.bold: true
                         }
                     }
                 }
@@ -125,24 +125,22 @@ Item {
         }
     }
 
-    Rectangle {
+    Divider {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: 1
-        color: Appearance.colors.outlineVariant
     }
 
-    // Indikator: lebar mengikuti jarak dua ujung, jadi melar saat berpindah
+    // Pil aksen: lebar mengikuti jarak dua ujung, jadi melar saat berpindah
     Rectangle {
-        readonly property real inset: root.tabWidth * 0.22
+        readonly property real base: 18
 
         anchors.bottom: parent.bottom
-        x: Math.min(root.lead, root.trail) * root.tabWidth + inset
-        width: Math.abs(root.lead - root.trail) * root.tabWidth + root.tabWidth - inset * 2
+        anchors.bottomMargin: -1
+        x: Math.min(root.lead, root.trail) * root.tabWidth + (root.tabWidth - base) / 2
+        width: Math.abs(root.lead - root.trail) * root.tabWidth + base
         height: 3
-        topLeftRadius: 3
-        topRightRadius: 3
+        radius: 1.5
         color: Appearance.colors.primary
     }
 }

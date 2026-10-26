@@ -13,6 +13,8 @@ ColumnLayout {
     // "12:06" -> ["12", "06"]; titik dua berkedip seperti jam di bar
     readonly property var parts: Qt.formatDateTime(Time.date, "hh:mm").split(":")
     property bool tick: true
+    // Bagian hari yang sudah lewat (0..1)
+    readonly property real dayProgress: (Time.date.getHours() * 60 + Time.date.getMinutes()) / 1440
 
     spacing: Appearance.spacing.large
 
@@ -68,6 +70,31 @@ ColumnLayout {
                 text: Time.date.toLocaleString(Qt.locale(), "d MMMM yyyy")
                 color: Appearance.colors.textDim
                 font.pixelSize: Appearance.font.size.larger
+            }
+
+            // Progres hari ala TE
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: Appearance.spacing.large
+
+                Caption {
+                    Layout.fillWidth: true
+                    text: "Hari ini"
+                }
+
+                StyledText {
+                    text: `${Math.round(root.dayProgress * 100)}%`
+                    color: Appearance.colors.textDim
+                    font.family: Appearance.font.family.mono
+                    font.pixelSize: Appearance.font.size.small
+                }
+            }
+
+            SegmentBar {
+                Layout.fillWidth: true
+                implicitHeight: 10
+                segments: 24
+                value: root.dayProgress
             }
 
             Item {

@@ -10,27 +10,26 @@ import qs.modules.notifs
 ColumnLayout {
     spacing: Appearance.spacing.normal
 
+    // Kepala: jumlah dot-matrix, jangan ganggu, hapus semua
     RowLayout {
         Layout.fillWidth: true
         spacing: Appearance.spacing.normal
 
-        StyledText {
-            text: "Notifikasi"
-            font.family: Appearance.font.family.title
-            font.pixelSize: Appearance.font.size.large
-            font.weight: Font.Medium
+        DisplayText {
+            text: String(Math.min(Notifs.list.length, 99)).padStart(2, "0")
+            weight: 800
+            color: Notifs.list.length > 0 ? Appearance.colors.primary : Appearance.colors.outline
+            font.pixelSize: 34
         }
 
-        StyledText {
+        Caption {
             Layout.fillWidth: true
-            text: Notifs.list.length > 0 ? Notifs.list.length : ""
-            color: Appearance.colors.textDim
-            font.family: Appearance.font.family.mono
+            text: "Notifikasi"
         }
 
-        StyledText {
+        Caption {
             text: "Jangan ganggu"
-            color: Appearance.colors.textDim
+            color: Notifs.dnd ? Appearance.colors.primary : Appearance.colors.textDim
         }
 
         StyledSwitch {
@@ -46,6 +45,8 @@ ColumnLayout {
             onClicked: Notifs.clearAll()
         }
     }
+
+    Divider {}
 
     ListView {
         id: list
@@ -85,27 +86,16 @@ ColumnLayout {
                     asynchronous: true
                 }
 
-                StyledText {
+                Caption {
                     text: group.modelData
-                    color: Appearance.colors.primary
-                    font.weight: Font.Medium
+                    color: Appearance.colors.text
                 }
 
-                StyledRect {
-                    implicitWidth: Math.max(implicitHeight, groupCount.implicitWidth + 10)
-                    implicitHeight: 18
-                    radius: Appearance.radius.small
-                    color: Appearance.colors.secondaryContainer
-
-                    StyledText {
-                        id: groupCount
-
-                        anchors.centerIn: parent
-                        text: group.items.length
-                        color: Appearance.colors.secondaryContainerText
-                        font.family: Appearance.font.family.mono
-                        font.pixelSize: Appearance.font.size.small
-                    }
+                StyledText {
+                    text: String(group.items.length).padStart(2, "0")
+                    color: Appearance.colors.outline
+                    font.family: Appearance.font.family.mono
+                    font.pixelSize: Appearance.font.size.small
                 }
 
                 Item {
@@ -194,17 +184,17 @@ ColumnLayout {
             visible: list.count === 0
             spacing: Appearance.spacing.small
 
-            MaterialIcon {
+            DisplayText {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "notifications_paused"
-                font.pixelSize: 56
+                text: "00"
+                weight: 800
                 color: Appearance.colors.outline
+                font.pixelSize: 64
             }
 
-            StyledText {
+            Caption {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Semua sudah terbaca"
-                color: Appearance.colors.textDim
+                text: Notifs.dnd ? "Jangan ganggu aktif" : "Semua beres"
             }
         }
     }
