@@ -7,8 +7,9 @@ A Hyprland desktop shell written in [Quickshell](https://quickshell.org), dresse
 [![Stars](https://img.shields.io/github/stars/Adomancer/me-shell?style=for-the-badge&labelColor=18120c&color=f8bb71)](https://github.com/Adomancer/me-shell/stargazers)
 [![Last commit](https://img.shields.io/github/last-commit/Adomancer/me-shell?style=for-the-badge&labelColor=18120c&color=f8bb71)](https://github.com/Adomancer/me-shell/commits/main)
 [![Repo size](https://img.shields.io/github/repo-size/Adomancer/me-shell?style=for-the-badge&labelColor=18120c&color=f8bb71)](https://github.com/Adomancer/me-shell)
+[![License](https://img.shields.io/github/license/Adomancer/me-shell?style=for-the-badge&labelColor=18120c&color=f8bb71)](LICENSE)
 
-[Screenshots](#screenshots) · [Features](#features) · [Install](#install) · [Keybinds](#keybinds) · [Configuration](#configuration) · [Credits](#credits)
+[Screenshots](#screenshots) · [Features](#features) · [Install](#install) · [Keybinds](#keybinds) · [Configuration](#configuration) · [Credits](#credits) · [License](#license)
 
 ![Dashboard](.github/screenshots/hero.webp)
 
@@ -205,9 +206,31 @@ Testing in VirtualBox, Qt can crash on the virtual GPU driver. Add `env = LIBGL_
 
 ## Credits
 
-- [Caelestia](https://github.com/caelestia-dots/shell) for the drawer structure, the animations, and the starship symbols this all started from
-- [end-4/dots-hyprland](https://github.com/end-4/dots-hyprland) for showing how far a Quickshell setup can go
-- [JaKooLit](https://github.com/JaKooLit/Hyprland-Dots) for the keybind layout
-- [Quickshell](https://quickshell.org), [matugen](https://github.com/InioX/matugen), [starship](https://starship.rs), and [kitty](https://sw.kovidgoyal.net/kitty)
-- Fonts: [Doto](https://fonts.google.com/specimen/Doto), [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), [Space Mono](https://fonts.google.com/specimen/Space+Mono), and [Material Symbols](https://fonts.google.com/icons)
-- The look is inspired by Nothing and Teenage Engineering. This project is not affiliated with either.
+me-shell is written from scratch, but a lot of it is borrowed from people who did it first.
+
+**Projects this is based on**
+
+- [caelestia-dots/shell](https://github.com/caelestia-dots/shell): the drawer structure (bar, panels, and screen frame drawn as one shape), the spring animations, the hover popouts under the bar, and the bento lockscreen layout
+- [caelestia-dots/caelestia](https://github.com/caelestia-dots/caelestia): the starship prompt is adapted from its `starship.toml`, and the kitty look (padding, translucency, thin beam cursor) follows its foot config
+- [end-4/dots-hyprland](https://github.com/end-4/dots-hyprland): the floating settings window with a category sidebar, and proof of how far a Quickshell setup can go
+- [JaKooLit/Hyprland-Dots](https://github.com/JaKooLit/Hyprland-Dots): the default keybinds and the split `me-shell.conf` / `keybinds.conf` / `user.conf` layout
+- [Material Design 3](https://m3.material.io): the easing curves and the color roles behind `Appearance.qml`
+- Nothing and Teenage Engineering: the visual language (dot-matrix numbers, numbered labels, segmented controls). me-shell is not affiliated with either company.
+
+**Built with**
+
+- [Hyprland](https://hyprland.org) and [Quickshell](https://quickshell.org)
+- [matugen](https://github.com/InioX/matugen) for wallpaper colors
+- [kitty](https://sw.kovidgoyal.net/kitty) and [starship](https://starship.rs) for the terminal
+- [cava](https://github.com/karlstav/cava), [cliphist](https://github.com/sentriz/cliphist), [grim](https://sr.ht/~emersion/grim), [wf-recorder](https://github.com/ammen99/wf-recorder), [hyprpicker](https://github.com/hyprwm/hyprpicker), and [hyprsunset](https://github.com/hyprwm/hyprsunset)
+- [wttr.in](https://wttr.in) for weather
+- Emoji names from the [Unicode emoji data](https://unicode.org/emoji)
+
+**Fonts**
+
+- [Doto](https://fonts.google.com/specimen/Doto), [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), [Space Mono](https://fonts.google.com/specimen/Space+Mono), [Rubik](https://fonts.google.com/specimen/Rubik), and [JetBrains Mono](https://www.jetbrains.com/lp/mono), all under the SIL Open Font License
+- [Material Symbols](https://fonts.google.com/icons) under the Apache License 2.0
+
+## License
+
+[GPL-3.0](LICENSE), the same license as Caelestia, end-4, and JaKooLit, whose work this builds on.
