@@ -137,6 +137,20 @@ ColumnLayout {
                             icon: Network.ethernet ? "lan" : Network.connected ? "wifi" : "wifi_off"
                             text: Network.ethernet ? "Ethernet" : Network.connected ? Network.ssid : "Offline"
                         }
+
+                        // Update paket yang tersedia; klik = upgrade di terminal
+                        Chip {
+                            visible: Updates.count > 0
+                            icon: "system_update_alt"
+                            text: `${Updates.count} update`
+
+                            StateLayer {
+                                onClicked: {
+                                    DrawerState.close();
+                                    Updates.upgrade();
+                                }
+                            }
+                        }
                     }
                 }
             }
