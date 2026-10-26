@@ -393,7 +393,7 @@ Item {
                         visible: wall.active
                         implicitWidth: 28
                         implicitHeight: 28
-                        radius: 14
+                        radius: Appearance.radius.small
                         color: Appearance.colors.primary
 
                         MaterialIcon {
@@ -515,7 +515,7 @@ Item {
                             StyledRect {
                                 anchors.fill: parent
                                 visible: row.modelData.kind !== "app" && row.modelData.kind !== "emoji"
-                                radius: row.modelData.kind === "action" ? height / 2 : Appearance.radius.small
+                                radius: Appearance.radius.small
                                 color: row.modelData.kind === "action" ? Appearance.colors.primaryContainer : Appearance.colors.tertiaryContainer
 
                                 MaterialIcon {
@@ -596,8 +596,10 @@ Item {
         StyledRect {
             width: parent.width
             height: 48
-            radius: height / 2
+            radius: Appearance.radius.small
             color: Appearance.colors.surfaceContainerHigh
+            border.width: Appearance.border.thin
+            border.color: Appearance.colors.outlineVariant
 
             MaterialIcon {
                 id: modeIcon
