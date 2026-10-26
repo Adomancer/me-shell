@@ -13,7 +13,7 @@ ColumnLayout {
     // Lebar tetap; implicitWidth layout dihitung ulang oleh layout itu sendiri
     readonly property int pageWidth: 460
     // Jumlah tile yang menyala, sama dengan yang tampil terisi di grid
-    readonly property int active: [Idle.inhibited, GameMode.enabled, Notifs.dnd, NightLight.enabled, Recorder.recording, !Audio.micMuted].filter(b => b).length
+    readonly property int active: [Idle.inhibited, GameMode.enabled, Notifs.dnd, NightLight.enabled, Recorder.recording, Network.vpnActive, !Audio.micMuted].filter(b => b).length
 
     // Toggle bulat + label mono di bawahnya; aktif = lingkaran terisi dengan ikon dan label aksen
     component Tile: Item {
@@ -156,6 +156,13 @@ ColumnLayout {
             icon: "document_scanner"
             label: "Teks"
             onClicked: Screenshot.openPicker("ocr")
+        }
+
+        Tile {
+            icon: Network.vpnActive ? "vpn_lock" : "vpn_key"
+            label: "VPN"
+            toggled: Network.vpnActive
+            onClicked: Network.vpns.length > 0 ? Network.toggleVpn() : Toaster.show("vpn_key_off", "Belum ada VPN", "Tambahkan profil VPN/WireGuard di NetworkManager", "")
         }
 
         Tile {
