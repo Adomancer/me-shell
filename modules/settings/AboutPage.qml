@@ -74,6 +74,12 @@ ColumnLayout {
             Value {
                 text: "github.com/Adomancer/me-shell"
             }
+            Key {
+                text: "Lisensi"
+            }
+            Value {
+                text: "GPL-3.0"
+            }
         }
     }
 
@@ -83,7 +89,7 @@ ColumnLayout {
 
     StyledText {
         Layout.fillWidth: true
-        text: "Caelestia (tata letak), end_4 (settings), JaKooLit (keybind)"
+        text: "Caelestia (struktur drawer, animasi, popout, lockscreen bento, prompt starship, gaya terminal), end-4 (jendela settings), JaKooLit (keybind dan pembagian file Hyprland), Material Design 3 (kurva animasi dan peran warna), Nothing dan Teenage Engineering (gaya visual; tidak berafiliasi)"
         color: Appearance.colors.textDim
         wrapMode: Text.Wrap
     }
