@@ -173,6 +173,22 @@ Item {
             run: () => DrawerState.open("settings")
         },
         {
+            icon: "timer",
+            title: Focus.mode === "idle" ? `Mulai fokus ${Config.focusMinutes} menit` : `${Focus.label} ${Focus.text}, jeda/lanjut`,
+            run: () => Focus.toggle()
+        },
+        {
+            icon: "avg_pace",
+            title: "Stopwatch",
+            run: () => Focus.startStopwatch()
+        },
+        {
+            icon: "checklist",
+            title: "Tugas dan timer",
+            subtitle: "Ketik /todo teks untuk langsung menambah tugas",
+            run: () => DrawerState.togglePanel("focus")
+        },
+        {
             icon: "keyboard",
             title: "Daftar keybind",
             run: () => DrawerState.open("cheatsheet")
@@ -238,6 +254,17 @@ Item {
             ] : [];
         case "action":
             {
+                // "/todo teks" = tambah tugas langsung
+                const todo = term.match(/^todo\s+(.+)$/i);
+                if (todo)
+                    return [
+                        {
+                            kind: "todo",
+                            icon: "add_task",
+                            title: todo[1],
+                            subtitle: "Enter untuk menambah tugas"
+                        }
+                    ];
                 // sort V4 tidak stabil, jadi tanpa kata kunci urutan asli dipakai apa adanya
                 const scored = actions.map(a => ({
                             a,
@@ -374,6 +401,9 @@ Item {
             break;
         case "wall":
             Wallpaper.set(r.path);
+            break;
+        case "todo":
+            Todo.add(r.title);
             break;
         }
         DrawerState.close();
@@ -1116,7 +1146,8 @@ Item {
                             app: "Buka",
                             action: "Jalankan",
                             run: "Jalankan",
-                            wall: "Pasang"
+                            wall: "Pasang",
+                            todo: "Tambah"
                         })[root.current?.kind] ?? "Salin"
                 }
                 Hint {
