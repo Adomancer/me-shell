@@ -13,7 +13,7 @@ ColumnLayout {
     // Lebar tetap; implicitWidth layout dihitung ulang oleh layout itu sendiri
     readonly property int pageWidth: 400
 
-    // Ubin M3 expressive: aktif = warna primer dan sudut lebih kotak
+    // Ubin toggle: aktif = warna aksen
     component Tile: StyledRect {
         id: tile
 
@@ -26,15 +26,8 @@ ColumnLayout {
 
         Layout.fillWidth: true
         implicitHeight: 76
-        radius: toggled ? Appearance.radius.normal : Appearance.radius.large + 8
+        radius: Appearance.radius.normal
         color: toggled ? Appearance.colors.primary : Appearance.colors.surfaceContainerHigh
-
-        Behavior on radius {
-            Anim {
-                duration: Appearance.anim.durations.expressiveFast
-                easing.bezierCurve: Appearance.anim.curves.expressiveFast
-            }
-        }
 
         Column {
             anchors.centerIn: parent
@@ -84,6 +77,7 @@ ColumnLayout {
         StyledText {
             Layout.fillWidth: true
             text: "Utilitas"
+            font.family: Appearance.font.family.title
             font.pixelSize: Appearance.font.size.larger
             font.weight: Font.Medium
         }
