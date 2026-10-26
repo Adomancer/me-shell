@@ -169,21 +169,17 @@ Item {
             Layout.alignment: Qt.AlignVCenter
             spacing: Appearance.spacing.normal
 
-            StyledText {
+            DisplayText {
                 Layout.alignment: Qt.AlignHCenter
                 text: Qt.formatDateTime(Time.date, "hh:mm")
-                color: Appearance.colors.primary
-                font.family: Appearance.font.family.mono
-                font.pixelSize: 120
-                font.bold: true
+                font.pixelSize: 132
             }
 
-            StyledText {
+            Caption {
                 Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: -Appearance.spacing.normal
                 text: Time.date.toLocaleString(Qt.locale(), "dddd, d MMMM")
-                color: Appearance.colors.text
-                font.pixelSize: Appearance.font.size.large
+                color: Appearance.colors.primary
+                font.pixelSize: Appearance.font.size.normal
             }
 
             // Avatar dengan cincin; cincin berputar selama password diperiksa
@@ -235,8 +231,8 @@ Item {
 
                 Layout.fillWidth: true
                 Layout.topMargin: Appearance.spacing.normal
-                implicitHeight: 56
-                radius: Appearance.radius.small
+                implicitHeight: 52
+                radius: height / 2
                 color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.85)
                 border.width: root.lock.failed && !root.lock.busy ? 2 : 0
                 border.color: Appearance.colors.error
