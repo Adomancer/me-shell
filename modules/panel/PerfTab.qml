@@ -164,7 +164,62 @@ ColumnLayout {
         }
 
         Card {
-            Layout.preferredWidth: 300
+            Layout.preferredWidth: 250
+            Layout.fillHeight: true
+            title: "Proses"
+            icon: "list_alt"
+            note: "CPU"
+
+            Repeater {
+                model: SystemStats.topProcs
+
+                RowLayout {
+                    id: proc
+
+                    required property var modelData
+
+                    Layout.fillWidth: true
+                    spacing: Appearance.spacing.small
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: proc.modelData.name
+                        font.pixelSize: Appearance.font.size.small
+                        elide: Text.ElideRight
+                    }
+
+                    // Batang kecil sebanding persen CPU
+                    StyledRect {
+                        implicitWidth: 48
+                        implicitHeight: 6
+                        radius: 3
+                        color: Appearance.colors.secondaryContainer
+
+                        StyledRect {
+                            width: parent.width * Math.min(1, proc.modelData.cpu / 100)
+                            height: parent.height
+                            radius: 3
+                            color: Appearance.colors.primary
+
+                            Behavior on width {
+                                Anim {}
+                            }
+                        }
+                    }
+
+                    StyledText {
+                        Layout.preferredWidth: 40
+                        horizontalAlignment: Text.AlignRight
+                        text: `${proc.modelData.cpu.toFixed(1)}%`
+                        font.family: Appearance.font.family.mono
+                        font.pixelSize: Appearance.font.size.small
+                    }
+                }
+            }
+        }
+
+        Card {
+            Layout.preferredWidth: 270
             Layout.fillHeight: true
             title: "Jaringan"
             icon: "swap_vert"
