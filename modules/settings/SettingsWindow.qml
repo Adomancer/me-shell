@@ -261,34 +261,34 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: item.modelData.icon
                                 fill: item.isActive ? 1 : 0
-                                color: item.isActive ? Appearance.colors.secondaryContainerText : Appearance.colors.textDim
+                                color: item.isActive ? Appearance.colors.primary : Appearance.colors.textDim
                             }
 
                             StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: item.modelData.label
-                                color: item.isActive ? Appearance.colors.secondaryContainerText : Appearance.colors.text
+                                color: item.isActive ? Appearance.colors.primary : Appearance.colors.text
                                 font.weight: item.isActive ? Font.Medium : Font.Normal
                             }
                         }
 
                         StateLayer {
-                            radius: Appearance.radius.small
+                            radius: height / 2
                             onClicked: root.open(item.modelData.id)
                         }
                     }
                 }
             }
 
-            // Sorotan halaman aktif, meluncur dengan pegas
+            // Sorotan halaman aktif: titik aksen yang meluncur dengan pegas
             StyledRect {
                 z: -1
-                x: nav.x
-                y: nav.y + navHeader.height + nav.spacing + root.index * (48 + nav.spacing)
-                width: nav.width
-                height: 48
-                radius: Appearance.radius.small
-                color: Appearance.colors.secondaryContainer
+                x: nav.x + 4
+                y: nav.y + navHeader.height + nav.spacing + root.index * (48 + nav.spacing) + (48 - height) / 2
+                width: 6
+                height: 6
+                radius: 3
+                color: Appearance.colors.primary
 
                 Behavior on y {
                     Anim {
@@ -313,7 +313,7 @@ Item {
         StyledClippingRect {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: Appearance.radius.normal
+            radius: Appearance.radius.large
             color: Appearance.colors.surfaceContainerLow
 
             ColumnLayout {

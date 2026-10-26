@@ -14,7 +14,7 @@ Row {
 
             width: 30
             height: 30
-            radius: Appearance.radius.small
+            radius: width / 2
             color: Appearance.colors[modelData]
             border.width: 2
             border.color: Appearance.colors.surfaceContainer

@@ -13,9 +13,6 @@ StyledRect {
 
     implicitWidth: 260
     implicitHeight: 40
-    topLeftRadius: Appearance.radius.small - 4
-    topRightRadius: Appearance.radius.small - 4
-    color: Appearance.colors.surfaceContainerHighest
 
     TextInput {
         id: input
@@ -26,7 +23,7 @@ StyledRect {
         verticalAlignment: TextInput.AlignVCenter
         text: root.value
         color: Appearance.colors.text
-        font.family: Appearance.font.family.sans
+        font.family: Appearance.font.family.mono
         font.pixelSize: Appearance.font.size.normal
         selectByMouse: true
         selectionColor: Appearance.colors.primary

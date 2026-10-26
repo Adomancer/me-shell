@@ -4,7 +4,7 @@ import qs.components
 import qs.utils
 
 // Satu baris setting di dalam grup: judul + penjelasan di kiri, kontrol di kanan.
-// Baris-baris yang bertumpuk dengan jarak 2px terlihat sebagai satu grup ala pengaturan Android.
+// Tanpa kotak: baris dipisah garis tipis di bawahnya.
 StyledRect {
     id: root
 
@@ -14,10 +14,12 @@ StyledRect {
 
     Layout.fillWidth: true
     implicitHeight: Math.max(texts.implicitHeight, slot.childrenRect.height) + Appearance.padding.normal * 2 + 4
-    radius: Appearance.radius.small - 4
-    color: Appearance.colors.surfaceContainer
-    border.width: Appearance.border.thin
-    border.color: Appearance.colors.outlineVariant
+
+    Divider {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+    }
 
     ColumnLayout {
         id: texts

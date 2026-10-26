@@ -97,7 +97,7 @@ ColumnLayout {
                     anchors.margins: Appearance.spacing.small
                     width: 28
                     height: 28
-                    radius: Appearance.radius.small
+                    radius: Appearance.radius.normal
                     color: Appearance.colors.primary
                     scale: cell.isCurrent ? 1 : 0
 
