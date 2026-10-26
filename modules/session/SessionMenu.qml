@@ -123,69 +123,64 @@ Item {
         Repeater {
             model: root.actions
 
-            StyledRect {
+            // Lingkaran yang membesar saat dipilih; aksi berbahaya jadi merah "Yakin?" dulu
+            Item {
                 id: btn
 
                 required property var modelData
                 required property int index
                 readonly property bool isCurrent: root.current === index
                 readonly property bool isPending: root.pending === modelData.id
-                readonly property color ink: isPending ? Appearance.colors.errorContainerText : isCurrent ? Appearance.colors.primaryContainerText : Appearance.colors.text
+                readonly property color ink: isPending ? Appearance.colors.errorText : isCurrent ? Appearance.colors.primaryText : Appearance.colors.text
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 implicitWidth: 76
-                implicitHeight: isCurrent ? 76 : 64
-                radius: isCurrent ? Appearance.radius.large : Appearance.radius.small
-                color: isPending ? Appearance.colors.errorContainer : isCurrent ? Appearance.colors.primaryContainer : Appearance.colors.surfaceContainerHigh
+                implicitHeight: circle.height + label.implicitHeight + 6
 
-                Behavior on implicitHeight {
-                    Anim {
-                        duration: Appearance.anim.durations.expressiveFast
-                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
-                    }
-                }
-                Behavior on radius {
-                    Anim {
-                        duration: Appearance.anim.durations.expressiveFast
-                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
-                    }
-                }
+                StyledRect {
+                    id: circle
 
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 2
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: btn.isCurrent || btn.isPending ? 60 : 52
+                    height: width
+                    radius: width / 2
+                    color: btn.isPending ? Appearance.colors.error : btn.isCurrent ? Appearance.colors.primary : "transparent"
+                    border.width: btn.isCurrent || btn.isPending ? 0 : 1
+                    border.color: Appearance.colors.hairline
 
-                    MaterialIcon {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: btn.isPending ? "warning" : btn.modelData.icon
-                        font.pixelSize: btn.isCurrent ? 28 : 24
-                        fill: btn.isCurrent ? 1 : 0
-                        color: btn.ink
-
-                        Behavior on font.pixelSize {
-                            Anim {
-                                duration: Appearance.anim.durations.expressiveFast
-                                easing.bezierCurve: Appearance.anim.curves.expressiveFast
-                            }
+                    Behavior on width {
+                        Anim {
+                            duration: Appearance.anim.durations.expressiveFast
+                            easing.bezierCurve: Appearance.anim.curves.expressiveFast
                         }
                     }
 
-                    StyledText {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: btn.isPending ? "Yakin?" : btn.modelData.label
-                        font.pixelSize: Appearance.font.size.small
+                    MaterialIcon {
+                        anchors.centerIn: parent
+                        text: btn.isPending ? "warning" : btn.modelData.icon
+                        font.pixelSize: 24
+                        fill: btn.isCurrent ? 1 : 0
                         color: btn.ink
-                        opacity: btn.isCurrent || btn.isPending ? 1 : 0.8
+                    }
+
+                    StateLayer {
+                        color: btn.ink
+                        onEntered: {
+                            if (root.current !== btn.index)
+                                root.move(btn.index - root.current);
+                        }
+                        onClicked: root.run(btn.index)
                     }
                 }
 
-                StateLayer {
-                    color: btn.ink
-                    onEntered: {
-                        if (root.current !== btn.index)
-                            root.move(btn.index - root.current);
-                    }
-                    onClicked: root.run(btn.index)
+                Caption {
+                    id: label
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: circle.bottom
+                    anchors.topMargin: 6
+                    text: btn.isPending ? "Yakin?" : btn.modelData.label
+                    color: btn.isPending ? Appearance.colors.error : btn.isCurrent ? Appearance.colors.primary : Appearance.colors.textDim
                 }
             }
         }
