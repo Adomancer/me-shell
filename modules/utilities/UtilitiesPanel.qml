@@ -5,7 +5,7 @@ import qs.services
 import qs.utils
 import qs.modules.bar.popouts
 
-// Panel utilitas ala Caelestia: ubin toggle cepat, aksi tangkap layar, dan power profile.
+// Panel utilitas: toggle bulat, aksi tangkap layar, dan power profile.
 ColumnLayout {
     id: root
 
@@ -13,45 +13,40 @@ ColumnLayout {
     // Lebar tetap; implicitWidth layout dihitung ulang oleh layout itu sendiri
     readonly property int pageWidth: 400
 
-    // Ubin toggle: aktif = warna aksen
-    component Tile: StyledRect {
+    // Toggle bulat + label mono di bawahnya; aktif = lingkaran aksen penuh
+    component Tile: Item {
         id: tile
 
         property string icon
         property string label
         property bool toggled: false
-        readonly property color ink: toggled ? Appearance.colors.primaryText : Appearance.colors.text
 
         signal clicked
 
         Layout.fillWidth: true
-        implicitHeight: 76
-        radius: Appearance.radius.normal
-        color: toggled ? Appearance.colors.primary : Appearance.colors.surfaceContainerHigh
+        implicitHeight: col.implicitHeight
 
         Column {
-            anchors.centerIn: parent
-            spacing: 4
+            id: col
 
-            MaterialIcon {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: Appearance.spacing.small
+
+            IconButton {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: tile.icon
-                fill: tile.toggled ? 1 : 0
-                font.pixelSize: Appearance.font.size.extraLarge - 4
-                color: tile.ink
+                type: "tonal"
+                icon: tile.icon
+                toggled: tile.toggled
+                size: Appearance.font.size.extraLarge - 6
+                padding: Appearance.padding.normal + 2
+                onClicked: tile.clicked()
             }
 
-            StyledText {
+            Caption {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: tile.label
-                color: tile.ink
-                font.pixelSize: Appearance.font.size.small
+                color: tile.toggled ? Appearance.colors.primary : Appearance.colors.textDim
             }
-        }
-
-        StateLayer {
-            color: tile.ink
-            onClicked: tile.clicked()
         }
     }
 
@@ -96,7 +91,7 @@ ColumnLayout {
     GridLayout {
         Layout.fillWidth: true
         columns: 4
-        rowSpacing: Appearance.spacing.small
+        rowSpacing: Appearance.spacing.large
         columnSpacing: Appearance.spacing.small
 
         Tile {

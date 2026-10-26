@@ -43,8 +43,6 @@ Item {
             implicitHeight: row.implicitHeight + Appearance.padding.normal * 2
             radius: Appearance.radius.normal
             color: Appearance.colors.surfaceContainerHigh
-            border.width: Appearance.border.thin
-            border.color: Appearance.colors.outlineVariant
 
             RowLayout {
                 id: row
@@ -58,7 +56,7 @@ Item {
                 StyledRect {
                     implicitWidth: 36
                     implicitHeight: 36
-                    radius: Appearance.radius.small
+                    radius: height / 2
                     color: Appearance.colors.primaryContainer
 
                     MaterialIcon {
