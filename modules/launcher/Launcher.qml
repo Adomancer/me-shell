@@ -173,6 +173,17 @@ Item {
             run: () => DrawerState.open("settings")
         },
         {
+            icon: "keyboard",
+            title: "Daftar keybind",
+            run: () => DrawerState.open("cheatsheet")
+        },
+        {
+            icon: "system_update_alt",
+            title: Updates.count > 0 ? `Perbarui sistem (${Updates.count} paket)` : "Perbarui sistem",
+            subtitle: "Buka terminal dan jalankan upgrade",
+            run: () => Updates.upgrade()
+        },
+        {
             icon: "lock",
             title: "Kunci layar",
             run: () => Session.lock()
