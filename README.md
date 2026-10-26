@@ -9,13 +9,21 @@ Sudah dites di Fedora 44 (VM), tapi belum di laptop asli dan belum di Arch, jadi
 
 ## Isinya
 
-- bar di atas: workspace, judul window, jam, tray, ikon status
-- control panel bertab yang turun dari jam: dashboard, media player dengan visualizer (cava), performa, cuaca, notifikasi
-- launcher: cari aplikasi, `=` buat ngitung, `>` buat jalanin perintah, `:` buat ganti wallpaper
+- bar di atas: workspace, judul window, lagu yang diputar, jam, tray, ikon status
+- popout ala Caelestia: arahkan kursor ke ikon Wi-Fi, Bluetooth, volume, baterai, judul window, atau lagu, nanti panel kecilnya turun dari bar. Bisa sambung Wi-Fi (lengkap sama kolom password), pasangkan perangkat Bluetooth, pilih output audio, atur volume per aplikasi, ganti power profile, dan lihat pratinjau window
+- control panel bertab yang turun dari jam: dashboard, media player dengan visualizer (cava), performa, cuaca, notifikasi (dikelompokkan per aplikasi)
+- panel utilitas di pojok kanan bawah: kafein, mode game, jangan ganggu, lampu malam, screenshot, rekam layar, ambil warna, mic, power profile. Toast kecil dari shell juga muncul di pojok ini
+- overview workspace (`SUPER + Tab`) dengan pratinjau live tiap window, window bisa diseret ke workspace lain
+- screenshot dan rekam layar pakai pemilih area sendiri: arahkan ke window buat milih window itu, seret buat milih area bebas
+- launcher: cari aplikasi (yang sering dibuka naik ke atas), `/` buat aksi shell, `;` buat riwayat clipboard, `:` buat carousel wallpaper, `=` buat ngitung, `>` buat jalanin perintah
+- jam besar dan visualizer di atas wallpaper
+- idle bawaan (kunci layar, matiin layar, suspend), jadi hypridle nggak perlu lagi
 - notifikasi (bisa di-swipe), OSD volume/brightness, menu power di tepi kanan
 - lockscreen tiga kolom: cuaca, info sistem, media, jam, foto profil, notifikasi, plus efek CRT opsional
 - wallpaper + warna yang ikut wallpaper (pakai matugen)
 - menu settings buat ngatur semuanya, termasuk keybind
+
+Beberapa panel bisa dibuka cukup dengan nyentuh layar: diam sebentar di atas jam buat dashboard, pojok kanan bawah buat utilitas, tepi kanan buat slider volume. Kalau ganggu, matiin "Buka dengan hover" di settings.
 
 ## Pasang
 
@@ -27,11 +35,11 @@ curl -fsSL https://raw.githubusercontent.com/Adomancer/me-shell/main/scripts/ins
 
 Script-nya nanya sekali sebelum install paket, lalu:
 
-- install Hyprland (kalau belum ada), Quickshell, dan semua dependency lain
+- install Hyprland (kalau belum ada), Quickshell, dan semua dependency lain, termasuk grim, wf-recorder, cliphist, hyprpicker, dan hyprsunset buat screenshot, rekam, clipboard, dan lampu malam
 - unduh font Material Symbols dan Rubik ke `~/.local/share/fonts/me-shell`
 - clone repo ke `~/.local/share/me-shell` dan pasang perintah `me-shell` di `~/.local/bin`
 - bikin `~/.config/me-shell/hypr/` dan nambahin satu baris `source` ke `hyprland.conf` (ada backup-nya). Kalau belum punya `hyprland.conf`, dibuatin yang minimal
-- nawarin buat matiin Waybar, swaync, mako, atau dunst kalau ketemu di config, soalnya bentrok
+- nawarin buat matiin Waybar, swaync, mako, dunst, atau hypridle kalau ketemu di config, soalnya bentrok
 
 Setelah itu tinggal login ke Hyprland. Kalau install dari live USB, jalankan `passwd` dulu, soalnya user live nggak punya password dan lockscreen jadi nggak bisa di-unlock.
 
@@ -62,10 +70,19 @@ Keybind bawaannya mengikuti JaKooLit:
 | `SUPER + SHIFT + E` | control panel |
 | `SUPER + SHIFT + N` | control panel tab notifikasi |
 | `SUPER + I` | settings |
+| `SUPER + Tab` | overview workspace |
+| `SUPER + A` | utilitas |
+| `SUPER + V` | riwayat clipboard |
+| `SUPER + SHIFT + S` | screenshot area atau window |
+| `Print` | screenshot layar penuh |
+| `SUPER + SHIFT + R` | mulai/berhenti rekam layar |
+| `SUPER + SHIFT + C` | ambil warna dari layar |
 | `CTRL + ALT + P` | menu power |
 | `CTRL + ALT + L` | lockscreen |
 
-Tombol volume, mic, media, dan brightness di keyboard juga sudah diurus. Semua kombinasi bisa diganti dari menu settings, halaman Keybind, lalu klik "Terapkan keybind". Kalau sebelumnya pakai JaKooLit, hapus dulu bind lama yang manggil rofi, wlogout, swaync, dan script volume/media-nya supaya nggak dobel. Screenshot, clipboard, dan emoji nggak diurus shell ini, jadi bind-nya biarin aja.
+Tombol volume, mic, media, dan brightness di keyboard juga sudah diurus. Semua kombinasi bisa diganti dari menu settings, halaman Keybind, lalu klik "Terapkan keybind". Kalau sebelumnya pakai JaKooLit, hapus dulu bind lama yang manggil rofi, wlogout, swaync, script volume/media, screenshot, dan clipboard-nya supaya nggak dobel. Emoji belum diurus shell ini, jadi bind itu biarin aja.
+
+Screenshot masuk ke `~/Pictures/Screenshots` dan langsung disalin ke clipboard, rekaman ke `~/Videos/Recordings`. Foldernya bisa diganti di settings, halaman Sistem.
 
 Di `me-shell.conf` ada `allow_session_lock_restore = true`. Jangan dihapus, soalnya kalau shell crash pas layar terkunci, opsi itu yang bikin lockscreen masih bisa dipulihkan.
 
