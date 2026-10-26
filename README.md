@@ -2,8 +2,9 @@
 
 Shell Hyprland buatan sendiri, ditulis pakai [Quickshell](https://quickshell.org).
 Terinspirasi dari [Caelestia](https://github.com/caelestia-dots/shell) dan [end_4](https://github.com/end-4/dots-hyprland):
-bar dan panel digambar sebagai satu bentuk dengan bingkai layar, panel "tumbuh" dari tepi layar,
-gayanya Material 3 dengan ikon Material Symbols, dan angka/jam pakai font monospace.
+bar dan panel digambar sebagai satu bentuk dengan bingkai layar, dan panel "tumbuh" dari tepi layar dengan animasi pegas.
+Tampilannya sengaja retro minimalis: sudut kecil, garis tepi tipis, bayangan keras, judul dan angka pakai font monospace,
+dan cuma satu warna aksen yang diambil dari wallpaper.
 
 Sudah dites di Fedora 44 (VM), tapi belum di laptop asli dan belum di Arch, jadi mungkin masih ada yang aneh.
 
