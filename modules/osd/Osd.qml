@@ -31,9 +31,16 @@ Item {
 
             DisplayText {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: Audio.muted ? "--" : Math.round(Audio.volume * 100)
+                text: Audio.muted ? "--" : String(Math.round(Audio.volume * 100)).padStart(2, "0")
                 weight: 800
-                font.pixelSize: Appearance.font.size.large
+                color: Audio.muted ? Appearance.colors.outline : Appearance.colors.text
+                font.pixelSize: 24
+            }
+
+            Caption {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: Audio.muted ? "Bisu" : "Vol"
+                color: Audio.muted ? Appearance.colors.error : Appearance.colors.textDim
             }
         }
 
@@ -49,9 +56,14 @@ Item {
 
             DisplayText {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: Math.round(Brightness.value * 100)
+                text: String(Math.round(Brightness.value * 100)).padStart(2, "0")
                 weight: 800
-                font.pixelSize: Appearance.font.size.large
+                font.pixelSize: 24
+            }
+
+            Caption {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "LCD"
             }
         }
     }
