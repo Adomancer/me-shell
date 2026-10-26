@@ -78,13 +78,18 @@ Item {
             visible: Recorder.recording
         }
 
+        BarFocus {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: Focus.mode !== "idle"
+        }
+
         BarMedia {
             anchors.verticalCenter: parent.verticalCenter
             visible: Config.barShowMedia && Media.active !== null
         }
 
         Separator {
-            visible: Recorder.recording || (Config.barShowMedia && Media.active !== null)
+            visible: Recorder.recording || Focus.mode !== "idle" || (Config.barShowMedia && Media.active !== null)
         }
 
         Tray {
