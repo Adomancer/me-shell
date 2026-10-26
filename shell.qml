@@ -6,6 +6,7 @@ import qs.services
 import qs.modules.background
 import qs.modules.drawers
 import qs.modules.lock
+import qs.modules.picker
 
 ShellRoot {
     Component.onCompleted: {
@@ -18,6 +19,8 @@ ShellRoot {
     Background {}
 
     Lock {}
+
+    Picker {}
 
     // Bar + drawer untuk setiap monitor
     Variants {
