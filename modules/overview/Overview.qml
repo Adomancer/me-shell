@@ -171,11 +171,10 @@ Item {
                                 live: true
                             }
 
-                            IconImage {
+                            AppIcon {
                                 anchors.centerIn: parent
-                                implicitSize: Math.min(32, Math.min(parent.width, parent.height) * 0.5)
-                                source: Quickshell.iconPath(win.entry?.icon || "application-x-executable", "application-x-executable")
-                                asynchronous: true
+                                size: Math.min(32, Math.min(parent.width, parent.height) * 0.5)
+                                icon: win.entry?.icon ?? ""
                             }
                         }
 
@@ -238,14 +237,14 @@ Item {
         radius: Appearance.radius.normal
         color: Appearance.colors.primaryContainer
 
-        IconImage {
+        // Window yang sedang diseret: ikon berwarna
+        AppIcon {
             anchors.centerIn: parent
-            implicitSize: 32
-            source: {
-                if (!root.dragged)
-                    return "";
-                const id = root.dragged.wayland?.appId ?? "";
-                return Quickshell.iconPath((id ? DesktopEntries.heuristicLookup(id)?.icon : "") || "application-x-executable", "application-x-executable");
+            size: 32
+            lit: true
+            icon: {
+                const id = root.dragged?.wayland?.appId ?? "";
+                return id ? DesktopEntries.heuristicLookup(id)?.icon ?? "" : "";
             }
         }
     }
