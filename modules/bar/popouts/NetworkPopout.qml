@@ -73,7 +73,7 @@ ColumnLayout {
                 Layout.bottomMargin: Appearance.spacing.small
                 visible: net.askPassword
                 implicitHeight: 40
-                radius: height / 2
+                radius: Appearance.radius.small
                 color: Appearance.colors.surfaceContainerHigh
 
                 onVisibleChanged: {

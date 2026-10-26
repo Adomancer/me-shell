@@ -13,7 +13,9 @@ StyledRect {
 
     implicitWidth: row.implicitWidth + Appearance.padding.small * 2
     implicitHeight: Config.barHeight - 10
-    radius: height / 2
+    radius: Appearance.radius.small
+    border.width: Appearance.border.thin
+    border.color: Appearance.colors.outlineVariant
     color: Appearance.colors.surfaceContainer
 
     Row {
@@ -43,7 +45,7 @@ StyledRect {
                 }
 
                 StateLayer {
-                    radius: height / 2
+                    radius: Appearance.radius.small
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: mouse => {
                         if (mouse.button === Qt.LeftButton && !item.modelData.onlyMenu) {

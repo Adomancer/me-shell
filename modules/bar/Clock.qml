@@ -12,7 +12,9 @@ StyledRect {
 
     implicitWidth: row.implicitWidth + Appearance.padding.normal * 2
     implicitHeight: Config.barHeight - 10
-    radius: height / 2
+    radius: Appearance.radius.small
+    border.width: Appearance.border.thin
+    border.color: Appearance.colors.outlineVariant
     color: active ? Appearance.colors.primaryContainer : Appearance.colors.surfaceContainer
 
     Row {

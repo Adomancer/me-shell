@@ -24,7 +24,9 @@ StyledRect {
 
     implicitWidth: slot * count + 4
     implicitHeight: slot + 4
-    radius: height / 2
+    radius: Appearance.radius.small
+    border.width: Appearance.border.thin
+    border.color: Appearance.colors.outlineVariant
     color: Appearance.colors.surfaceContainer
 
     Behavior on lead {
@@ -58,10 +60,10 @@ StyledRect {
             height: root.slot
             color: Appearance.colors.secondaryContainer
             opacity: filled ? 1 : 0
-            topLeftRadius: joinLeft ? 0 : height / 2
-            bottomLeftRadius: joinLeft ? 0 : height / 2
-            topRightRadius: joinRight ? 0 : height / 2
-            bottomRightRadius: joinRight ? 0 : height / 2
+            topLeftRadius: joinLeft ? 0 : Appearance.radius.small
+            bottomLeftRadius: joinLeft ? 0 : Appearance.radius.small
+            topRightRadius: joinRight ? 0 : Appearance.radius.small
+            bottomRightRadius: joinRight ? 0 : Appearance.radius.small
 
             Behavior on opacity {
                 Anim {
@@ -80,7 +82,7 @@ StyledRect {
         y: 2
         width: (to - from + 1) * root.slot
         height: root.slot
-        radius: height / 2
+        radius: Appearance.radius.small
         color: Appearance.colors.primary
     }
 
@@ -125,7 +127,7 @@ StyledRect {
                 visible: !cell.filled && !cell.isActive
                 width: 5
                 height: 5
-                radius: 3
+                radius: 1
                 color: Appearance.colors.outline
             }
 

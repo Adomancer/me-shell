@@ -45,7 +45,7 @@ StyledRect {
         }
 
         StateLayer {
-            radius: height / 2
+            radius: Appearance.radius.small
             onClicked: Config.barPopouts ? trigger.pin() : DrawerState.togglePanel("dash")
             onWheel: event => Audio.setVolume(Math.max(0, Math.min(1, Audio.volume + (event.angleDelta.y > 0 ? 0.05 : -0.05))))
         }
@@ -59,7 +59,9 @@ StyledRect {
 
     implicitWidth: row.implicitWidth + Appearance.padding.small * 2
     implicitHeight: Config.barHeight - 10
-    radius: height / 2
+    radius: Appearance.radius.small
+    border.width: Appearance.border.thin
+    border.color: Appearance.colors.outlineVariant
     color: Appearance.colors.surfaceContainer
 
     Row {

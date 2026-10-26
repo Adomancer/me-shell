@@ -5,7 +5,7 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Tiga tombol power profile; yang aktif melebar dan berwarna primer.
+// Tiga tombol power profile; yang aktif melebar dan berwarna aksen.
 ColumnLayout {
     id: root
 
@@ -29,11 +29,8 @@ ColumnLayout {
 
     spacing: Appearance.spacing.small
 
-    StyledText {
+    Caption {
         text: "Power profile"
-        color: Appearance.colors.primary
-        font.pixelSize: Appearance.font.size.small
-        font.weight: Font.Medium
     }
 
     RowLayout {
@@ -54,17 +51,11 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.preferredWidth: isActive ? 140 : 90
                 implicitHeight: 44
-                radius: isActive ? Appearance.radius.small + 4 : height / 2
+                radius: Appearance.radius.small
                 color: isActive ? Appearance.colors.primary : Appearance.colors.surfaceContainerHigh
                 opacity: usable ? 1 : 0.38
 
                 Behavior on Layout.preferredWidth {
-                    Anim {
-                        duration: Appearance.anim.durations.expressiveFast
-                        easing.bezierCurve: Appearance.anim.curves.expressiveFast
-                    }
-                }
-                Behavior on radius {
                     Anim {
                         duration: Appearance.anim.durations.expressiveFast
                         easing.bezierCurve: Appearance.anim.curves.expressiveFast

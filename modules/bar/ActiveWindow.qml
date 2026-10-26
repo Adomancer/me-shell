@@ -101,7 +101,7 @@ Item {
 
     StateLayer {
         anchors.margins: -4
-        radius: height / 2
+        radius: Appearance.radius.small
         onClicked: trigger.pin()
     }
 

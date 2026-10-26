@@ -11,13 +11,10 @@ import qs.utils
 ColumnLayout {
     id: root
 
-    component SectionLabel: StyledText {
+    component SectionLabel: Caption {
         Layout.fillWidth: true
         Layout.topMargin: Appearance.spacing.normal
         Layout.bottomMargin: 2
-        color: Appearance.colors.primary
-        font.pixelSize: Appearance.font.size.small
-        font.weight: Font.Medium
     }
 
     readonly property int pageWidth: 340
