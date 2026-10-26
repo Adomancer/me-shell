@@ -27,6 +27,9 @@ Scope {
 
     readonly property bool here: DrawerState.screen === "" || DrawerState.screen === modelData.name
     readonly property string active: here ? DrawerState.active : ""
+    // Drawer yang terbuka karena hover tidak mengambil fokus keyboard (kursor yang lewat
+    // tidak boleh memotong ketikan); setelah diklik (disematkan) baru mengambil fokus
+    readonly property bool grabbing: active !== "" && !DrawerState.hoverOpened
     readonly property bool focused: (Hyprland.focusedMonitor?.name ?? modelData.name) === modelData.name
     readonly property int frame: Appearance.frame.thickness
     // Kursor masih di pemicu atau di drawer yang dibuka dengan hover. Satu nilai gabungan supaya
@@ -88,7 +91,7 @@ Scope {
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.namespace: "me-shell"
         WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.keyboardFocus: root.active !== "" ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: root.grabbing ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         anchors {
             top: true
@@ -193,7 +196,7 @@ Scope {
         // Klik di luar drawer = tutup
         HyprlandFocusGrab {
             windows: [win]
-            active: root.active !== ""
+            active: root.grabbing
             onCleared: DrawerState.close()
         }
 
