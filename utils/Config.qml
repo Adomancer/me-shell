@@ -31,6 +31,7 @@ Singleton {
     readonly property bool cavaEnabled: adapter.cavaEnabled
     readonly property bool barShowMedia: adapter.barShowMedia
     readonly property bool barPopouts: adapter.barPopouts
+    readonly property bool barWorkspaceIcons: adapter.barWorkspaceIcons
     readonly property bool hoverOpen: adapter.hoverOpen
     readonly property int idleLockMinutes: adapter.idleLockMinutes
     readonly property int idleScreenOffMinutes: adapter.idleScreenOffMinutes
@@ -93,6 +94,8 @@ Singleton {
             property bool barShowMedia: true
             // Popout saat kursor di atas ikon bar
             property bool barPopouts: true
+            // Ikon aplikasi menggantikan nomor di workspace yang berisi window
+            property bool barWorkspaceIcons: true
             // Buka drawer dengan menyentuh tepi/pojok layar
             property bool hoverOpen: true
             // Menit diam sebelum aksi idle; 0 = mati
