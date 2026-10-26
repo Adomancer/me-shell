@@ -236,7 +236,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.topMargin: Appearance.spacing.normal
                 implicitHeight: 56
-                radius: height / 2
+                radius: Appearance.radius.small
                 color: Appearance.alpha(Appearance.colors.surfaceContainer, 0.85)
                 border.width: root.lock.failed && !root.lock.busy ? 2 : 0
                 border.color: Appearance.colors.error
