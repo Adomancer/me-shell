@@ -28,6 +28,21 @@ Scope {
     readonly property string active: here ? DrawerState.active : ""
     readonly property bool focused: (Hyprland.focusedMonitor?.name ?? modelData.name) === modelData.name
     readonly property int frame: Appearance.frame.thickness
+    // Kursor masih di pemicu atau di drawer yang dibuka dengan hover. Satu nilai gabungan supaya
+    // pindah dari pemicu ke drawer tidak sempat dianggap "keluar".
+    readonly property bool hoverInside: bar.clockHovered || cornerZone.containsMouse || dash.hovered || utilities.hovered
+
+    onHoverInsideChanged: {
+        if (DrawerState.hoverOpened && root.here)
+            hoverInside ? DrawerState.hoverHold() : DrawerState.hoverLeave();
+    }
+
+    // Zona hover di bingkai (ikut mask input). Nonaktif kalau hoverOpen dimatikan.
+    component HotZone: MouseArea {
+        enabled: Config.hoverOpen
+        hoverEnabled: true
+        acceptedButtons: Qt.NoButton
+    }
 
     // Window kosong yang hanya memesan ruang (exclusive zone) untuk bar dan bingkai
     component Exclusion: PanelWindow {
@@ -109,8 +124,60 @@ Scope {
                 },
                 Region {
                     item: utilities
+                },
+                Region {
+                    item: cornerZone
+                },
+                Region {
+                    item: edgeZone
                 }
             ]
+        }
+
+        // Hover jam sebentar = dashboard; pojok kanan bawah = utilitas; tepi kanan = slider OSD
+        Timer {
+            id: dashHover
+
+            interval: 250
+            onTriggered: DrawerState.hoverOpen("panel", root.modelData.name)
+        }
+
+        Timer {
+            id: cornerHover
+
+            interval: 150
+            onTriggered: DrawerState.hoverOpen("utilities", root.modelData.name)
+        }
+
+        Connections {
+            target: bar
+
+            function onClockHoveredChanged(): void {
+                if (bar.clockHovered && Config.hoverOpen && DrawerState.active === "")
+                    dashHover.restart();
+                else
+                    dashHover.stop();
+            }
+        }
+
+        HotZone {
+            id: cornerZone
+
+            x: win.width - width
+            y: win.height - height
+            width: 160
+            height: Math.max(root.frame, 2)
+            onContainsMouseChanged: containsMouse && DrawerState.active === "" ? cornerHover.restart() : cornerHover.stop()
+        }
+
+        HotZone {
+            id: edgeZone
+
+            x: win.width - width
+            y: Math.round(win.height / 3)
+            width: Math.max(root.frame, 2)
+            height: Math.round(win.height / 3)
+            onContainsMouseChanged: containsMouse ? OsdState.peek() : OsdState.release()
         }
 
         // Kafein: tahan idle (juga untuk hypridle kalau dipakai)
