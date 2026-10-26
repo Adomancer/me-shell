@@ -301,12 +301,16 @@ Item {
             }
         }
 
-        // Isi halaman
+        Divider {
+            vertical: true
+        }
+
+        // Isi halaman: tanpa kotak sendiri, satu permukaan dengan sidebar
         StyledClippingRect {
             Layout.fillWidth: true
             Layout.fillHeight: true
             radius: Appearance.radius.large
-            color: Appearance.colors.surfaceContainerLow
+            color: "transparent"
 
             ColumnLayout {
                 anchors.fill: parent
@@ -377,6 +381,37 @@ Item {
                                 })[root.page]
                         }
                     }
+
+                    // Isi masih berlanjut di bawah: memudar ke warna latar
+                    Rectangle {
+                        parent: flick
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        height: 40
+                        opacity: flick.contentY < flick.contentHeight - flick.height - 1 ? 1 : 0
+                        gradient: Gradient {
+                            GradientStop {
+                                position: 0
+                                color: "transparent"
+                            }
+                            GradientStop {
+                                position: 1
+                                color: Appearance.colors.surface
+                            }
+                        }
+
+                        Behavior on opacity {
+                            Anim {
+                                duration: Appearance.anim.durations.small
+                            }
+                        }
+                    }
+                }
+
+                Divider {
+                    Layout.leftMargin: Appearance.spacing.huge
+                    Layout.rightMargin: Appearance.spacing.huge
                 }
 
                 // Status simpan

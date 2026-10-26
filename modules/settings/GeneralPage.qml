@@ -75,14 +75,4 @@ ColumnLayout {
             onPicked: v => Config.set("launcherMaxResults", v)
         }
     }
-
-    SettingRow {
-        label: "Ikon monokrom"
-        description: "Ikon aplikasi abu-abu, berwarna saat dipilih"
-
-        SettingToggle {
-            checked: Config.launcherMonoIcons
-            onToggled: v => Config.set("launcherMonoIcons", v)
-        }
-    }
 }

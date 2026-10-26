@@ -63,6 +63,16 @@ ColumnLayout {
     }
 
     SettingRow {
+        label: "Ikon monokrom"
+        description: "Ikon aplikasi abu-abu di launcher, bar, overview, dan notifikasi; berwarna saat dipilih"
+
+        SettingToggle {
+            checked: Config.monoIcons
+            onToggled: v => Config.set("monoIcons", v)
+        }
+    }
+
+    SettingRow {
         label: "Palet aktif"
         description: "Dari wallpaper lewat matugen"
 

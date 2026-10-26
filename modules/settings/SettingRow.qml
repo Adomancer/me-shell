@@ -25,7 +25,6 @@ StyledRect {
         id: texts
 
         anchors.left: parent.left
-        anchors.leftMargin: Appearance.padding.large
         anchors.right: slot.left
         anchors.rightMargin: Appearance.spacing.huge
         anchors.verticalCenter: parent.verticalCenter
@@ -52,7 +51,6 @@ StyledRect {
         id: slot
 
         anchors.right: parent.right
-        anchors.rightMargin: Appearance.padding.large
         anchors.verticalCenter: parent.verticalCenter
         width: childrenRect.width
         height: childrenRect.height
