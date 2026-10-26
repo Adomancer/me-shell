@@ -54,6 +54,11 @@ StyledRect {
                         }
                     }
                 }
+
+                // Tooltip lewat popout
+                PopoutTrigger {
+                    popout: `tray:${item.modelData.tooltipTitle || item.modelData.title || item.modelData.id}`
+                }
             }
         }
     }

@@ -46,6 +46,16 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Appearance.spacing.normal
 
+        BarRecording {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: Recorder.recording
+        }
+
+        BarMedia {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: Config.barShowMedia && Media.active !== null
+        }
+
         Tray {
             anchors.verticalCenter: parent.verticalCenter
             visible: Config.barShowTray && count > 0

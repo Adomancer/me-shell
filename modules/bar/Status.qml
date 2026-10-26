@@ -3,7 +3,8 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Ikon status: jaringan, bluetooth, volume, baterai. Klik membuka dashboard, scroll mengubah volume.
+// Ikon status: jaringan, bluetooth, volume, baterai. Hover tiap ikon memunculkan popout-nya,
+// klik menyematkan popout itu. Scroll di ikon mana pun mengubah volume.
 StyledRect {
     id: root
 
@@ -25,7 +26,38 @@ StyledRect {
         return p > 0.95 ? "battery_full" : `battery_${Math.max(0, Math.min(6, Math.floor(p * 7)))}_bar`;
     }
 
-    implicitWidth: row.implicitWidth + Appearance.padding.normal * 2
+    component StatusIcon: Item {
+        id: item
+
+        required property string popout
+        default property alias content: inner.data
+        readonly property bool open: DrawerState.popout === popout
+
+        anchors.verticalCenter: parent.verticalCenter
+        implicitWidth: inner.implicitWidth + Appearance.padding.small * 2
+        implicitHeight: root.height - 6
+
+        Row {
+            id: inner
+
+            anchors.centerIn: parent
+            spacing: 2
+        }
+
+        StateLayer {
+            radius: height / 2
+            onClicked: Config.barPopouts ? trigger.pin() : DrawerState.togglePanel("dash")
+            onWheel: event => Audio.setVolume(Math.max(0, Math.min(1, Audio.volume + (event.angleDelta.y > 0 ? 0.05 : -0.05))))
+        }
+
+        PopoutTrigger {
+            id: trigger
+
+            popout: item.popout
+        }
+    }
+
+    implicitWidth: row.implicitWidth + Appearance.padding.small * 2
     implicitHeight: Config.barHeight - 10
     radius: height / 2
     color: Appearance.colors.surfaceContainer
@@ -34,31 +66,41 @@ StyledRect {
         id: row
 
         anchors.centerIn: parent
-        spacing: Appearance.spacing.normal
+        spacing: 0
 
-        MaterialIcon {
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.netIcon
-            color: Appearance.colors.text
+        StatusIcon {
+            popout: "network"
+
+            MaterialIcon {
+                text: root.netIcon
+                fill: 1
+                color: Appearance.colors.text
+            }
         }
 
-        MaterialIcon {
-            anchors.verticalCenter: parent.verticalCenter
+        StatusIcon {
             visible: BluetoothService.available
-            text: BluetoothService.enabled ? "bluetooth" : "bluetooth_disabled"
-            color: Appearance.colors.text
+            popout: "bluetooth"
+
+            MaterialIcon {
+                text: BluetoothService.enabled ? (BluetoothService.devices.length > 0 ? "bluetooth_connected" : "bluetooth") : "bluetooth_disabled"
+                color: Appearance.colors.text
+            }
         }
 
-        MaterialIcon {
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.volIcon
-            color: Appearance.colors.text
+        StatusIcon {
+            popout: "audio"
+
+            MaterialIcon {
+                text: root.volIcon
+                fill: 1
+                color: Appearance.colors.text
+            }
         }
 
-        Row {
-            anchors.verticalCenter: parent.verticalCenter
+        StatusIcon {
             visible: Battery.available
-            spacing: 2
+            popout: "battery"
 
             MaterialIcon {
                 anchors.verticalCenter: parent.verticalCenter
@@ -74,10 +116,5 @@ StyledRect {
                 font.pixelSize: Appearance.font.size.smaller
             }
         }
-    }
-
-    StateLayer {
-        onClicked: DrawerState.togglePanel("dash")
-        onWheel: event => Audio.setVolume(Math.max(0, Math.min(1, Audio.volume + (event.angleDelta.y > 0 ? 0.05 : -0.05))))
     }
 }

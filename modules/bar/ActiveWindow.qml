@@ -6,7 +6,8 @@ import qs.components
 import qs.utils
 
 // Ikon + judul window aktif. Saat window berganti, judul lama turun memudar lalu yang baru naik.
-Row {
+// Hover = popout pratinjau window.
+Item {
     id: root
 
     readonly property var toplevel: ToplevelManager.activeToplevel
@@ -16,7 +17,8 @@ Row {
     property string shownTitle: title
     property string shownIcon: entry?.icon ?? ""
 
-    spacing: Appearance.spacing.small
+    implicitWidth: label.implicitWidth
+    implicitHeight: Math.max(label.implicitHeight, Config.barHeight - 10)
 
     onTitleChanged: swap.restart()
 
@@ -65,6 +67,7 @@ Row {
     Item {
         id: label
 
+        anchors.verticalCenter: parent.verticalCenter
         implicitWidth: inner.implicitWidth
         implicitHeight: inner.implicitHeight
 
@@ -94,5 +97,17 @@ Row {
                 color: Appearance.colors.textDim
             }
         }
+    }
+
+    StateLayer {
+        anchors.margins: -4
+        radius: height / 2
+        onClicked: trigger.pin()
+    }
+
+    PopoutTrigger {
+        id: trigger
+
+        popout: "window"
     }
 }
