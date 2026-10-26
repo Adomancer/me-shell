@@ -1,4 +1,6 @@
+import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Widgets
 import QtQuick
 import qs.components
 import qs.services
@@ -91,15 +93,26 @@ StyledRect {
             required property int index
             readonly property bool isActive: index === root.activeIndex
             readonly property bool filled: root.occupied(index)
+            // Ikon aplikasi window pertama di workspace ini (opsi barWorkspaceIcons)
+            readonly property string appId: Config.barWorkspaceIcons ? (Hyprland.toplevels.values.find(t => t.workspace?.id === index + 1)?.wayland?.appId ?? "") : ""
+            readonly property string appIcon: appId ? (DesktopEntries.heuristicLookup(appId)?.icon || "application-x-executable") : ""
 
             x: 2 + index * root.slot
             y: 2
             width: root.slot
             height: root.slot
 
+            IconImage {
+                anchors.centerIn: parent
+                visible: cell.appIcon !== ""
+                implicitSize: 16
+                source: cell.appIcon ? Quickshell.iconPath(cell.appIcon, "application-x-executable") : ""
+                asynchronous: true
+            }
+
             StyledText {
                 anchors.centerIn: parent
-                visible: cell.filled || cell.isActive
+                visible: (cell.filled || cell.isActive) && cell.appIcon === ""
                 text: cell.index + 1
                 font.family: Appearance.font.family.mono
                 font.pixelSize: Appearance.font.size.smaller
