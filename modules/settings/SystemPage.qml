@@ -48,6 +48,16 @@ ColumnLayout {
         }
     }
 
+    SettingRow {
+        label: "Tahan saat media diputar"
+        description: "Layar tidak terkunci atau mati selama lagu/video jalan"
+
+        SettingToggle {
+            checked: Config.idleInhibitMedia
+            onToggled: v => Config.set("idleInhibitMedia", v)
+        }
+    }
+
     SettingSection {
         title: "Lampu malam"
     }
@@ -111,6 +121,20 @@ ColumnLayout {
         SettingToggle {
             checked: Config.clipboardHistory
             onToggled: v => Config.set("clipboardHistory", v)
+        }
+    }
+
+    SettingSection {
+        title: "Update"
+    }
+
+    SettingRow {
+        label: "Cek update paket"
+        description: Updates.available ? (Updates.count > 0 ? `${Updates.count} paket bisa diperbarui` : "Tiap jam lewat " + (Updates.manager === "dnf" ? "dnf" : "checkupdates")) : "Butuh dnf atau pacman-contrib (checkupdates)"
+
+        SettingToggle {
+            checked: Config.updateCheck
+            onToggled: v => Config.set("updateCheck", v)
         }
     }
 }

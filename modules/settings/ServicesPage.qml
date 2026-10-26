@@ -49,6 +49,16 @@ ColumnLayout {
         }
     }
 
+    SettingRow {
+        label: "Popup saat fullscreen"
+        description: "Mati = popup ditahan selama game/video fullscreen, tetap masuk riwayat"
+
+        SettingToggle {
+            checked: Config.notifsInFullscreen
+            onToggled: v => Config.set("notifsInFullscreen", v)
+        }
+    }
+
     SettingSection {
         title: "Audio"
     }
