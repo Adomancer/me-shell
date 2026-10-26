@@ -5,7 +5,8 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import QtQuick
 
-// Drawer mana yang terbuka ("panel", "launcher", "session", "utilities", "settings", "popout") dan di monitor mana.
+// Drawer mana yang terbuka ("panel", "launcher", "session", "utilities", "settings", "cheatsheet", "overview",
+// "popout") dan di monitor mana.
 Singleton {
     id: root
 

@@ -14,6 +14,10 @@ Singleton {
     id: root
 
     property bool inhibited: false
+    // Ada lagu/video yang diputar dan setting-nya aktif
+    readonly property bool mediaHolds: Config.idleInhibitMedia && Media.playing
+    // Kafein atau media: idle ditahan (juga dipakai IdleInhibitor di Drawers untuk hypridle)
+    readonly property bool holding: inhibited || mediaHolds
 
     function toggleInhibit(): void {
         inhibited = !inhibited;
@@ -21,7 +25,7 @@ Singleton {
     }
 
     IdleMonitor {
-        enabled: !root.inhibited && Config.idleLockMinutes > 0
+        enabled: !root.holding && Config.idleLockMinutes > 0
         timeout: Config.idleLockMinutes * 60
         respectInhibitors: true
         onIsIdleChanged: {
@@ -31,14 +35,14 @@ Singleton {
     }
 
     IdleMonitor {
-        enabled: !root.inhibited && Config.idleScreenOffMinutes > 0
+        enabled: !root.holding && Config.idleScreenOffMinutes > 0
         timeout: Config.idleScreenOffMinutes * 60
         respectInhibitors: true
         onIsIdleChanged: Hyprland.dispatch(isIdle ? "dpms off" : "dpms on")
     }
 
     IdleMonitor {
-        enabled: !root.inhibited && Config.idleSuspendMinutes > 0
+        enabled: !root.holding && Config.idleSuspendMinutes > 0
         timeout: Config.idleSuspendMinutes * 60
         respectInhibitors: true
         onIsIdleChanged: {

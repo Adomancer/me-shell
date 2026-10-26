@@ -110,6 +110,13 @@ Singleton {
             cmd: "picker color"
         },
         {
+            id: "cheatsheet",
+            label: "Daftar keybind",
+            mods: "SUPER",
+            key: "SLASH",
+            cmd: "drawers toggle cheatsheet"
+        },
+        {
             id: "session",
             label: "Session menu",
             mods: "CTRL ALT",
@@ -140,7 +147,10 @@ Singleton {
         ["bindl", "", "XF86AudioPrev", "media previous"],
         ["bindl", "", "XF86AudioStop", "media stop"],
         ["bindel", "", "XF86MonBrightnessUp", "brightness up"],
-        ["bindel", "", "XF86MonBrightnessDown", "brightness down"]
+        ["bindel", "", "XF86MonBrightnessDown", "brightness down"],
+        // bindn: tombol tetap sampai ke aplikasi, shell hanya ikut membaca status lock untuk toast
+        ["bindn", "", "Caps_Lock", "keyboard locks"],
+        ["bindn", "", "Num_Lock", "keyboard locks"]
     ]
 
     // Daftar yang sedang dipakai: default + perubahan dari keybinds.json

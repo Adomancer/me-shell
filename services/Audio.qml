@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import QtQuick
+import qs.services
 
 Singleton {
     id: root
@@ -21,6 +22,12 @@ Singleton {
     // Tracker sengaja tidak memakai `streams` supaya tidak jadi binding loop.
     readonly property var allStreams: Pipewire.nodes.values.filter(n => n.isStream && n.audio)
     readonly property var streams: allStreams.filter(n => n.properties["media.class"] !== "Stream/Input/Audio")
+
+    // Indikator privasi (ide dari Privacy.qml end-4): aplikasi yang sedang merekam mikrofon atau mengambil
+    // video (kamera lewat Pipewire, atau berbagi layar). cava (visualizer shell sendiri) tidak dihitung.
+    readonly property var videoStreams: Pipewire.nodes.values.filter(n => n.isStream && !n.audio)
+    readonly property var micUsers: allStreams.filter(n => n.properties["media.class"] === "Stream/Input/Audio" && !/cava/i.test(n.properties["application.name"] ?? n.name))
+    readonly property var videoUsers: videoStreams.filter(n => n.properties["media.class"] === "Stream/Input/Video")
 
     function setVolume(value: real): void {
         if (!sink?.ready || !sink.audio)
@@ -46,6 +53,16 @@ Singleton {
             source.audio.muted = !source.audio.muted;
     }
 
+    // Perangkat default berganti (colok headset dsb.); Toaster sendiri mengabaikan perubahan saat startup
+    onSinkChanged: {
+        if (sink)
+            Toaster.show("speaker", "Output audio", nameOf(sink), "");
+    }
+    onSourceChanged: {
+        if (source)
+            Toaster.show("mic", "Input audio", nameOf(source), "");
+    }
+
     function setSink(node: PwNode): void {
         Pipewire.preferredDefaultAudioSink = node;
     }
@@ -64,7 +81,7 @@ Singleton {
     }
 
     PwObjectTracker {
-        objects: [root.sink, root.source, ...root.sinks, ...root.allStreams].filter(n => n)
+        objects: [root.sink, root.source, ...root.sinks, ...root.allStreams, ...root.videoStreams].filter(n => n)
     }
 
     IpcHandler {

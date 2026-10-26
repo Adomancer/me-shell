@@ -3,14 +3,19 @@ pragma Singleton
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
+import Quickshell.Hyprland
 import QtQuick
 import qs.services
+import qs.utils
 
 // Notification server. Jangan jalankan bersama swaync/mako/dunst.
 Singleton {
     id: root
 
     property bool dnd: false
+    // Window fullscreen di monitor yang fokus (game, video): popup ditahan, tetap masuk riwayat
+    readonly property bool fullscreen: Hyprland.focusedMonitor?.activeWorkspace?.hasFullscreen ?? false
+    readonly property bool quiet: dnd || GameMode.enabled || (fullscreen && !Config.notifsInFullscreen)
     // Notifikasi yang sedang tampil sebagai popup (terbaru di depan)
     property var popups: []
     readonly property var list: server.trackedNotifications.values
@@ -66,7 +71,7 @@ Singleton {
                 root.dismissPopup(notif);
                 delete root.times[notif.id];
             });
-            if ((!root.dnd && !GameMode.enabled) || notif.urgency === NotificationUrgency.Critical)
+            if (!root.quiet || notif.urgency === NotificationUrgency.Critical)
                 root.popups = [notif, ...root.popups].slice(0, 5);
         }
     }
