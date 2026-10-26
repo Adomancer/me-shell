@@ -18,6 +18,7 @@ ShellRoot {
         Clipboard.watching;
         Keyboard.layout;
         Updates.count;
+        Todo.pending;
     }
 
     Background {}
