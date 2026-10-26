@@ -29,12 +29,11 @@ Item {
                 onMoved: v => Audio.setVolume(v)
             }
 
-            StyledText {
+            DisplayText {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: Audio.muted ? "--" : Math.round(Audio.volume * 100)
-                font.family: Appearance.font.family.mono
-                font.pixelSize: Appearance.font.size.smaller
-                color: Appearance.colors.textDim
+                weight: 800
+                font.pixelSize: Appearance.font.size.large
             }
         }
 
@@ -48,12 +47,11 @@ Item {
                 onMoved: v => Brightness.set(v)
             }
 
-            StyledText {
+            DisplayText {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: Math.round(Brightness.value * 100)
-                font.family: Appearance.font.family.mono
-                font.pixelSize: Appearance.font.size.smaller
-                color: Appearance.colors.textDim
+                weight: 800
+                font.pixelSize: Appearance.font.size.large
             }
         }
     }
