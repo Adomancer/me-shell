@@ -71,6 +71,7 @@ Item {
         StyledText {
             anchors.verticalCenter: parent.verticalCenter
             text: "Overview"
+            font.family: Appearance.font.family.title
             font.pixelSize: Appearance.font.size.larger
             font.weight: Font.Medium
         }
