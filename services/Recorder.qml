@@ -43,7 +43,8 @@ Singleton {
         const file = `${Config.recordingDir}/Recording_${Qt.formatDateTime(new Date(), "yyyy-MM-dd_hh-mm-ss")}.mp4`;
         proc.file = file;
         proc.command = ["setpriv", "--pdeathsig", "TERM", "sh", "-c", 'f="$1"; shift; mkdir -p "$(dirname "$f")" && exec wf-recorder -f "$f" "$@"', "sh", file, ...args, ...(Config.recordAudio ? ["-a"] : [])];
-        proc.running = true;
+        // Tunggu drawer/picker hilang supaya tidak ikut terekam
+        startDelay.restart();
     }
 
     function stop(): void {
@@ -55,6 +56,13 @@ Singleton {
         command: ["sh", "-c", "command -v wf-recorder"]
         running: true
         onExited: code => root.available = code === 0
+    }
+
+    Timer {
+        id: startDelay
+
+        interval: 300
+        onTriggered: proc.running = true
     }
 
     Process {
