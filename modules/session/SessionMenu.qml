@@ -133,26 +133,11 @@ Item {
             }
         }
 
-        // Jam dot-matrix bertumpuk + uptime
+        // Uptime (jam sudah ada di bar)
         Column {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 0
             bottomPadding: Appearance.spacing.normal
-
-            DisplayText {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: Qt.formatDateTime(Time.date, "hh")
-                weight: 800
-                font.pixelSize: 30
-            }
-
-            DisplayText {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: Qt.formatDateTime(Time.date, "mm")
-                color: Appearance.colors.primary
-                weight: 800
-                font.pixelSize: 30
-            }
 
             Caption {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -183,7 +168,8 @@ Item {
                 readonly property bool isHolding: root.holding === modelData.id
                 readonly property bool danger: isCurrent && modelData.confirm
                 readonly property real fill: danger ? root.hold : 0
-                readonly property color ink: isCurrent ? (modelData.confirm ? Appearance.colors.errorText : Appearance.colors.primaryText) : Appearance.colors.text
+                // Terpilih: aksi berbahaya = merah penuh (peringatan), lainnya = lingkaran netral dengan ikon aksen
+                readonly property color ink: isCurrent ? (modelData.confirm ? Appearance.colors.errorText : Appearance.colors.secondaryContainerText) : Appearance.colors.text
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 implicitWidth: 84
@@ -232,7 +218,7 @@ Item {
                     width: btn.isCurrent ? 56 : 50
                     height: width
                     radius: width / 2
-                    color: btn.isCurrent ? (btn.modelData.confirm ? Appearance.colors.error : Appearance.colors.primary) : "transparent"
+                    color: btn.isCurrent ? (btn.modelData.confirm ? Appearance.colors.error : Appearance.colors.secondaryContainer) : "transparent"
                     border.width: btn.isCurrent ? 0 : 1
                     border.color: Appearance.colors.hairline
                     scale: btn.isHolding ? 0.88 : 1
