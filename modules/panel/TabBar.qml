@@ -33,6 +33,11 @@ Item {
             name: "notif",
             label: "Notif",
             icon: "notifications"
+        },
+        {
+            name: "focus",
+            label: "Fokus",
+            icon: "timer"
         }
     ]
     readonly property int index: Math.max(0, items.findIndex(i => i.name === current))
