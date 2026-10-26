@@ -449,12 +449,22 @@ Item {
                 highlightFollowsCurrentItem: false
                 boundsBehavior: Flickable.StopAtBounds
 
+                // Sorotan: fill tipis + batang aksen di kiri, meluncur dengan pegas
                 highlight: StyledRect {
                     width: list.width
                     height: root.rowHeight
                     y: list.currentItem?.y ?? 0
                     radius: Appearance.radius.normal
-                    color: Appearance.colors.secondaryContainer
+                    color: Appearance.colors.surfaceContainerHigh
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 3
+                        height: parent.height * 0.5
+                        radius: 1.5
+                        color: Appearance.colors.primary
+                    }
 
                     Behavior on y {
                         Anim {
@@ -479,7 +489,7 @@ Item {
                     required property var modelData
                     required property int index
                     readonly property bool current: ListView.isCurrentItem
-                    readonly property color ink: current ? Appearance.colors.secondaryContainerText : Appearance.colors.text
+                    readonly property color ink: current ? Appearance.colors.primary : Appearance.colors.text
                     readonly property bool mono: modelData.kind === "calc" || modelData.kind === "run"
 
                     width: ListView.view.width
@@ -545,7 +555,7 @@ Item {
                                 width: parent.width
                                 visible: text !== ""
                                 text: row.modelData.subtitle ?? ""
-                                color: row.current ? Appearance.colors.secondaryContainerText : Appearance.colors.textDim
+                                color: Appearance.colors.textDim
                                 font.pixelSize: Appearance.font.size.small
                                 elide: Text.ElideRight
                             }
@@ -593,13 +603,16 @@ Item {
             }
         }
 
-        StyledRect {
+        // Kolom cari tanpa kotak: hanya garis bawah
+        Item {
             width: parent.width
             height: 48
-            radius: Appearance.radius.small
-            color: Appearance.colors.surfaceContainerHigh
-            border.width: Appearance.border.thin
-            border.color: Appearance.colors.outlineVariant
+
+            Divider {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+            }
 
             MaterialIcon {
                 id: modeIcon
@@ -633,9 +646,28 @@ Item {
                 selectByMouse: true
                 selectionColor: Appearance.colors.primary
                 selectedTextColor: Appearance.colors.primaryText
+                // Kursor blok berkedip ala terminal lama
                 cursorDelegate: Rectangle {
-                    width: 2
+                    width: 9
                     color: Appearance.colors.primary
+
+                    SequentialAnimation on opacity {
+                        loops: Animation.Infinite
+                        running: true
+
+                        PropertyAction {
+                            value: 1
+                        }
+                        PauseAnimation {
+                            duration: 530
+                        }
+                        PropertyAction {
+                            value: 0
+                        }
+                        PauseAnimation {
+                            duration: 530
+                        }
+                    }
                 }
 
                 Keys.onEscapePressed: DrawerState.close()
