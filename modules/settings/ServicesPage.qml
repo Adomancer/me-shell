@@ -73,6 +73,16 @@ ColumnLayout {
         }
     }
 
+    SettingRow {
+        label: "Lirik"
+        description: "Lirik tersinkron dari lrclib.net di tab MEDIA, disimpan di cache"
+
+        SettingToggle {
+            checked: Config.lyricsEnabled
+            onToggled: v => Config.set("lyricsEnabled", v)
+        }
+    }
+
     SettingSection {
         title: "Jaringan"
     }
