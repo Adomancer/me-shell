@@ -89,6 +89,9 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: tab.modelData.label
                         color: tab.ink
+                        font.family: Appearance.font.family.title
+                        font.capitalization: Font.AllUppercase
+                        font.letterSpacing: 1
                         font.weight: tab.isActive ? Font.DemiBold : Font.Normal
                     }
 
@@ -98,7 +101,7 @@ Item {
                         visible: tab.modelData.name === "notif" && Notifs.list.length > 0
                         implicitWidth: Math.max(implicitHeight, count.implicitWidth + 10)
                         implicitHeight: 18
-                        radius: height / 2
+                        radius: Appearance.radius.small
                         color: Appearance.colors.error
 
                         StyledText {

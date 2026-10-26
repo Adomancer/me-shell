@@ -163,7 +163,7 @@ StyledClippingRect {
                                 anchors.bottom: parent.bottom
                                 width: parent.width
                                 height: Math.max(width, eqBar.level * eqBar.height)
-                                radius: width / 2
+                                radius: 1
                                 color: Appearance.colors.primary
                                 opacity: 0.45 + eqBar.level * 0.55
                             }
@@ -217,7 +217,7 @@ StyledClippingRect {
                     x: (seek.pressed ? seek.live : root.progress) * parent.width - width / 2
                     width: seek.containsMouse || seek.pressed ? 16 : 12
                     height: width
-                    radius: width / 2
+                    radius: 1
                     color: Appearance.colors.primary
 
                     Behavior on width {

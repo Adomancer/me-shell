@@ -16,6 +16,7 @@ ColumnLayout {
 
         StyledText {
             text: "Notifikasi"
+            font.family: Appearance.font.family.title
             font.pixelSize: Appearance.font.size.large
             font.weight: Font.Medium
         }
@@ -93,7 +94,7 @@ ColumnLayout {
                 StyledRect {
                     implicitWidth: Math.max(implicitHeight, groupCount.implicitWidth + 10)
                     implicitHeight: 18
-                    radius: height / 2
+                    radius: Appearance.radius.small
                     color: Appearance.colors.secondaryContainer
 
                     StyledText {

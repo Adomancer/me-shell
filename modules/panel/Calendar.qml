@@ -41,6 +41,7 @@ ColumnLayout {
             Layout.leftMargin: Appearance.spacing.small
             text: `${Qt.locale().standaloneMonthName(root.month, Locale.LongFormat)} ${root.year}`
             color: Appearance.colors.primary
+            font.family: Appearance.font.family.title
             font.pixelSize: Appearance.font.size.larger
             font.weight: Font.Medium
         }
@@ -96,7 +97,7 @@ ColumnLayout {
                 Layout.alignment: Qt.AlignHCenter
                 implicitWidth: 28
                 implicitHeight: 26
-                radius: height / 2
+                radius: Appearance.radius.small
                 color: isToday ? Appearance.colors.primary : "transparent"
 
                 StyledText {
