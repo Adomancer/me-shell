@@ -87,9 +87,6 @@ Item {
     readonly property real cellW: Math.floor((width - pad * 2) / gridCols)
     readonly property real cellH: mode === "wall" ? Math.round(cellW * 0.7) : mode === "emoji" ? cellW : 96
 
-    // [[emoji, nama]] dari assets/emoji.txt, dimuat sekali
-    property var emojis: []
-
     // Aksi untuk mode "/". run dipanggil setelah launcher tertutup; keep = launcher tetap terbuka.
     readonly property var actions: [
         {
@@ -204,7 +201,10 @@ Item {
         }
     ]
 
+    // Tidak dihitung selama tertutup (aksi dan daftar aplikasi bisa berubah kapan saja)
     readonly property var results: {
+        if (!shown && !visible)
+            return [];
         switch (mode) {
         case "calc":
             {
@@ -256,7 +256,7 @@ Item {
         case "emoji":
             {
                 const words = term.toLowerCase().split(/\s+/).filter(w => w);
-                return emojis.filter(e => words.every(w => e[1].includes(w))).slice(0, 200).map(e => ({
+                return Emojis.list.filter(e => words.every(w => e[1].includes(w))).slice(0, 200).map(e => ({
                             kind: "emoji",
                             glyph: e[0],
                             title: e[1]
@@ -479,11 +479,6 @@ Item {
         }
     }
 
-    FileView {
-        path: `${Paths.shell}/assets/emoji.txt`
-        onLoaded: root.emojis = text().split("\n").filter(l => l.includes("\t")).map(l => l.split("\t"))
-    }
-
     FolderListModel {
         id: walls
 
@@ -629,7 +624,7 @@ Item {
 
                     SequentialAnimation on opacity {
                         loops: Animation.Infinite
-                        running: true
+                        running: root.visible && input.activeFocus
 
                         PropertyAction {
                             value: 1
