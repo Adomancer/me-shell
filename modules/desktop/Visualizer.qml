@@ -47,8 +47,8 @@ Item {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: Math.max(0, bar.level * bar.height)
-                    topLeftRadius: Math.min(width / 2, height)
-                    topRightRadius: Math.min(width / 2, height)
+                    topLeftRadius: Math.min(2, height)
+                    topRightRadius: Math.min(2, height)
                     gradient: Gradient {
                         GradientStop {
                             position: 0
