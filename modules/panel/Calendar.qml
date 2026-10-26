@@ -89,7 +89,7 @@ ColumnLayout {
                     return new Date(root.year, root.month, 1 - offset + index);
                 }
                 readonly property bool inMonth: day.getMonth() === root.month
-                readonly property bool isToday: day.toDateString() === Time.date.toDateString()
+                readonly property bool isToday: day.toDateString() === Time.today
 
                 Layout.alignment: Qt.AlignHCenter
                 implicitWidth: 28

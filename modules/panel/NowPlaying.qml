@@ -49,14 +49,13 @@ Card {
                 color: Appearance.colors.outline
             }
 
+            // Hanya berputar selama lagu jalan dan panel tampil; mulai lagi dari sudut terakhir, jadi tidak meloncat
             RotationAnimator on rotation {
-                from: 0
-                to: 360
+                from: disc.rotation % 360
+                to: disc.rotation % 360 + 360
                 duration: 12000
                 loops: Animation.Infinite
-                running: true
-                // Dijeda, bukan dihentikan, supaya tidak meloncat ke 0
-                paused: !Media.playing
+                running: Media.playing && root.visible
             }
         }
 

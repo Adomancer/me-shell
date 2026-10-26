@@ -74,6 +74,7 @@ Item {
                     height: root.pageHeight
                 }
                 MediaTab {
+                    live: root.usingCava
                     width: root.pageWidth
                     height: root.pageHeight
                 }

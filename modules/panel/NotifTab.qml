@@ -60,14 +60,14 @@ ColumnLayout {
         // Satu baris per aplikasi, urut dari notifikasi terbaru. Nilainya string, jadi delegate tetap
         // sama saat notifikasi dalam grup bertambah/berkurang.
         model: ScriptModel {
-            values: [...new Set([...Notifs.list].reverse().map(n => n.appName || "Lainnya"))]
+            values: Object.keys(Notifs.groups)
         }
 
         delegate: Column {
             id: group
 
             required property string modelData
-            readonly property var items: [...Notifs.list].reverse().filter(n => (n.appName || "Lainnya") === modelData)
+            readonly property var items: Notifs.groups[modelData] ?? []
             property bool expanded: false
 
             width: ListView.view.width

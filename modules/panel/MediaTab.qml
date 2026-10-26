@@ -10,6 +10,8 @@ Item {
     id: root
 
     readonly property var player: Media.active
+    // Tab sedang tampil; data cava hanya dialirkan saat itu
+    property bool live: false
     readonly property real progress: player && player.length > 0 ? Math.min(1, player.position / player.length) : 0
 
     function fmt(seconds: real): string {
@@ -97,7 +99,7 @@ Item {
                     anchors.fill: parent
                     columns: Cava.bars
                     rows: 9
-                    values: Media.playing ? Cava.values : []
+                    values: root.live && Media.playing ? Cava.values : []
                 }
 
                 StyledText {
