@@ -221,20 +221,10 @@ Item {
                     bottomPadding: Appearance.padding.normal
                     spacing: Appearance.spacing.normal
 
-                    MaterialIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "settings"
-                        fill: 1
-                        color: Appearance.colors.primary
-                        font.pixelSize: Appearance.font.size.extraLarge
-                    }
-
-                    StyledText {
+                    Caption {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Pengaturan"
-                        font.family: Appearance.font.family.title
-                        font.pixelSize: Appearance.font.size.large
-                        font.weight: Font.Medium
+                        color: Appearance.colors.text
                     }
                 }
 
@@ -257,17 +247,19 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: Appearance.spacing.normal
 
-                            MaterialIcon {
+                            // Nomor ala TE + label
+                            StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: item.modelData.icon
-                                fill: item.isActive ? 1 : 0
-                                color: item.isActive ? Appearance.colors.primary : Appearance.colors.textDim
+                                text: String(item.index + 1).padStart(2, "0")
+                                color: item.isActive ? Appearance.colors.primary : Appearance.colors.outline
+                                font.family: Appearance.font.family.mono
+                                font.pixelSize: Appearance.font.size.small
                             }
 
                             StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: item.modelData.label
-                                color: item.isActive ? Appearance.colors.primary : Appearance.colors.text
+                                color: item.isActive ? Appearance.colors.text : Appearance.colors.textDim
                                 font.weight: item.isActive ? Font.Medium : Font.Normal
                             }
                         }
@@ -341,12 +333,26 @@ Item {
                             id: shift
                         }
 
-                        StyledText {
+                        // Nomor halaman dot-matrix + judul
+                        Row {
                             visible: root.current.id !== "about"
-                            text: root.current.label
-                            font.family: Appearance.font.family.title
-                            font.pixelSize: Appearance.font.size.extraLarge
-                            font.weight: Font.Medium
+                            spacing: Appearance.spacing.large
+
+                            DisplayText {
+                                anchors.baseline: pageTitle.baseline
+                                text: String(root.index + 1).padStart(2, "0")
+                                weight: 800
+                                color: Appearance.colors.primary
+                                font.pixelSize: 40
+                            }
+
+                            StyledText {
+                                id: pageTitle
+
+                                text: root.current.label
+                                font.pixelSize: Appearance.font.size.extraLarge
+                                font.weight: Font.Medium
+                            }
                         }
 
                         StyledText {
