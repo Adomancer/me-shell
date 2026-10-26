@@ -356,7 +356,7 @@ Item {
 
                     Image {
                         anchors.fill: parent
-                        source: `file://${wall.modelData.path}`
+                        source: wall.modelData.path ? `file://${wall.modelData.path}` : ""
                         sourceSize: Qt.size(600, 400)
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
@@ -477,7 +477,8 @@ Item {
                                 anchors.centerIn: parent
                                 visible: row.modelData.kind === "app"
                                 implicitSize: 32
-                                source: visible ? Quickshell.iconPath(row.modelData.icon, "application-x-executable") : ""
+                                // iconPath(nama, fallback) dengan nama kosong menghasilkan path rusak
+                                source: visible ? Quickshell.iconPath(row.modelData.icon || "application-x-executable", "application-x-executable") : ""
                                 asynchronous: true
                             }
 
