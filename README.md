@@ -15,9 +15,10 @@ Sudah dites di Fedora 44 (VM), tapi belum di laptop asli dan belum di Arch, jadi
 - panel utilitas di pojok kanan bawah: kafein, mode game, jangan ganggu, lampu malam, screenshot, rekam layar, ambil warna, mic, power profile. Toast kecil dari shell juga muncul di pojok ini
 - overview workspace (`SUPER + Tab`) dengan pratinjau live tiap window, window bisa diseret ke workspace lain
 - screenshot dan rekam layar pakai pemilih area sendiri: arahkan ke window buat milih window itu, seret buat milih area bebas
-- launcher: cari aplikasi (yang sering dibuka naik ke atas), `/` buat aksi shell, `;` buat riwayat clipboard, `:` buat carousel wallpaper, `=` buat ngitung, `>` buat jalanin perintah
+- launcher: cari aplikasi (yang sering dibuka naik ke atas), `/` buat aksi shell, `;` buat riwayat clipboard, `.` buat emoji, `:` buat carousel wallpaper, `=` buat ngitung, `>` buat jalanin perintah
 - jam besar dan visualizer di atas wallpaper
 - idle bawaan (kunci layar, matiin layar, suspend), jadi hypridle nggak perlu lagi
+- dialog password admin sendiri (agen polkit), jadi hyprpolkitagent atau polkit-gnome juga nggak perlu
 - notifikasi (bisa di-swipe), OSD volume/brightness, menu power di tepi kanan
 - lockscreen tiga kolom: cuaca, info sistem, media, jam, foto profil, notifikasi, plus efek CRT opsional
 - wallpaper + warna yang ikut wallpaper (pakai matugen)
@@ -39,7 +40,7 @@ Script-nya nanya sekali sebelum install paket, lalu:
 - unduh font Material Symbols dan Rubik ke `~/.local/share/fonts/me-shell`
 - clone repo ke `~/.local/share/me-shell` dan pasang perintah `me-shell` di `~/.local/bin`
 - bikin `~/.config/me-shell/hypr/` dan nambahin satu baris `source` ke `hyprland.conf` (ada backup-nya). Kalau belum punya `hyprland.conf`, dibuatin yang minimal
-- nawarin buat matiin Waybar, swaync, mako, dunst, atau hypridle kalau ketemu di config, soalnya bentrok
+- nawarin buat matiin Waybar, swaync, mako, dunst, hypridle, atau agen polkit lain kalau ketemu di config, soalnya bentrok
 
 Setelah itu tinggal login ke Hyprland. Kalau install dari live USB, jalankan `passwd` dulu, soalnya user live nggak punya password dan lockscreen jadi nggak bisa di-unlock.
 
@@ -73,6 +74,7 @@ Keybind bawaannya mengikuti JaKooLit:
 | `SUPER + Tab` | overview workspace |
 | `SUPER + A` | utilitas |
 | `SUPER + V` | riwayat clipboard |
+| `SUPER + .` | emoji |
 | `SUPER + SHIFT + S` | screenshot area atau window |
 | `Print` | screenshot layar penuh |
 | `SUPER + SHIFT + R` | mulai/berhenti rekam layar |
@@ -80,7 +82,7 @@ Keybind bawaannya mengikuti JaKooLit:
 | `CTRL + ALT + P` | menu power |
 | `CTRL + ALT + L` | lockscreen |
 
-Tombol volume, mic, media, dan brightness di keyboard juga sudah diurus. Semua kombinasi bisa diganti dari menu settings, halaman Keybind, lalu klik "Terapkan keybind". Kalau sebelumnya pakai JaKooLit, hapus dulu bind lama yang manggil rofi, wlogout, swaync, script volume/media, screenshot, dan clipboard-nya supaya nggak dobel. Emoji belum diurus shell ini, jadi bind itu biarin aja.
+Tombol volume, mic, media, dan brightness di keyboard juga sudah diurus. Semua kombinasi bisa diganti dari menu settings, halaman Keybind, lalu klik "Terapkan keybind". Kalau sebelumnya pakai JaKooLit, hapus dulu bind lama yang manggil rofi, wlogout, swaync, script volume/media, screenshot, dan clipboard-nya supaya nggak dobel. Bind emoji JaKooLit juga boleh dihapus.
 
 Screenshot masuk ke `~/Pictures/Screenshots` dan langsung disalin ke clipboard, rekaman ke `~/Videos/Recordings`. Foldernya bisa diganti di settings, halaman Sistem.
 
