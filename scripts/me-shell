@@ -14,8 +14,8 @@ SOURCE_LINE="source = $HYPR_DIR/me-shell.conf"
 BIN="$HOME/.local/bin/me-shell"
 # Penanda baris config lain yang dimatikan oleh installer, supaya bisa dikembalikan saat uninstall
 MARK="#me-shell-off#"
-# Program yang tugasnya diambil alih me-shell (bar, notifikasi, idle)
-CLASH="waybar|swaync|mako|dunst|hyprpanel|ags|hypridle"
+# Program yang tugasnya diambil alih me-shell (bar, notifikasi, idle, agen polkit)
+CLASH="waybar|swaync|mako|dunst|hyprpanel|ags|hypridle|hyprpolkitagent|polkit-gnome|polkit-kde"
 
 YES=0
 
