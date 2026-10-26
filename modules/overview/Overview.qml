@@ -61,26 +61,24 @@ Item {
         y: root.pad
         spacing: Appearance.spacing.normal
 
-        MaterialIcon {
+        Caption {
             anchors.verticalCenter: parent.verticalCenter
-            text: "grid_view"
-            fill: 1
+            text: "Overview"
+            color: Appearance.colors.text
+        }
+
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 4
+            height: 4
+            radius: 2
             color: Appearance.colors.primary
         }
 
-        StyledText {
+        Caption {
             anchors.verticalCenter: parent.verticalCenter
-            text: "Overview"
-            font.family: Appearance.font.family.title
-            font.pixelSize: Appearance.font.size.larger
-            font.weight: Font.Medium
-        }
-
-        StyledText {
-            anchors.verticalCenter: parent.verticalCenter
-            text: "Klik window untuk fokus · seret ke workspace lain"
-            color: Appearance.colors.textDim
-            font.pixelSize: Appearance.font.size.small
+            text: "Klik window untuk fokus, seret ke workspace lain"
+            font.letterSpacing: 1
         }
     }
 
