@@ -27,6 +27,12 @@ Singleton {
 
     // Buka panel di tab tertentu; tutup kalau tab itu sedang terbuka
     function togglePanel(tab: string): void {
+        // Panel yang terbuka karena hover: klik = sematkan, bukan tutup
+        if (active === "panel" && hoverOpened) {
+            hoverOpened = false;
+            panelTab = tab;
+            return;
+        }
         if (active === "panel" && panelTab === tab) {
             close();
             return;

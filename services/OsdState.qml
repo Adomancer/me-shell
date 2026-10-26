@@ -24,6 +24,12 @@ Singleton {
             hideTimer.restart();
     }
 
+    // Muncul tanpa jeda tutup, misalnya saat kursor menyentuh tepi kanan layar
+    function peek(): void {
+        shown = true;
+        hold();
+    }
+
     function hold(): void {
         held = true;
         hideTimer.stop();
