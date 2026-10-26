@@ -4,6 +4,7 @@ import Quickshell
 import QtQuick
 import qs.services
 import qs.modules.background
+import qs.modules.desktop
 import qs.modules.drawers
 import qs.modules.lock
 import qs.modules.picker
@@ -17,6 +18,8 @@ ShellRoot {
     }
 
     Background {}
+
+    Desktop {}
 
     Lock {}
 
