@@ -110,6 +110,13 @@ Singleton {
             cmd: "picker color"
         },
         {
+            id: "ocr",
+            label: "Salin teks dari layar (OCR)",
+            mods: "SUPER SHIFT",
+            key: "T",
+            cmd: "picker ocr"
+        },
+        {
             id: "cheatsheet",
             label: "Daftar keybind",
             mods: "SUPER",

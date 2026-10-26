@@ -12,7 +12,7 @@ import qs.utils
 Singleton {
     id: root
 
-    // Diisi oleh picker: "screenshot" atau "record"; dibaca saat picker selesai
+    // Diisi oleh picker: "screenshot", "record", atau "ocr"; dibaca saat picker selesai
     property string pickerMode: "screenshot"
     property bool pickerOpen: false
     // Argumen grim untuk tangkapan berikutnya
@@ -32,7 +32,10 @@ Singleton {
     // Koordinat global (logical) dari picker
     function region(x: real, y: real, w: real, h: real): void {
         pending = ["-g", `${Math.round(x)},${Math.round(y)} ${Math.round(w)}x${Math.round(h)}`];
-        delay.restart();
+        if (pickerMode === "ocr")
+            ocrDelay.restart();
+        else
+            delay.restart();
     }
 
     // hyprpicker membekukan layar sendiri; tunggu drawer tertutup dulu
@@ -56,6 +59,36 @@ Singleton {
             proc.file = file;
             proc.command = ["sh", "-c", 'f="$1"; shift; mkdir -p "$(dirname "$f")" && grim "$@" "$f" && wl-copy --type image/png < "$f"', "sh", file, ...root.pending];
             proc.running = true;
+        }
+    }
+
+    // OCR (ide dari regionSelector end-4): area -> tesseract -> clipboard. Bahasa Inggris + Indonesia
+    // kalau data bahasanya ada.
+    Timer {
+        id: ocrDelay
+
+        interval: 250
+        onTriggered: {
+            ocrProc.command = ["sh", "-c", 'command -v tesseract >/dev/null || { echo "#no-tesseract"; exit; }; l=eng; tesseract --list-langs 2>/dev/null | grep -qx ind && l=eng+ind; grim "$@" - | tesseract - - -l "$l" 2>/dev/null', "sh", ...root.pending];
+            ocrProc.running = true;
+        }
+    }
+
+    Process {
+        id: ocrProc
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const t = text.trim();
+                if (t === "#no-tesseract") {
+                    Toaster.show("error", "OCR gagal", "tesseract belum terinstall", "");
+                } else if (!t) {
+                    Toaster.show("document_scanner", "Tidak ada teks", "Coba area yang lebih besar atau lebih jelas", "");
+                } else {
+                    Quickshell.execDetached(["wl-copy", t]);
+                    Toaster.show("document_scanner", "Teks disalin", t.replace(/\s+/g, " ").slice(0, 80), "");
+                }
+            }
         }
     }
 
@@ -109,6 +142,10 @@ Singleton {
 
         function color(): void {
             root.pickColor();
+        }
+
+        function ocr(): void {
+            root.openPicker("ocr");
         }
     }
 }
