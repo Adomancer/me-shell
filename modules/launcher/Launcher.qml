@@ -6,19 +6,139 @@ import qs.components
 import qs.services
 import qs.utils
 import "../../utils/Calc.js" as Calc
+import "../../utils/Fuzzy.js" as Fuzzy
 
 // Launcher yang muncul dari tepi bawah, dengan mode prefix:
-//   (kosong) aplikasi   = kalkulator   > perintah shell   : wallpaper
+//   (kosong) aplikasi   / aksi shell   ; clipboard   : wallpaper   = kalkulator   > perintah shell
+// Mode wallpaper memakai carousel mendatar; launcher melebar mengikutinya.
 Item {
     id: root
 
     property bool shown: false
 
     readonly property string query: input.text
-    readonly property string mode: query.startsWith("=") ? "calc" : query.startsWith(">") ? "run" : query.startsWith(":") ? "wall" : "apps"
+    readonly property string mode: ({
+            "=": "calc",
+            ">": "run",
+            ":": "wall",
+            "/": "action",
+            ";": "clip"
+        })[query.charAt(0)] ?? "apps"
     readonly property string term: mode === "apps" ? query.trim() : query.slice(1).trim()
-    readonly property int rowHeight: mode === "wall" ? 64 : 56
+    readonly property bool carousel: mode === "wall"
+    readonly property bool showEmpty: results.length === 0 && query !== ""
+    readonly property int rowHeight: 56
     readonly property int maxRows: Config.launcherMaxResults
+
+    // Aksi untuk mode "/". run dipanggil setelah launcher tertutup; keep = launcher tetap terbuka.
+    readonly property var actions: [
+        {
+            icon: "screenshot_region",
+            title: "Screenshot area",
+            subtitle: "Klik window atau seret area",
+            run: () => Screenshot.openPicker("screenshot")
+        },
+        {
+            icon: "screenshot_monitor",
+            title: "Screenshot layar penuh",
+            run: () => Screenshot.full()
+        },
+        {
+            icon: "screen_record",
+            title: Recorder.recording ? "Hentikan rekaman" : "Rekam layar",
+            run: () => Recorder.recording ? Recorder.stop() : Screenshot.openPicker("record")
+        },
+        {
+            icon: "colorize",
+            title: "Ambil warna dari layar",
+            run: () => Screenshot.pickColor()
+        },
+        {
+            icon: "coffee",
+            title: Idle.inhibited ? "Matikan kafein" : "Kafein (tahan layar menyala)",
+            run: () => Idle.toggleInhibit()
+        },
+        {
+            icon: "sports_esports",
+            title: GameMode.enabled ? "Matikan mode game" : "Mode game",
+            run: () => GameMode.toggle()
+        },
+        {
+            icon: "nightlight",
+            title: NightLight.enabled ? "Matikan lampu malam" : "Lampu malam",
+            run: () => NightLight.toggle()
+        },
+        {
+            icon: "do_not_disturb_on",
+            title: Notifs.dnd ? "Matikan jangan ganggu" : "Jangan ganggu",
+            run: () => Notifs.toggleDnd()
+        },
+        {
+            icon: Config.colorMode === "dark" ? "light_mode" : "dark_mode",
+            title: Config.colorMode === "dark" ? "Tema terang" : "Tema gelap",
+            run: () => {
+                Config.set("colorMode", Config.colorMode === "dark" ? "light" : "dark");
+                if (Wallpaper.current)
+                    Wallpaper.set(Wallpaper.current);
+            }
+        },
+        {
+            icon: "shuffle",
+            title: "Wallpaper acak",
+            run: () => {
+                if (walls.count > 0)
+                    Wallpaper.set(walls.get(Math.floor(Math.random() * walls.count), "filePath"));
+            }
+        },
+        {
+            icon: "wallpaper",
+            title: "Pilih wallpaper",
+            keep: true,
+            run: () => root.setQuery(":")
+        },
+        {
+            icon: "content_paste",
+            title: "Riwayat clipboard",
+            keep: true,
+            run: () => root.setQuery(";")
+        },
+        {
+            icon: "widgets",
+            title: "Utilitas",
+            run: () => DrawerState.open("utilities")
+        },
+        {
+            icon: "settings",
+            title: "Pengaturan",
+            run: () => DrawerState.open("settings")
+        },
+        {
+            icon: "lock",
+            title: "Kunci layar",
+            run: () => Session.lock()
+        },
+        {
+            icon: "bedtime",
+            title: "Tidur",
+            run: () => Session.suspend()
+        },
+        {
+            icon: "restart_alt",
+            title: "Restart",
+            run: () => Session.reboot()
+        },
+        {
+            icon: "power_settings_new",
+            title: "Matikan",
+            run: () => Session.poweroff()
+        },
+        {
+            icon: "logout",
+            title: "Keluar dari Hyprland",
+            run: () => Session.logout()
+        }
+    ]
+
     readonly property var results: {
         switch (mode) {
         case "calc":
@@ -27,6 +147,7 @@ Item {
                 return r === null ? [] : [
                     {
                         kind: "calc",
+                        icon: "calculate",
                         title: String(r),
                         subtitle: "Enter untuk menyalin"
                     }
@@ -36,10 +157,37 @@ Item {
             return term ? [
                 {
                     kind: "run",
+                    icon: "terminal",
                     title: term,
                     subtitle: "Jalankan di shell"
                 }
             ] : [];
+        case "action":
+            {
+                // sort V4 tidak stabil, jadi tanpa kata kunci urutan asli dipakai apa adanya
+                const scored = actions.map(a => ({
+                            a,
+                            s: Fuzzy.score(term, a.title)
+                        })).filter(r => r.s > 0);
+                return (term ? scored.sort((x, y) => y.s - x.s) : scored).slice(0, maxRows).map(r => Object.assign({
+                        kind: "action",
+                        subtitle: ""
+                    }, r.a));
+            }
+        case "clip":
+            {
+                const t = term.toLowerCase();
+                return Clipboard.entries.filter(e => !t || e.text.toLowerCase().includes(t)).slice(0, 50).map(e => {
+                    const img = e.text.match(/binary data .*? (\w+) (\d+x\d+)/);
+                    return {
+                        kind: "clip",
+                        icon: e.image ? "image" : "content_paste",
+                        title: img ? `Gambar ${img[1].toUpperCase()} ${img[2].replace("x", " × ")}` : e.text.replace(/\s+/g, " ").trim(),
+                        subtitle: e.image ? "Enter untuk menyalin lagi" : "",
+                        line: e.line
+                    };
+                });
+            }
         case "wall":
             {
                 const out = [];
@@ -50,11 +198,10 @@ Item {
                         out.push({
                             kind: "wall",
                             title: name,
-                            subtitle: "Pasang wallpaper",
                             path: walls.get(i, "filePath")
                         });
                 }
-                return out.slice(0, 30);
+                return out.slice(0, 100);
             }
         default:
             return Apps.search(term, maxRows).map(a => ({
@@ -67,19 +214,40 @@ Item {
         }
     }
 
+    function currentIndex(): int {
+        return carousel ? wallView.currentIndex : list.currentIndex;
+    }
+
+    function setQuery(q: string): void {
+        input.text = q;
+        input.cursorPosition = q.length;
+    }
+
     function activate(i: int): void {
         const r = results[i];
         if (!r)
             return;
+        if (r.kind === "action") {
+            if (r.keep) {
+                r.run();
+                return;
+            }
+            DrawerState.close();
+            r.run();
+            return;
+        }
         switch (r.kind) {
         case "app":
-            r.entry.execute();
+            Apps.launch(r.entry);
             break;
         case "calc":
             Quickshell.execDetached(["wl-copy", r.title]);
             break;
         case "run":
             Quickshell.execDetached(["sh", "-c", r.title]);
+            break;
+        case "clip":
+            Clipboard.copy(r.line);
             break;
         case "wall":
             Wallpaper.set(r.path);
@@ -88,14 +256,22 @@ Item {
         DrawerState.close();
     }
 
-    implicitWidth: 620
+    implicitWidth: carousel ? 940 : 620
     implicitHeight: col.implicitHeight + Appearance.padding.large * 2
 
-    onResultsChanged: list.currentIndex = 0
+    onResultsChanged: {
+        list.currentIndex = 0;
+        // Wallpaper aktif jadi pilihan awal carousel (setelah model carousel ikut berganti)
+        if (carousel)
+            Qt.callLater(() => wallView.currentIndex = Math.max(0, results.findIndex(r => r.path === Wallpaper.current)));
+    }
+    onModeChanged: {
+        if (mode === "clip")
+            Clipboard.refresh();
+    }
     onShownChanged: {
         if (shown) {
-            input.text = DrawerState.launcherQuery;
-            input.cursorPosition = input.text.length;
+            setQuery(DrawerState.launcherQuery);
             DrawerState.launcherQuery = "";
             list.lastMouse = Qt.point(-1, -1);
             input.forceActiveFocus();
@@ -118,9 +294,117 @@ Item {
         width: root.width - Appearance.padding.large * 2
         spacing: Appearance.spacing.normal
 
+        // Carousel wallpaper: yang di tengah membesar, sisanya mengecil dan meredup
+        ListView {
+            id: wallView
+
+            readonly property int itemWidth: 300
+
+            width: parent.width
+            height: root.carousel && count > 0 ? 230 : 0
+            visible: height > 0
+            orientation: ListView.Horizontal
+            clip: true
+            spacing: Appearance.spacing.normal
+            model: root.carousel ? root.results : []
+            highlightRangeMode: ListView.StrictlyEnforceRange
+            preferredHighlightBegin: (width - itemWidth) / 2
+            preferredHighlightEnd: (width + itemWidth) / 2
+            highlightMoveDuration: Appearance.anim.durations.normal
+            boundsBehavior: Flickable.StopAtBounds
+
+            delegate: Item {
+                id: wall
+
+                required property var modelData
+                required property int index
+                readonly property bool current: ListView.isCurrentItem
+                readonly property bool active: modelData.path === Wallpaper.current
+
+                width: wallView.itemWidth
+                height: wallView.height
+
+                StyledClippingRect {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: (parent.height - 30 - height) / 2
+                    width: parent.width * (wall.current ? 1 : 0.84)
+                    height: (parent.height - 30) * (wall.current ? 1 : 0.84)
+                    radius: wall.current ? Appearance.radius.large : Appearance.radius.normal
+                    color: Appearance.colors.surfaceContainerHigh
+                    opacity: wall.current ? 1 : 0.6
+
+                    Behavior on width {
+                        Anim {
+                            duration: Appearance.anim.durations.expressiveFast
+                            easing.bezierCurve: Appearance.anim.curves.expressiveDefault
+                        }
+                    }
+                    Behavior on height {
+                        Anim {
+                            duration: Appearance.anim.durations.expressiveFast
+                            easing.bezierCurve: Appearance.anim.curves.expressiveDefault
+                        }
+                    }
+                    Behavior on opacity {
+                        Anim {}
+                    }
+
+                    Image {
+                        anchors.fill: parent
+                        source: `file://${wall.modelData.path}`
+                        sourceSize: Qt.size(600, 400)
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
+
+                    // Penanda wallpaper yang sedang dipakai
+                    StyledRect {
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: Appearance.padding.small
+                        visible: wall.active
+                        implicitWidth: 28
+                        implicitHeight: 28
+                        radius: 14
+                        color: Appearance.colors.primary
+
+                        MaterialIcon {
+                            anchors.centerIn: parent
+                            text: "check"
+                            font.pixelSize: Appearance.font.size.larger
+                            color: Appearance.colors.primaryText
+                        }
+                    }
+                }
+
+                StyledText {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    text: wall.modelData.title
+                    color: wall.current ? Appearance.colors.text : Appearance.colors.textDim
+                    font.pixelSize: Appearance.font.size.small
+                    elide: Text.ElideMiddle
+                    opacity: wall.current ? 1 : 0
+
+                    Behavior on opacity {
+                        Anim {}
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: wall.current ? root.activate(wall.index) : wallView.currentIndex = wall.index
+                }
+            }
+        }
+
         Item {
             width: parent.width
-            height: list.count > 0 ? list.height : empty.height
+            height: root.showEmpty ? empty.implicitHeight : root.carousel ? 0 : list.height
+            visible: height > 0
 
             ListView {
                 id: list
@@ -129,10 +413,10 @@ Item {
                 property point lastMouse: Qt.point(-1, -1)
 
                 width: parent.width
-                height: Math.min(count, root.mode === "wall" ? 6 : root.maxRows) * root.rowHeight
+                height: Math.min(count, root.maxRows) * root.rowHeight
                 visible: count > 0
                 clip: true
-                model: root.results
+                model: root.carousel ? [] : root.results
                 verticalLayoutDirection: ListView.BottomToTop
                 highlightFollowsCurrentItem: false
                 boundsBehavior: Flickable.StopAtBounds
@@ -168,6 +452,7 @@ Item {
                     required property int index
                     readonly property bool current: ListView.isCurrentItem
                     readonly property color ink: current ? Appearance.colors.secondaryContainerText : Appearance.colors.text
+                    readonly property bool mono: modelData.kind === "calc" || modelData.kind === "run"
 
                     width: ListView.view.width
                     height: root.rowHeight
@@ -180,8 +465,8 @@ Item {
 
                         Item {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: row.modelData.kind === "wall" ? 80 : 36
-                            height: row.modelData.kind === "wall" ? 48 : 36
+                            width: 36
+                            height: 36
 
                             IconImage {
                                 anchors.centerIn: parent
@@ -191,52 +476,39 @@ Item {
                                 asynchronous: true
                             }
 
-                            StyledClippingRect {
-                                anchors.fill: parent
-                                visible: row.modelData.kind === "wall"
-                                radius: Appearance.radius.small
-
-                                Image {
-                                    anchors.fill: parent
-                                    source: parent.visible ? `file://${row.modelData.path}` : ""
-                                    sourceSize: Qt.size(160, 96)
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                }
-                            }
-
                             StyledRect {
                                 anchors.fill: parent
-                                visible: row.modelData.kind === "calc" || row.modelData.kind === "run"
-                                radius: Appearance.radius.small
-                                color: Appearance.colors.tertiaryContainer
+                                visible: row.modelData.kind !== "app"
+                                radius: row.modelData.kind === "action" ? height / 2 : Appearance.radius.small
+                                color: row.modelData.kind === "action" ? Appearance.colors.primaryContainer : Appearance.colors.tertiaryContainer
 
                                 MaterialIcon {
                                     anchors.centerIn: parent
-                                    text: row.modelData.kind === "calc" ? "calculate" : "terminal"
-                                    color: Appearance.colors.tertiaryContainerText
+                                    text: row.modelData.icon ?? ""
+                                    color: row.modelData.kind === "action" ? Appearance.colors.primaryContainerText : Appearance.colors.tertiaryContainerText
                                 }
                             }
                         }
 
                         Column {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: row.width - (row.modelData.kind === "wall" ? 80 : 36) - Appearance.spacing.large - Appearance.padding.normal * 2
+                            width: row.width - 36 - Appearance.spacing.large - Appearance.padding.normal * 2
 
                             StyledText {
                                 width: parent.width
                                 text: row.modelData.title
                                 color: row.ink
                                 font.pixelSize: row.modelData.kind === "calc" ? Appearance.font.size.large : Appearance.font.size.normal
-                                font.family: row.modelData.kind === "calc" || row.modelData.kind === "run" ? Appearance.font.family.mono : Appearance.font.family.sans
+                                font.family: row.mono ? Appearance.font.family.mono : Appearance.font.family.sans
                                 font.weight: Font.Medium
                                 elide: Text.ElideRight
+                                maximumLineCount: 1
                             }
 
                             StyledText {
                                 width: parent.width
                                 visible: text !== ""
-                                text: row.modelData.subtitle
+                                text: row.modelData.subtitle ?? ""
                                 color: row.current ? Appearance.colors.secondaryContainerText : Appearance.colors.textDim
                                 font.pixelSize: Appearance.font.size.small
                                 elide: Text.ElideRight
@@ -265,22 +537,21 @@ Item {
                 id: empty
 
                 anchors.horizontalCenter: parent.horizontalCenter
-                visible: list.count === 0 && root.query !== ""
-                height: visible ? implicitHeight : 0
+                visible: root.showEmpty
                 spacing: Appearance.spacing.small
                 topPadding: Appearance.spacing.large
                 bottomPadding: Appearance.spacing.large
 
                 MaterialIcon {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "search_off"
+                    text: root.mode === "clip" ? "content_paste_off" : "search_off"
                     font.pixelSize: Appearance.font.size.extraLarge
                     color: Appearance.colors.textDim
                 }
 
                 StyledText {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "Tidak ada hasil"
+                    text: root.mode === "clip" && !Clipboard.available ? "Install cliphist untuk riwayat clipboard" : root.mode === "clip" ? "Clipboard masih kosong" : "Tidak ada hasil"
                     color: Appearance.colors.textDim
                 }
             }
@@ -302,7 +573,9 @@ Item {
                         apps: "search",
                         calc: "calculate",
                         run: "terminal",
-                        wall: "wallpaper"
+                        wall: "wallpaper",
+                        action: "bolt",
+                        clip: "content_paste"
                     })[root.mode]
                 color: Appearance.colors.primary
             }
@@ -329,14 +602,26 @@ Item {
                 Keys.onEscapePressed: DrawerState.close()
                 Keys.onUpPressed: list.incrementCurrentIndex()
                 Keys.onDownPressed: list.decrementCurrentIndex()
-                Keys.onTabPressed: list.incrementCurrentIndex()
-                Keys.onReturnPressed: root.activate(list.currentIndex)
-                Keys.onEnterPressed: root.activate(list.currentIndex)
+                Keys.onTabPressed: root.carousel ? wallView.incrementCurrentIndex() : list.incrementCurrentIndex()
+                Keys.onReturnPressed: root.activate(root.currentIndex())
+                Keys.onEnterPressed: root.activate(root.currentIndex())
+                Keys.onPressed: event => {
+                    // Panah kiri/kanan menggeser carousel, bukan kursor teks
+                    if (root.carousel && (event.key === Qt.Key_Left || event.key === Qt.Key_Right)) {
+                        event.key === Qt.Key_Left ? wallView.decrementCurrentIndex() : wallView.incrementCurrentIndex();
+                        event.accepted = true;
+                    } else if (root.mode === "clip" && event.key === Qt.Key_Delete) {
+                        const r = root.results[list.currentIndex];
+                        if (r)
+                            Clipboard.remove(r.line);
+                        event.accepted = true;
+                    }
+                }
 
                 StyledText {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: input.text === ""
-                    text: "Cari aplikasi     = hitung     > perintah     : wallpaper"
+                    text: "Cari aplikasi    / aksi    ; clipboard    : wallpaper    = hitung    > perintah"
                     color: Appearance.colors.textDim
                 }
             }
