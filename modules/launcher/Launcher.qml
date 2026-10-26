@@ -103,6 +103,11 @@ Item {
             run: () => root.setQuery(";")
         },
         {
+            icon: "grid_view",
+            title: "Overview workspace",
+            run: () => DrawerState.open("overview")
+        },
+        {
             icon: "widgets",
             title: "Utilitas",
             run: () => DrawerState.open("utilities")

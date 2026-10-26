@@ -54,6 +54,13 @@ Singleton {
             cmd: "drawers toggle settings"
         },
         {
+            id: "overview",
+            label: "Overview workspace",
+            mods: "SUPER",
+            key: "TAB",
+            cmd: "drawers toggle overview"
+        },
+        {
             id: "utilities",
             label: "Utilitas",
             mods: "SUPER",
