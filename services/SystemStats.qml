@@ -21,8 +21,13 @@ Singleton {
     property real home: 0
     property real diskUsedGiB: 0
     property real diskTotalGiB: 0
-    // °C, 0 kalau sensor tidak terbaca
+    // °C, 0 kalau sensor tidak terbaca. temp = CPU (hwmon), atau thermal zone terpanas kalau tidak ada.
     property real temp: 0
+    property real gpuTemp: 0
+    // Path sensor hwmon yang ditemukan sekali; gpu bisa "nvidia" (lewat nvidia-smi)
+    property string cpuSensor: ""
+    property string gpuSensor: ""
+    property bool sensorsFound: false
     // byte per detik
     property real netRx: 0
     property real netTx: 0
@@ -57,7 +62,10 @@ Singleton {
         onTriggered: {
             stat.reload();
             meminfo.reload();
-            tempProc.running = true;
+            if (root.sensorsFound)
+                tempProc.running = true;
+            else
+                sensorProc.running = true;
             if (root.ticks % 15 === 0)
                 diskProc.running = true;
             // Jaringan dan proses hanya tampil di tab Performa
@@ -202,13 +210,38 @@ Singleton {
         }
     }
 
-    // Ambil suhu tertinggi dari semua thermal zone
+    // Cari sensor sekali: CPU dari coretemp/k10temp/zenpower, GPU dari amdgpu/nouveau/radeon atau nvidia-smi
+    Process {
+        id: sensorProc
+
+        command: ["sh", "-c", 'for d in /sys/class/hwmon/hwmon*; do n=$(cat "$d/name" 2>/dev/null); case "$n" in coretemp|k10temp|zenpower) echo "cpu $d/temp1_input" ;; amdgpu|nouveau|radeon) echo "gpu $d/temp1_input" ;; esac; done; command -v nvidia-smi >/dev/null && echo "gpu nvidia"; true']
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = text.trim().split("\n");
+                root.cpuSensor = lines.find(l => l.startsWith("cpu "))?.slice(4) ?? "";
+                root.gpuSensor = lines.find(l => l.startsWith("gpu "))?.slice(4) ?? "";
+                root.sensorsFound = true;
+                tempProc.running = true;
+            }
+        }
+    }
+
+    // Suhu dalam milidrajat; GPU hanya dibaca di tab Performa
     Process {
         id: tempProc
 
-        command: ["sh", "-c", "cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1"]
+        command: ["sh", "-c", 'if [ -n "$1" ]; then echo "cpu $(cat "$1")"; else echo "cpu $(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1)"; fi; if [ "$2" = nvidia ]; then echo "gpu $(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits | head -1)000"; elif [ -n "$2" ]; then echo "gpu $(cat "$2")"; fi', "sh", root.cpuSensor, root.perfShown ? root.gpuSensor : ""]
         stdout: StdioCollector {
-            onStreamFinished: root.temp = (Number(text.trim()) || 0) / 1000
+            onStreamFinished: {
+                for (const line of text.trim().split("\n")) {
+                    const [kind, value] = line.split(" ");
+                    const c = (Number(value) || 0) / 1000;
+                    if (kind === "cpu")
+                        root.temp = c;
+                    else if (kind === "gpu")
+                        root.gpuTemp = c;
+                }
+            }
         }
     }
 

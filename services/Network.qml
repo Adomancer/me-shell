@@ -5,7 +5,7 @@ import Quickshell.Io
 import QtQuick
 import qs.services
 
-// Status jaringan lewat nmcli (NetworkManager).
+// Status jaringan lewat nmcli (NetworkManager), termasuk koneksi VPN/WireGuard (ide dari VPN.qml Caelestia).
 Singleton {
     id: root
 
@@ -21,11 +21,31 @@ Singleton {
     property string connecting: ""
     // SSID yang gagal karena password salah/kosong; UI menampilkan kolom password
     property string needsPassword: ""
+    // [{ name, type, active }] profil VPN dan WireGuard yang tersimpan di NetworkManager
+    property var vpns: []
+    readonly property bool vpnActive: vpns.some(v => v.active)
+    readonly property string vpnName: vpns.find(v => v.active)?.name ?? ""
 
     function refresh(): void {
         radioProc.running = true;
         wifiProc.running = true;
         devProc.running = true;
+        vpnProc.running = true;
+    }
+
+    function setVpn(name: string, on: bool): void {
+        vpnToggle.vpn = name;
+        vpnToggle.on = on;
+        vpnToggle.command = ["nmcli", "con", on ? "up" : "down", "id", name];
+        vpnToggle.running = true;
+    }
+
+    // Tile utilitas: matikan yang aktif, atau nyalakan profil pertama
+    function toggleVpn(): void {
+        if (vpnActive)
+            setVpn(vpnName, false);
+        else if (vpns.length > 0)
+            setVpn(vpns[0].name, true);
     }
 
     function setWifi(on: bool): void {
@@ -145,6 +165,49 @@ Singleton {
                 Toaster.show("wifi_off", "Gagal menyambung", ssid, "");
             }
             root.scan();
+        }
+    }
+
+    Process {
+        id: vpnProc
+
+        // NAME bisa berisi ":" (di-escape nmcli jadi "\:"), TYPE dan ACTIVE tidak; jadi potong dari kanan
+        command: ["nmcli", "-t", "-f", "NAME,TYPE,ACTIVE", "connection", "show"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const out = [];
+                for (const line of text.split("\n")) {
+                    const a = line.lastIndexOf(":");
+                    const b = line.lastIndexOf(":", a - 1);
+                    const type = line.slice(b + 1, a);
+                    if (b < 0 || !["vpn", "wireguard"].includes(type))
+                        continue;
+                    out.push({
+                        name: line.slice(0, b).replace(/\\:/g, ":"),
+                        type,
+                        active: line.slice(a + 1) === "yes"
+                    });
+                }
+                root.vpns = out;
+            }
+        }
+    }
+
+    Process {
+        id: vpnToggle
+
+        property string vpn
+        property bool on
+
+        stderr: StdioCollector {
+            id: vpnErr
+        }
+        onExited: code => {
+            if (code === 0)
+                Toaster.show(on ? "vpn_lock" : "vpn_lock_off", on ? "VPN tersambung" : "VPN diputus", vpn, "");
+            else
+                Toaster.show("error", "VPN gagal", vpnErr.text.trim().split("\n").pop() || vpn, "");
+            root.refresh();
         }
     }
 
