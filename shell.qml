@@ -16,6 +16,8 @@ ShellRoot {
         // Singleton baru dibuat saat pertama disentuh; service latar ini harus jalan sejak start
         Idle.inhibited;
         Clipboard.watching;
+        Keyboard.layout;
+        Updates.count;
     }
 
     Background {}
