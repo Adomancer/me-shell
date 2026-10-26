@@ -17,8 +17,10 @@ Singleton {
     // Perangkat output/input, dan aplikasi yang sedang memutar suara
     readonly property var sinks: Pipewire.nodes.values.filter(n => n.isSink && !n.isStream && n.audio)
     readonly property var sources: Pipewire.nodes.values.filter(n => !n.isSink && !n.isStream && n.audio)
-    // Stream rekaman (Stream/Input/Audio) tidak ikut; properties baru terisi setelah node dilacak
-    readonly property var streams: Pipewire.nodes.values.filter(n => n.isStream && n.audio && n.properties["media.class"] !== "Stream/Input/Audio")
+    // Semua stream dilacak supaya properties terisi; lalu stream rekaman (Stream/Input/Audio) dibuang.
+    // Tracker sengaja tidak memakai `streams` supaya tidak jadi binding loop.
+    readonly property var allStreams: Pipewire.nodes.values.filter(n => n.isStream && n.audio)
+    readonly property var streams: allStreams.filter(n => n.properties["media.class"] !== "Stream/Input/Audio")
 
     function setVolume(value: real): void {
         if (!sink?.ready || !sink.audio)
@@ -62,7 +64,7 @@ Singleton {
     }
 
     PwObjectTracker {
-        objects: [root.sink, root.source, ...root.sinks, ...root.streams].filter(n => n)
+        objects: [root.sink, root.source, ...root.sinks, ...root.allStreams].filter(n => n)
     }
 
     IpcHandler {
