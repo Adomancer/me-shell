@@ -21,7 +21,8 @@ Item {
     readonly property int columns: Math.min(count, 5)
     readonly property int rows: Math.ceil(count / columns)
     readonly property int gap: Appearance.spacing.normal
-    readonly property int cardWidth: 264
+    // Menyusut di layar sempit supaya semua kolom muat di dalam bingkai
+    readonly property int cardWidth: Math.min(264, Math.floor((screenWidth - Appearance.frame.thickness * 2 - pad * 2 - gap * (columns - 1) - 48) / columns))
     readonly property real scale: cardWidth / screenWidth
     readonly property int cardHeight: Math.round(screenHeight * scale)
     readonly property int activeWs: Hyprland.focusedWorkspace?.id ?? 1
@@ -139,7 +140,7 @@ Item {
 
                 Repeater {
                     model: ScriptModel {
-                        values: Hyprland.toplevels.values.filter(t => t.workspace?.id === card.ws && t.lastIpcObject?.at)
+                        values: root.visible ? Hyprland.toplevels.values.filter(t => t.workspace?.id === card.ws && t.lastIpcObject?.at) : []
                     }
 
                     Item {
