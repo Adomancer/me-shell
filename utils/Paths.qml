@@ -9,6 +9,7 @@ Singleton {
     readonly property string home: Quickshell.env("HOME")
     readonly property string config: `${Quickshell.env("XDG_CONFIG_HOME") || home + "/.config"}/me-shell`
     readonly property string state: `${Quickshell.env("XDG_STATE_HOME") || home + "/.local/state"}/me-shell`
+    readonly property string cache: `${Quickshell.env("XDG_CACHE_HOME") || home + "/.cache"}/me-shell`
     readonly property string shell: Quickshell.shellDir
 
     function expand(path: string): string {
