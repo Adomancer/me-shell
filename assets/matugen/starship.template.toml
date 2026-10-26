@@ -1,27 +1,31 @@
 # Prompt starship bergaya me-shell (Nothing / TE, simbol geometris ala Caelestia).
 # Dibuat matugen lewat scripts/gen-colors.sh, ditimpa setiap ganti wallpaper. Dipakai kitty lewat
 # STARSHIP_CONFIG (assets/kitty/me-shell.conf). Kiri: durasi, host (ssh), user (kalau bukan default),
-# titik prompt. Kanan: folder, git, versi bahasa, jam.
+# folder, git, titik prompt. Kanan: versi bahasa, baterai, jam.
 
 add_newline = false
 palette = "meshell"
 continuation_prompt = "[▸ ](faint)"
+# Modul lambat (versi bahasa, git di repo besar) dipotong supaya prompt tidak tersendat
+command_timeout = 1000
 
-format = """($nix_shell$container$fill$git_metrics\n)$cmd_duration\
+# Baris pertama hanya muncul kalau ada isinya (nix shell, container, perubahan git).
+# Folder dan git di kiri karena bash (shell bawaan Fedora) tidak bisa menampilkan right_format.
+format = """($nix_shell$container$git_metrics\n)$cmd_duration\
 $hostname\
 $localip\
 $shlvl\
 $jobs\
-$sudo\
 $username\
-$character"""
-
-right_format = """
 $directory\
 $git_branch\
 $git_commit\
 $git_state\
-$git_status\
+$git_status \
+$character"""
+
+# Hanya tampil di zsh/fish
+right_format = """
 $docker_context\
 $package\
 $c\
@@ -45,9 +49,6 @@ err = "{{colors.error.default.hex}}"
 good = "{{colors.green.default.hex}}"
 bad = "{{colors.red.default.hex}}"
 
-[fill]
-symbol = " "
-
 [character]
 format = "$symbol "
 success_symbol = "[●](bold accent)"
@@ -56,12 +57,6 @@ vimcmd_symbol = "[■](faint)"
 vimcmd_replace_one_symbol = "[◌](faint)"
 vimcmd_replace_symbol = "[□](faint)"
 vimcmd_visual_symbol = "[▼](faint)"
-
-[sudo]
-format = "[$symbol]($style)"
-style = "bold accent"
-symbol = "⋈┈"
-disabled = false
 
 [username]
 style_user = "bold soft"
