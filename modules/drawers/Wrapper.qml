@@ -56,9 +56,10 @@ Item {
         }
     }
 
-    // Ukuran isi berubah (pindah tab dsb.): panel ikut mengembang/menyusut halus
+    // Ukuran isi berubah (pindah tab dsb.): panel ikut mengembang/menyusut halus. Tidak saat masih
+    // tersembunyi, supaya isi yang baru dibuat (LazyContent) langsung berukuran penuh.
     Behavior on contentW {
-        enabled: root.shown
+        enabled: root.shown && root.visible
 
         Anim {
             duration: Appearance.anim.durations.expressiveDefault
@@ -66,7 +67,7 @@ Item {
         }
     }
     Behavior on contentH {
-        enabled: root.shown
+        enabled: root.shown && root.visible
 
         Anim {
             duration: Appearance.anim.durations.expressiveDefault

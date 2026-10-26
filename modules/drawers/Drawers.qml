@@ -200,7 +200,8 @@ Scope {
             onCleared: DrawerState.close()
         }
 
-        // Semua latar dalam satu Shape, dengan bayangan lembut tipis di sekelilingnya
+        // Semua latar dalam satu Shape, dengan bayangan lembut tipis di sekelilingnya. Layer ini hanya
+        // dirender ulang saat bentuknya berubah (drawer buka/tutup), bukan saat isi bar berubah.
         Item {
             anchors.fill: parent
             layer.enabled: true
@@ -271,8 +272,9 @@ Scope {
             x: Math.round((parent.width - width) / 2)
             y: Config.barHeight
 
-            ControlPanel {
-                shown: dash.shown
+            LazyContent {
+                wrapper: dash
+                sourceComponent: ControlPanel {}
             }
         }
 
@@ -284,10 +286,12 @@ Scope {
             x: Math.round((parent.width - width) / 2)
             y: Config.barHeight
 
-            Overview {
-                shown: overview.shown
-                screenWidth: win.width
-                screenHeight: win.height
+            LazyContent {
+                wrapper: overview
+                sourceComponent: Overview {
+                    screenWidth: win.width
+                    screenHeight: win.height
+                }
             }
         }
 
@@ -299,8 +303,9 @@ Scope {
             x: Math.round((parent.width - width) / 2)
             y: parent.height - root.frame - height
 
-            Launcher {
-                shown: launcher.shown
+            LazyContent {
+                wrapper: launcher
+                sourceComponent: Launcher {}
             }
         }
 
@@ -312,8 +317,9 @@ Scope {
             x: parent.width - root.frame - width
             y: Math.round((parent.height - height) / 2)
 
-            SessionMenu {
-                shown: session.shown
+            LazyContent {
+                wrapper: session
+                sourceComponent: SessionMenu {}
             }
         }
 
