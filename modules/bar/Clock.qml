@@ -18,10 +18,11 @@ StyledRect {
     implicitHeight: Config.barHeight - 10
     radius: height / 2
 
+    // Kedip tanpa animasi: satu frame per detik, bukan belasan
     Timer {
         interval: 1000
         repeat: true
-        running: true
+        running: !Session.locked
         onTriggered: root.tick = !root.tick
     }
 
@@ -51,12 +52,6 @@ StyledRect {
                         font.family: Appearance.font.family.display
                         font.pixelSize: 24
                         opacity: root.tick ? 1 : 0.15
-
-                        Behavior on opacity {
-                            Anim {
-                                duration: Appearance.anim.durations.small
-                            }
-                        }
                     }
 
                     DisplayText {

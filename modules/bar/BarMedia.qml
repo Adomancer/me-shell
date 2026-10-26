@@ -40,7 +40,7 @@ StyledRect {
                     color: Appearance.colors.primary
 
                     SequentialAnimation on level {
-                        running: Media.playing
+                        running: Media.playing && root.visible
                         loops: Animation.Infinite
 
                         Anim {
