@@ -11,7 +11,7 @@ ColumnLayout {
 
     property bool shown: false
     // Lebar tetap; implicitWidth layout dihitung ulang oleh layout itu sendiri
-    readonly property int pageWidth: 400
+    readonly property int pageWidth: 460
     // Jumlah tile yang menyala, sama dengan yang tampil terisi di grid
     readonly property int active: [Idle.inhibited, GameMode.enabled, Notifs.dnd, NightLight.enabled, Recorder.recording, !Audio.micMuted].filter(b => b).length
 
@@ -101,7 +101,7 @@ ColumnLayout {
 
     GridLayout {
         Layout.fillWidth: true
-        columns: 4
+        columns: 5
         rowSpacing: Appearance.spacing.large
         columnSpacing: Appearance.spacing.small
 
@@ -150,6 +150,12 @@ ColumnLayout {
             icon: "colorize"
             label: "Warna"
             onClicked: Screenshot.pickColor()
+        }
+
+        Tile {
+            icon: "document_scanner"
+            label: "Teks"
+            onClicked: Screenshot.openPicker("ocr")
         }
 
         Tile {
