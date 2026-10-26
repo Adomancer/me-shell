@@ -31,6 +31,8 @@ Item {
         implicitHeight: layout.implicitHeight + Appearance.padding.normal * 2
         radius: Appearance.radius.normal
         color: root.critical ? Appearance.colors.errorContainer : root.background
+        border.width: Appearance.border.thin
+        border.color: root.critical ? Appearance.colors.error : Appearance.colors.outlineVariant
         opacity: 1 - Math.min(1, Math.abs(x) / width) * 0.8
 
         // Kembali ke tempat dengan pegas kalau geseran kurang jauh
@@ -72,7 +74,7 @@ Item {
                 Layout.alignment: Qt.AlignTop
                 implicitWidth: 40
                 implicitHeight: 40
-                radius: root.image ? Appearance.radius.small : height / 2
+                radius: Appearance.radius.small
                 color: root.critical ? Appearance.colors.error : Appearance.colors.primaryContainer
 
                 Image {
