@@ -20,6 +20,16 @@ ColumnLayout {
     }
 
     SettingRow {
+        label: "Ikon aplikasi di workspace"
+        description: "Workspace yang berisi window menampilkan ikon aplikasinya, bukan nomor"
+
+        SettingToggle {
+            checked: Config.barWorkspaceIcons
+            onToggled: v => Config.set("barWorkspaceIcons", v)
+        }
+    }
+
+    SettingRow {
         label: "Judul window aktif"
         description: "Di sebelah workspace"
 
