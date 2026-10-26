@@ -1,72 +1,69 @@
 import QtQuick
 import qs.utils
 
-// Slider Material 3: track tebal yang terisi, pegangan tipis, ikon opsional di dalam track.
+// Slider bersegmen: ikon (atau label mono) di kiri, deretan segmen, angka opsional di kanan.
 Item {
     id: root
 
     property real value: 0
     property string icon: ""
+    // Label mono pendek pengganti ikon, misalnya "VOL"
+    property string label: ""
+    property bool showValue: false
     // Selama digeser, tampilan mengikuti mouse dulu
     readonly property real shown: drag.pressed ? drag.live : value
 
     signal moved(real value)
 
     implicitWidth: 200
-    implicitHeight: 40
+    implicitHeight: 32
 
-    StyledRect {
-        anchors.fill: parent
-        radius: Appearance.radius.small
-        color: Appearance.colors.secondaryContainer
-        border.width: Appearance.border.thin
-        border.color: Appearance.colors.outlineVariant
+    MaterialIcon {
+        id: lead
 
-        StyledRect {
-            id: fill
-
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: Math.max(parent.height, root.shown * parent.width)
-            radius: parent.radius
-            color: Appearance.colors.primary
-
-            Behavior on width {
-                enabled: !drag.pressed
-
-                Anim {
-                    easing.bezierCurve: Appearance.anim.curves.expressiveDefault
-                }
-            }
-        }
-
-        MaterialIcon {
-            anchors.left: parent.left
-            anchors.leftMargin: (parent.height - width) / 2
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.icon !== ""
-            text: root.icon
-            fill: 1
-            color: Appearance.colors.primaryText
-        }
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.icon !== "" && root.label === ""
+        text: root.icon
+        color: Appearance.colors.textDim
     }
 
-    Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        x: fill.width - width - 6
-        width: 4
-        height: drag.pressed ? root.height - 4 : root.height - 16
-        radius: 2
-        color: Appearance.colors.primaryText
-        opacity: 0.7
+    Caption {
+        id: leadLabel
 
-        Behavior on height {
-            Anim {
-                duration: Appearance.anim.durations.expressiveFast
-                easing.bezierCurve: Appearance.anim.curves.expressiveFast
-            }
-        }
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.label !== ""
+        width: 36
+        text: root.label
+        color: Appearance.colors.textDim
+    }
+
+    StyledText {
+        id: valueText
+
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.showValue
+        width: 32
+        horizontalAlignment: Text.AlignRight
+        text: Math.round(root.shown * 100)
+        font.family: Appearance.font.family.mono
+        font.pixelSize: Appearance.font.size.smaller
+    }
+
+    SegmentBar {
+        id: bar
+
+        anchors.left: leadLabel.visible ? leadLabel.right : lead.visible ? lead.right : parent.left
+        anchors.leftMargin: leadLabel.visible || lead.visible ? Appearance.spacing.normal : 0
+        anchors.right: valueText.visible ? valueText.left : parent.right
+        anchors.rightMargin: valueText.visible ? Appearance.spacing.small : 0
+        anchors.verticalCenter: parent.verticalCenter
+        height: Math.min(18, root.height - 8)
+        segments: Math.max(8, Math.round(width / 7))
+        value: root.shown
+        instant: drag.pressed
     }
 
     MouseArea {
@@ -75,7 +72,7 @@ Item {
         property real live: 0
 
         function update(x: real): void {
-            live = Math.max(0, Math.min(1, x / width));
+            live = Math.max(0, Math.min(1, (x - bar.x) / bar.width));
             root.moved(live);
         }
 

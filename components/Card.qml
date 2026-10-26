@@ -2,7 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import qs.utils
 
-// Kartu: latar container, garis tepi tipis, judul kecil ber-ikon (opsional).
+// Kelompok berjudul. Default tanpa latar dan tanpa garis (dipisah Divider oleh pemanggil);
+// filled = permukaan utama berlatar (misalnya di atas blur lockscreen). Fill + border tidak dipakai bersamaan.
 // Isi disusun vertikal; anak pakai Layout.fillWidth.
 StyledRect {
     id: root
@@ -10,15 +11,14 @@ StyledRect {
     property string title: ""
     property string icon: ""
     property string note: ""
+    property bool filled: false
     property int pad: Appearance.padding.normal + 2
     default property alias content: body.data
 
     implicitWidth: col.implicitWidth + pad * 2
     implicitHeight: col.implicitHeight + pad * 2
-    radius: Appearance.radius.normal
-    color: Appearance.colors.surfaceContainer
-    border.width: Appearance.border.thin
-    border.color: Appearance.colors.outlineVariant
+    radius: Appearance.radius.large
+    color: filled ? Appearance.colors.surfaceContainerLow : "transparent"
 
     ColumnLayout {
         id: col
@@ -38,7 +38,7 @@ StyledRect {
                 visible: root.icon !== ""
                 text: root.icon
                 font.pixelSize: Appearance.font.size.larger
-                color: Appearance.colors.primary
+                color: Appearance.colors.textDim
             }
 
             Caption {
@@ -53,6 +53,7 @@ StyledRect {
                 Layout.maximumWidth: 180
                 text: root.note
                 color: Appearance.colors.textDim
+                font.family: Appearance.font.family.mono
                 font.pixelSize: Appearance.font.size.small
                 elide: Text.ElideRight
             }

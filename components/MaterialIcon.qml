@@ -8,6 +8,8 @@ StyledText {
     property int grade: -25
 
     font.family: Appearance.font.family.icon
+    // Garis tipis, serasi dengan Space Grotesk
+    font.weight: Font.Light
     font.pixelSize: Appearance.font.size.large
     font.variableAxes: ({
             FILL: fill.toFixed(1),

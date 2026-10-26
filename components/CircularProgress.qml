@@ -1,8 +1,8 @@
 import QtQuick
-import QtQuick.Shapes
 import qs.utils
 
-// Cincin progres: track redup dengan busur terisi yang bergerak halus, angka di tengah.
+// Cincin progres dot-matrix: titik-titik di busur 270°, yang menyala mengikuti nilai. Nilai tampil
+// dianimasikan, jadi titik menyala berurutan. Angka dot-matrix di tengah.
 Item {
     id: root
 
@@ -14,6 +14,8 @@ Item {
     property color color: Appearance.colors.primary
     property real shown: Math.max(0, Math.min(1, value))
     readonly property real r: (size - thickness) / 2
+    readonly property int dots: Math.max(12, Math.round(Math.PI * 1.5 * r / (thickness * 1.9)))
+    readonly property int lit: Math.round(shown * dots)
 
     implicitWidth: size
     implicitHeight: size
@@ -25,40 +27,25 @@ Item {
         }
     }
 
-    Shape {
-        anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
+    Repeater {
+        model: root.dots
 
-        ShapePath {
-            fillColor: "transparent"
-            strokeColor: Appearance.colors.secondaryContainer
-            strokeWidth: root.thickness
-            capStyle: ShapePath.FlatCap
+        Rectangle {
+            required property int index
+            // Mulai dari kiri bawah (135°), celah di bawah ala pengukur
+            readonly property real angle: (135 + 270 * index / (root.dots - 1)) * Math.PI / 180
 
-            PathAngleArc {
-                centerX: root.size / 2
-                centerY: root.size / 2
-                radiusX: root.r
-                radiusY: root.r
-                // Celah kecil di bawah, ala pengukur
-                startAngle: 135
-                sweepAngle: 270
-            }
-        }
+            x: root.size / 2 + root.r * Math.cos(angle) - width / 2
+            y: root.size / 2 + root.r * Math.sin(angle) - height / 2
+            width: root.thickness * 0.75
+            height: width
+            radius: width / 2
+            color: index < root.lit ? root.color : Appearance.colors.hairline
 
-        ShapePath {
-            fillColor: "transparent"
-            strokeColor: root.color
-            strokeWidth: root.thickness
-            capStyle: ShapePath.FlatCap
-
-            PathAngleArc {
-                centerX: root.size / 2
-                centerY: root.size / 2
-                radiusX: root.r
-                radiusY: root.r
-                startAngle: 135
-                sweepAngle: Math.max(0.1, 270 * root.shown)
+            Behavior on color {
+                CAnim {
+                    duration: Appearance.anim.durations.small
+                }
             }
         }
     }
@@ -67,19 +54,16 @@ Item {
         anchors.centerIn: parent
         spacing: 0
 
-        StyledText {
+        DisplayText {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Math.round(root.value * 100) + "%"
-            font.family: Appearance.font.family.mono
-            font.pixelSize: Appearance.font.size.larger
-            font.bold: true
+            text: Math.round(root.value * 100)
+            font.pixelSize: Math.round(root.size * 0.28)
         }
 
-        StyledText {
+        Caption {
             anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.label !== ""
             text: root.label
-            color: Appearance.colors.textDim
-            font.pixelSize: Appearance.font.size.small
         }
     }
 }

@@ -1,7 +1,7 @@
 import QtQuick
 import qs.utils
 
-// Tombol pill dengan label (dan ikon opsional). type: "filled", "tonal", "text".
+// Tombol pil berlabel mono huruf besar (ikon opsional). type: "filled" (aksen), "tonal" (cincin), "text".
 StyledRect {
     id: root
 
@@ -10,16 +10,16 @@ StyledRect {
     property string type: "tonal"
     property bool disabled: false
 
-    readonly property color ink: type === "filled" ? Appearance.colors.primaryText : type === "tonal" ? Appearance.colors.secondaryContainerText : Appearance.colors.primary
+    readonly property color ink: type === "filled" ? Appearance.colors.primaryText : type === "tonal" ? Appearance.colors.text : Appearance.colors.primary
 
     signal clicked
 
     implicitWidth: row.implicitWidth + Appearance.padding.large * 2
-    implicitHeight: 36
-    radius: Appearance.radius.small
-    border.width: type === "text" ? 0 : Appearance.border.thin
-    border.color: type === "filled" ? Appearance.colors.primary : Appearance.colors.outlineVariant
-    color: type === "filled" ? Appearance.colors.primary : type === "tonal" ? Appearance.colors.secondaryContainer : "transparent"
+    implicitHeight: 34
+    radius: height / 2
+    color: type === "filled" ? Appearance.colors.primary : "transparent"
+    border.width: type === "tonal" ? 1 : 0
+    border.color: Appearance.colors.hairline
     opacity: disabled ? 0.38 : 1
 
     Row {
@@ -36,11 +36,10 @@ StyledRect {
             color: root.ink
         }
 
-        StyledText {
+        Caption {
             anchors.verticalCenter: parent.verticalCenter
             text: root.text
             color: root.ink
-            font.weight: Font.Medium
         }
     }
 

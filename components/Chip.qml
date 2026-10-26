@@ -1,19 +1,16 @@
 import QtQuick
 import qs.utils
 
-// Chip kecil berisi ikon + teks, untuk info singkat (uptime, jaringan)
+// Info singkat tanpa kotak: ikon tipis + teks mono kecil (uptime, jaringan). color bisa diisi untuk menyorot.
 StyledRect {
     id: root
 
     property string icon: ""
     property string text: ""
 
-    implicitWidth: row.implicitWidth + Appearance.padding.normal * 2
-    implicitHeight: 26
-    radius: Appearance.radius.small - 2
-    color: Appearance.colors.surfaceContainerHigh
-    border.width: Appearance.border.thin
-    border.color: Appearance.colors.outlineVariant
+    implicitWidth: row.implicitWidth + (color.a > 0 ? Appearance.padding.normal * 2 : 0)
+    implicitHeight: 24
+    radius: height / 2
 
     Row {
         id: row
@@ -26,12 +23,14 @@ StyledRect {
             visible: root.icon !== ""
             text: root.icon
             font.pixelSize: Appearance.font.size.larger
-            color: Appearance.colors.primary
+            color: Appearance.colors.textDim
         }
 
         StyledText {
             anchors.verticalCenter: parent.verticalCenter
             text: root.text
+            color: Appearance.colors.textDim
+            font.family: Appearance.font.family.mono
             font.pixelSize: Appearance.font.size.small
         }
     }

@@ -1,7 +1,8 @@
 import QtQuick
 import qs.utils
 
-// Tombol ikon bersudut kecil. type: "text" (tanpa latar), "tonal", "filled". toggled = aktif.
+// Tombol ikon bulat. type: "text" (tanpa latar), "tonal" (cincin tipis), "filled".
+// toggled = aktif: lingkaran aksen penuh (untuk "text": ikon jadi warna aksen saja).
 StyledRect {
     id: root
 
@@ -12,18 +13,17 @@ StyledRect {
     property int padding: Appearance.padding.small
     property bool disabled: false
 
-    readonly property color activeColor: type === "filled" ? Appearance.colors.primary : Appearance.colors.secondaryContainer
-    readonly property color activeText: type === "filled" ? Appearance.colors.primaryText : Appearance.colors.secondaryContainerText
-    readonly property color idleColor: type === "text" ? "transparent" : Appearance.colors.surfaceContainerHigh
+    readonly property bool solid: toggled && type !== "text"
+    readonly property color ink: solid ? Appearance.colors.primaryText : toggled ? Appearance.colors.primary : type === "text" ? Appearance.colors.textDim : Appearance.colors.text
 
     signal clicked
 
     implicitWidth: label.implicitWidth + padding * 2
     implicitHeight: label.implicitHeight + padding * 2
-    radius: Appearance.radius.small
-    border.width: type === "text" ? 0 : Appearance.border.thin
-    border.color: toggled ? activeColor : Appearance.colors.outlineVariant
-    color: toggled ? activeColor : idleColor
+    radius: height / 2
+    color: solid ? Appearance.colors.primary : "transparent"
+    border.width: type === "tonal" && !solid ? 1 : 0
+    border.color: Appearance.colors.hairline
     opacity: disabled ? 0.38 : 1
 
     MaterialIcon {
@@ -33,12 +33,12 @@ StyledRect {
         text: root.icon
         font.pixelSize: root.size
         fill: root.toggled ? 1 : 0
-        color: root.toggled ? root.activeText : Appearance.colors.textDim
+        color: root.ink
     }
 
     StateLayer {
         disabled: root.disabled
-        color: root.toggled ? root.activeText : Appearance.colors.text
+        color: root.ink
         onClicked: root.clicked()
     }
 }

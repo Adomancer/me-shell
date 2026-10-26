@@ -1,7 +1,7 @@
 import QtQuick
 import qs.utils
 
-// Slider vertikal Material 3 (isi dari bawah) dengan ikon di dasar track.
+// Slider vertikal bersegmen (isi dari bawah) dengan ikon di bawahnya.
 Item {
     id: root
 
@@ -14,40 +14,27 @@ Item {
     implicitWidth: 44
     implicitHeight: 180
 
-    StyledRect {
-        anchors.fill: parent
-        radius: Appearance.radius.small
-        color: Appearance.colors.secondaryContainer
-        border.width: Appearance.border.thin
-        border.color: Appearance.colors.outlineVariant
+    SegmentBar {
+        id: bar
 
-        StyledRect {
-            id: fill
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.bottom: icon.top
+        anchors.bottomMargin: Appearance.spacing.normal
+        width: 22
+        vertical: true
+        segments: Math.max(8, Math.round(height / 7))
+        value: root.shown
+        instant: drag.pressed
+    }
 
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            height: Math.max(parent.width, root.shown * parent.height)
-            radius: parent.radius
-            color: Appearance.colors.primary
+    MaterialIcon {
+        id: icon
 
-            Behavior on height {
-                enabled: !drag.pressed
-
-                Anim {
-                    easing.bezierCurve: Appearance.anim.curves.expressiveDefault
-                }
-            }
-        }
-
-        MaterialIcon {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: (parent.width - height) / 2
-            text: root.icon
-            fill: 1
-            color: Appearance.colors.primaryText
-        }
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        text: root.icon
+        color: Appearance.colors.textDim
     }
 
     MouseArea {
@@ -56,7 +43,7 @@ Item {
         property real live: 0
 
         function update(y: real): void {
-            live = Math.max(0, Math.min(1, 1 - y / height));
+            live = Math.max(0, Math.min(1, 1 - (y - bar.y) / bar.height));
             root.moved(live);
         }
 
