@@ -5,7 +5,7 @@ import qs.services
 import qs.utils
 import "../../utils/WeatherIcons.js" as WeatherIcons
 
-// Jam besar di atas wallpaper: jam (primer) dan menit (sekunder), tanggal, lalu cuaca.
+// Jam dot-matrix besar di atas wallpaper (titik dua aksen), tanggal sebagai label mono, lalu cuaca.
 // Bayangan lembut supaya tetap terbaca di wallpaper terang.
 Item {
     id: root
@@ -36,38 +36,29 @@ Item {
             anchors.horizontalCenter: root.align === Text.AlignHCenter ? parent.horizontalCenter : undefined
             spacing: 0
 
-            StyledText {
+            DisplayText {
                 text: Qt.formatDateTime(Time.date, "hh")
-                color: Appearance.colors.primary
-                font.family: Appearance.font.family.mono
                 font.pixelSize: Appearance.font.size.giant
-                font.bold: true
             }
 
-            StyledText {
+            DisplayText {
                 text: ":"
-                color: Appearance.colors.outline
-                font.family: Appearance.font.family.mono
+                color: Appearance.colors.primary
                 font.pixelSize: Appearance.font.size.giant
-                font.bold: true
             }
 
-            StyledText {
+            DisplayText {
                 text: Qt.formatDateTime(Time.date, "mm")
-                color: Appearance.colors.secondary
-                font.family: Appearance.font.family.mono
                 font.pixelSize: Appearance.font.size.giant
-                font.bold: true
             }
         }
 
-        StyledText {
+        Caption {
             width: parent.width
             horizontalAlignment: root.align
             text: Time.date.toLocaleString(Qt.locale(), "dddd, d MMMM")
             color: Appearance.colors.text
-            font.pixelSize: Appearance.font.size.extraLarge
-            font.weight: Font.Medium
+            font.pixelSize: Appearance.font.size.large
         }
 
         Row {
@@ -81,16 +72,16 @@ Item {
             MaterialIcon {
                 anchors.verticalCenter: parent.verticalCenter
                 text: WeatherIcons.get(Weather.kind)
-                fill: 1
                 font.pixelSize: Appearance.font.size.extraLarge
-                color: Appearance.colors.tertiary
+                color: Appearance.colors.text
             }
 
             StyledText {
                 anchors.verticalCenter: parent.verticalCenter
                 text: `${Weather.temp}°  ${Weather.description}`
                 color: Appearance.colors.textDim
-                font.pixelSize: Appearance.font.size.large
+                font.family: Appearance.font.family.mono
+                font.pixelSize: Appearance.font.size.larger
             }
         }
     }
