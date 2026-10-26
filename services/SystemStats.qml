@@ -27,6 +27,9 @@ Singleton {
     property real netRx: 0
     property real netTx: 0
     property string netIface: ""
+    property int cores: 1
+    // [{ name, cpu, mem }] lima proses paling rakus CPU (persen dari seluruh CPU)
+    property var topProcs: []
 
     // Riwayat untuk grafik; netHistory dalam byte/detik (UI menormalkan sendiri)
     property var cpuHistory: []
@@ -52,6 +55,7 @@ Singleton {
             netdev.reload();
             diskProc.running = true;
             tempProc.running = true;
+            topProc.running = true;
         }
     }
 
@@ -77,7 +81,10 @@ Singleton {
 
     FileView {
         path: "/proc/cpuinfo"
-        onLoaded: root.cpuName = (text().match(/model name\s*:\s*(.*)/)?.[1] ?? "").replace(/\s+/g, " ").trim()
+        onLoaded: {
+            root.cpuName = (text().match(/model name\s*:\s*(.*)/)?.[1] ?? "").replace(/\s+/g, " ").trim();
+            root.cores = Math.max(1, (text().match(/^processor\s*:/gm) ?? []).length);
+        }
     }
 
     FileView {
@@ -155,6 +162,32 @@ Singleton {
                         root.home = ratio;
                     }
                 }
+            }
+        }
+    }
+
+    Process {
+        id: topProc
+
+        // top, bukan ps: %CPU ps adalah rata-rata sepanjang umur proses. Locale C supaya desimal pakai titik.
+        // Kolom: PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND
+        command: ["top", "-bn1", "-w", "200", "-o", "%CPU"]
+        environment: ({
+                LC_ALL: "C"
+            })
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = text.split("\n");
+                const head = lines.findIndex(l => l.trim().startsWith("PID"));
+                root.topProcs = lines.slice(head + 1).filter(l => l.trim()).slice(0, 5).map(l => {
+                    const f = l.trim().split(/\s+/);
+                    return {
+                        name: f.slice(11).join(" "),
+                        // top menghitung per core (bisa >100%)
+                        cpu: (Number(f[8]) || 0) / root.cores,
+                        mem: Number(f[9]) || 0
+                    };
+                });
             }
         }
     }
