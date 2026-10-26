@@ -10,6 +10,7 @@ Item {
 
     // Window induk, dibutuhkan untuk membuka menu tray
     property var window
+    readonly property bool clockHovered: clock.hovered
 
     implicitHeight: Config.barHeight
 
@@ -37,6 +38,8 @@ Item {
     }
 
     Clock {
+        id: clock
+
         anchors.centerIn: parent
     }
 

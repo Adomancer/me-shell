@@ -8,6 +8,7 @@ StyledRect {
     id: root
 
     readonly property bool active: DrawerState.active === "panel"
+    readonly property bool hovered: layer.containsMouse
 
     implicitWidth: row.implicitWidth + Appearance.padding.normal * 2
     implicitHeight: Config.barHeight - 10
@@ -37,6 +38,8 @@ StyledRect {
     }
 
     StateLayer {
+        id: layer
+
         color: root.active ? Appearance.colors.primaryContainerText : Appearance.colors.text
         onClicked: DrawerState.togglePanel("dash")
     }
