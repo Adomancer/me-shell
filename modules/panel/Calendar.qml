@@ -67,15 +67,12 @@ ColumnLayout {
         Repeater {
             model: 7
 
-            StyledText {
+            Caption {
                 required property int index
 
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 text: Qt.locale().dayName((index + 1) % 7, Locale.NarrowFormat)
-                color: Appearance.colors.textDim
-                font.pixelSize: Appearance.font.size.small
-                font.weight: Font.Medium
             }
         }
 
@@ -96,8 +93,9 @@ ColumnLayout {
 
                 Layout.alignment: Qt.AlignHCenter
                 implicitWidth: 28
-                implicitHeight: 26
-                radius: Appearance.radius.small
+                implicitHeight: 28
+                // Hari ini = lingkaran aksen
+                radius: height / 2
                 color: isToday ? Appearance.colors.primary : "transparent"
 
                 StyledText {

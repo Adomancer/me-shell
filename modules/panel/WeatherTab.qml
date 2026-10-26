@@ -20,7 +20,8 @@ ColumnLayout {
         return new Date(y, m - 1, d).toLocaleDateString(Qt.locale(), "dddd");
     }
 
-    component Tile: StyledRect {
+    // Detail tanpa kotak: label mono di atas, nilai di bawah, garis tipis di bawahnya
+    component Tile: ColumnLayout {
         id: tile
 
         property string icon
@@ -29,29 +30,26 @@ ColumnLayout {
 
         Layout.fillWidth: true
         Layout.fillHeight: true
-        radius: Appearance.radius.small + 2
-        color: Appearance.colors.surfaceContainerHigh
+        spacing: Appearance.spacing.small
 
         RowLayout {
-            anchors.fill: parent
-            anchors.margins: Appearance.padding.normal
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             spacing: Appearance.spacing.normal
 
             MaterialIcon {
                 text: tile.icon
-                color: Appearance.colors.tertiary
-                font.pixelSize: 26
+                color: Appearance.colors.textDim
+                font.pixelSize: 22
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
 
-                StyledText {
+                Caption {
                     Layout.fillWidth: true
                     text: tile.label
-                    color: Appearance.colors.textDim
-                    font.pixelSize: Appearance.font.size.small
                 }
 
                 StyledText {
@@ -63,6 +61,8 @@ ColumnLayout {
                 }
             }
         }
+
+        Divider {}
     }
 
     spacing: Appearance.spacing.normal
@@ -85,19 +85,16 @@ ColumnLayout {
 
                 MaterialIcon {
                     text: Weather.available ? WeatherIcons.get(Weather.kind) : "cloud_off"
-                    fill: 1
-                    font.pixelSize: 104
-                    color: Appearance.colors.tertiary
+                    font.pixelSize: 96
+                    color: Appearance.colors.text
                 }
 
                 ColumnLayout {
                     spacing: 0
 
-                    StyledText {
+                    DisplayText {
                         text: Weather.available ? `${Weather.temp}°` : "--"
-                        font.family: Appearance.font.family.mono
-                        font.pixelSize: 64
-                        font.weight: Font.Medium
+                        font.pixelSize: 72
                     }
 
                     StyledText {
@@ -113,7 +110,7 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             columns: 2
-            columnSpacing: Appearance.spacing.normal
+            columnSpacing: Appearance.spacing.huge
             rowSpacing: Appearance.spacing.normal
 
             Tile {
@@ -169,9 +166,8 @@ ColumnLayout {
 
                     MaterialIcon {
                         text: WeatherIcons.get(day.modelData.kind)
-                        fill: 1
-                        font.pixelSize: 36
-                        color: Appearance.colors.tertiary
+                        font.pixelSize: 32
+                        color: Appearance.colors.text
                     }
 
                     ColumnLayout {

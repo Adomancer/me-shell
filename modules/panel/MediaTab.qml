@@ -130,45 +130,17 @@ StyledClippingRect {
                 elide: Text.ElideRight
             }
 
-            // Visualizer cava: batang bulat yang naik turun halus
+            // Visualizer cava dot-matrix
             Item {
                 Layout.fillWidth: true
                 Layout.topMargin: Appearance.spacing.normal
                 implicitHeight: 90
 
-                Row {
+                DotColumns {
                     anchors.fill: parent
-                    spacing: 4
-
-                    Repeater {
-                        model: Cava.bars
-
-                        Item {
-                            id: eqBar
-
-                            required property int index
-                            property real level: Media.playing ? (Cava.values[index] ?? 0) : 0
-
-                            width: (parent.width - 4 * (Cava.bars - 1)) / Cava.bars
-                            height: parent.height
-
-                            Behavior on level {
-                                Anim {
-                                    duration: 120
-                                    easing.bezierCurve: Appearance.anim.curves.standardDecel
-                                }
-                            }
-
-                            Rectangle {
-                                anchors.bottom: parent.bottom
-                                width: parent.width
-                                height: Math.max(width, eqBar.level * eqBar.height)
-                                radius: 1
-                                color: Appearance.colors.primary
-                                opacity: 0.45 + eqBar.level * 0.55
-                            }
-                        }
-                    }
+                    columns: Cava.bars
+                    rows: 9
+                    values: Media.playing ? Cava.values : []
                 }
 
                 StyledText {

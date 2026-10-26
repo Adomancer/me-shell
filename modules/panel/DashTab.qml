@@ -5,191 +5,172 @@ import qs.services
 import qs.utils
 import "../../utils/WeatherIcons.js" as WeatherIcons
 
-// Tab Dashboard ala Caelestia: user + cuaca di atas, jam + kalender + cincin resource di tengah,
-// lagu di kanan, lalu kontrol cepat.
+// Tab Dashboard ala Nothing/TE, tanpa kartu: jam dot-matrix besar + cuaca + user di kiri, kalender di
+// tengah, lagu di kanan, dipisah garis tipis. Di bawah: slider bersegmen dan toggle bulat.
 ColumnLayout {
     id: root
 
-    spacing: Appearance.spacing.normal
+    // "12:06" -> ["12", "06"]; titik dua berkedip seperti jam di bar
+    readonly property var parts: Qt.formatDateTime(Time.date, "hh:mm").split(":")
+    property bool tick: true
 
-    RowLayout {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        spacing: Appearance.spacing.normal
+    spacing: Appearance.spacing.large
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: Appearance.spacing.normal
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Appearance.spacing.normal
-
-                // User
-                Card {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-
-                    RowLayout {
-                        spacing: Appearance.spacing.large
-
-                        Avatar {
-                            size: 72
-                            source: `file://${UserInfo.avatar}`
-                            initial: UserInfo.displayName.charAt(0).toUpperCase()
-                        }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: UserInfo.displayName
-                                font.pixelSize: Appearance.font.size.large
-                                font.weight: Font.Medium
-                                elide: Text.ElideRight
-                            }
-
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: `${UserInfo.wm} · ${UserInfo.distro}`
-                                color: Appearance.colors.textDim
-                                font.pixelSize: Appearance.font.size.small
-                                elide: Text.ElideRight
-                            }
-
-                            Row {
-                                spacing: Appearance.spacing.small
-
-                                Chip {
-                                    icon: "schedule"
-                                    text: UserInfo.uptime
-                                }
-
-                                Chip {
-                                    icon: Network.ethernet ? "lan" : Network.connected ? "wifi" : "wifi_off"
-                                    text: Network.ethernet ? "Ethernet" : Network.connected ? Network.ssid : "Offline"
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Cuaca
-                Card {
-                    Layout.preferredWidth: 236
-                    Layout.fillHeight: true
-
-                    RowLayout {
-                        spacing: Appearance.spacing.normal
-
-                        MaterialIcon {
-                            text: Weather.available ? WeatherIcons.get(Weather.kind) : "cloud_off"
-                            fill: 1
-                            font.pixelSize: 52
-                            color: Appearance.colors.tertiary
-                        }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 0
-
-                            StyledText {
-                                text: Weather.available ? `${Weather.temp}°` : "--"
-                                font.family: Appearance.font.family.mono
-                                font.pixelSize: Appearance.font.size.extraLarge
-                                font.weight: Font.Medium
-                            }
-
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: Weather.available ? Weather.description : "Tidak ada data"
-                                color: Appearance.colors.textDim
-                                font.pixelSize: Appearance.font.size.small
-                                elide: Text.ElideRight
-                            }
-
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: Weather.location
-                                color: Appearance.colors.textDim
-                                font.pixelSize: Appearance.font.size.small
-                                elide: Text.ElideRight
-                            }
-                        }
-                    }
-                }
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                spacing: Appearance.spacing.normal
-
-                // Jam
-                Card {
-                    Layout.preferredWidth: 150
-                    Layout.fillHeight: true
-
-                    ColumnLayout {
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.topMargin: Appearance.spacing.normal
-                        spacing: -6
-
-                        StyledText {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: Qt.formatDateTime(Time.date, "hh")
-                            color: Appearance.colors.primary
-                            font.family: Appearance.font.family.mono
-                            font.pixelSize: 64
-                            font.bold: true
-                        }
-
-                        StyledText {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: Qt.formatDateTime(Time.date, "mm")
-                            color: Appearance.colors.secondary
-                            font.family: Appearance.font.family.mono
-                            font.pixelSize: 64
-                            font.bold: true
-                        }
-                    }
-
-                    StyledText {
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.topMargin: Appearance.spacing.small
-                        text: Time.date.toLocaleString(Qt.locale(), "dddd, d MMM")
-                        color: Appearance.colors.textDim
-                        font.pixelSize: Appearance.font.size.small
-                    }
-                }
-
-                Card {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-
-                    Calendar {
-                        Layout.fillWidth: true
-                    }
-                }
-            }
-        }
-
-        NowPlaying {
-            Layout.preferredWidth: 220
-            Layout.fillHeight: true
-        }
+    Timer {
+        interval: 1000
+        repeat: true
+        running: root.visible
+        onTriggered: root.tick = !root.tick
     }
 
     RowLayout {
         Layout.fillWidth: true
-        spacing: Appearance.spacing.normal
+        Layout.fillHeight: true
+        spacing: Appearance.spacing.huge
+
+        // Kiri: jam, tanggal, cuaca, user
+        ColumnLayout {
+            Layout.preferredWidth: 250
+            Layout.fillHeight: true
+            spacing: Appearance.spacing.small
+
+            Caption {
+                text: Time.date.toLocaleString(Qt.locale(), "dddd")
+                color: Appearance.colors.primary
+            }
+
+            Row {
+                DisplayText {
+                    text: root.parts[0]
+                    font.pixelSize: 88
+                }
+
+                DisplayText {
+                    text: ":"
+                    color: Appearance.colors.primary
+                    font.pixelSize: 88
+                    opacity: root.tick ? 1 : 0.15
+
+                    Behavior on opacity {
+                        Anim {
+                            duration: Appearance.anim.durations.small
+                        }
+                    }
+                }
+
+                DisplayText {
+                    text: root.parts[1]
+                    font.pixelSize: 88
+                }
+            }
+
+            StyledText {
+                text: Time.date.toLocaleString(Qt.locale(), "d MMMM yyyy")
+                color: Appearance.colors.textDim
+                font.pixelSize: Appearance.font.size.larger
+            }
+
+            Item {
+                Layout.fillHeight: true
+            }
+
+            // Cuaca satu baris
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Appearance.spacing.small
+
+                MaterialIcon {
+                    text: Weather.available ? WeatherIcons.get(Weather.kind) : "cloud_off"
+                    font.pixelSize: Appearance.font.size.extraLarge
+                    color: Appearance.colors.text
+                }
+
+                StyledText {
+                    text: Weather.available ? `${Weather.temp}°` : "--"
+                    font.family: Appearance.font.family.mono
+                    font.pixelSize: Appearance.font.size.large
+                }
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: Weather.available ? `${Weather.description} · ${Weather.location}` : "Tidak ada data cuaca"
+                    color: Appearance.colors.textDim
+                    font.pixelSize: Appearance.font.size.small
+                    elide: Text.ElideRight
+                }
+            }
+
+            Divider {}
+
+            // User
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Appearance.spacing.normal
+
+                Avatar {
+                    size: 36
+                    source: `file://${UserInfo.avatar}`
+                    initial: UserInfo.displayName.charAt(0).toUpperCase()
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: UserInfo.displayName
+                        font.weight: Font.Medium
+                        elide: Text.ElideRight
+                    }
+
+                    Row {
+                        spacing: Appearance.spacing.normal
+
+                        Chip {
+                            icon: "schedule"
+                            text: UserInfo.uptime
+                        }
+
+                        Chip {
+                            icon: Network.ethernet ? "lan" : Network.connected ? "wifi" : "wifi_off"
+                            text: Network.ethernet ? "Ethernet" : Network.connected ? Network.ssid : "Offline"
+                        }
+                    }
+                }
+            }
+        }
+
+        Divider {
+            vertical: true
+        }
+
+        Calendar {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignTop
+        }
+
+        Divider {
+            vertical: true
+        }
+
+        NowPlaying {
+            Layout.preferredWidth: 210
+            Layout.fillHeight: true
+            pad: 0
+        }
+    }
+
+    Divider {}
+
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: Appearance.spacing.large
 
         StyledSlider {
             Layout.fillWidth: true
-            icon: Audio.muted ? "volume_off" : "volume_up"
+            label: "VOL"
+            showValue: true
             value: Audio.muted ? 0 : Audio.volume
             onMoved: v => Audio.setVolume(v)
         }
@@ -197,7 +178,8 @@ ColumnLayout {
         StyledSlider {
             Layout.fillWidth: true
             visible: Brightness.available
-            icon: "light_mode"
+            label: "LCD"
+            showValue: true
             value: Brightness.value
             onMoved: v => Brightness.set(v)
         }
