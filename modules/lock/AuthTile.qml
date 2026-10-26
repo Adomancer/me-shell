@@ -9,7 +9,6 @@ Tile {
 
     required property var lock
     readonly property bool failed: lock.failed && !lock.busy
-    readonly property int hour: Time.date.getHours()
 
     Connections {
         target: root.lock
@@ -23,7 +22,7 @@ Tile {
     Caption {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        text: root.hour < 11 ? "Selamat pagi" : root.hour < 15 ? "Selamat siang" : root.hour < 19 ? "Selamat sore" : "Selamat malam"
+        text: Time.greeting
         color: Appearance.colors.primary
     }
 

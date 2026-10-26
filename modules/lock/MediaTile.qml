@@ -50,32 +50,15 @@ Tile {
             width: parent.width
             spacing: Appearance.spacing.normal
 
-            StyledClippingRect {
+            CoverArt {
                 id: cover
 
                 width: 52
                 height: 52
                 radius: Appearance.radius.normal
-                color: Appearance.colors.surfaceContainerHigh
-
-                Image {
-                    id: art
-
-                    anchors.fill: parent
-                    source: root.player?.trackArtUrl ?? ""
-                    fillMode: Image.PreserveAspectCrop
-                    sourceSize: Qt.size(104, 104)
-                    asynchronous: true
-                    visible: status === Image.Ready
-                }
-
-                MaterialIcon {
-                    anchors.centerIn: parent
-                    visible: !art.visible
-                    text: "album"
-                    font.pixelSize: 28
-                    color: Appearance.colors.textDim
-                }
+                source: root.player?.trackArtUrl ?? ""
+                title: root.player?.trackTitle ?? ""
+                progress: Media.progress
             }
 
             Column {
