@@ -1,8 +1,6 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Widgets
 import QtQuick
-import QtQuick.Effects
 import Qt.labs.folderlistmodel
 import qs.components
 import qs.services
@@ -390,43 +388,6 @@ Item {
             DrawerState.launcherQuery = "";
             hoverGuard.last = Qt.point(-1, -1);
             input.forceActiveFocus();
-        }
-    }
-
-    // Ikon aplikasi; monokrom (sesuai setting) dan berwarna saat dipilih
-    component AppIcon: Item {
-        id: appIcon
-
-        property string icon
-        property bool lit: false
-        property int size: 32
-
-        implicitWidth: size
-        implicitHeight: size
-
-        IconImage {
-            id: img
-
-            anchors.fill: parent
-            visible: false
-            implicitSize: appIcon.size
-            // iconPath(nama, fallback) dengan nama kosong menghasilkan path rusak
-            source: Quickshell.iconPath(appIcon.icon || "application-x-executable", "application-x-executable")
-            asynchronous: true
-        }
-
-        MultiEffect {
-            anchors.fill: img
-            source: img
-            saturation: !Config.launcherMonoIcons || appIcon.lit ? 0 : -1
-            brightness: !Config.launcherMonoIcons || appIcon.lit ? 0 : -0.08
-
-            Behavior on saturation {
-                Anim {}
-            }
-            Behavior on brightness {
-                Anim {}
-            }
         }
     }
 
