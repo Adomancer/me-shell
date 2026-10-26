@@ -12,6 +12,7 @@ HYPR_DIR="$CONF/me-shell/hypr"
 HYPR_CONF="$CONF/hypr/hyprland.conf"
 SOURCE_LINE="source = $HYPR_DIR/me-shell.conf"
 BIN="$HOME/.local/bin/me-shell"
+KITTY_CONF="$CONF/kitty/kitty.conf"
 # Penanda baris config lain yang dimatikan oleh installer, supaya bisa dikembalikan saat uninstall
 MARK="#me-shell-off#"
 # Program yang tugasnya diambil alih me-shell (bar, notifikasi, idle, agen polkit)
@@ -87,7 +88,7 @@ install_deps() {
     step "Dependency ($d)"
     case "$d" in
     arch)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava ttf-jetbrains-mono noto-fonts-emoji qt6-svg qt6-imageformats qt6-shadertools)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava ttf-jetbrains-mono noto-fonts-emoji qt6-svg qt6-imageformats qt6-shadertools starship)
         local aur=(quickshell matugen-bin)
         need_terminal && pkgs+=(kitty)
         note "pacman: ${pkgs[*]}"
@@ -300,6 +301,45 @@ setup_hyprland_conf() {
     fi
 }
 
+# --- Terminal -----------------------------------------------------------------
+
+# Gaya kitty + prompt starship. Warna digenerate gen-colors.sh ke $STATE (kitty-colors.conf, starship.toml).
+setup_terminal() {
+    local root="$1" inc rc line
+    inc="include $root/assets/kitty/me-shell.conf"
+    step "Terminal"
+    if command -v kitty >/dev/null; then
+        if [ -f "$KITTY_CONF" ] && grep -qxF "$inc" "$KITTY_CONF"; then
+            ok "kitty sudah memakai gaya me-shell"
+        elif ask "Pakai gaya terminal me-shell untuk kitty?"; then
+            mkdir -p "$(dirname "$KITTY_CONF")"
+            [ -f "$KITTY_CONF" ] && cp "$KITTY_CONF" "$KITTY_CONF.me-shell.bak"
+            printf '\n# me-shell\n%s\n' "$inc" >>"$KITTY_CONF"
+            ok "Ditambahkan ke kitty.conf (backup: kitty.conf.me-shell.bak)"
+        fi
+    else
+        note "kitty tidak ada, gaya terminal dilewati"
+    fi
+
+    if ! command -v starship >/dev/null; then
+        note "Pasang starship (https://starship.rs) untuk prompt bergaya me-shell, lalu jalankan install lagi"
+        return 0
+    fi
+    case "$(basename "${SHELL:-bash}")" in
+    bash) rc="$HOME/.bashrc" line='eval "$(starship init bash)"' ;;
+    zsh) rc="${ZDOTDIR:-$HOME}/.zshrc" line='eval "$(starship init zsh)"' ;;
+    fish) rc="$CONF/fish/config.fish" line='starship init fish | source' ;;
+    *) return 0 ;;
+    esac
+    if grep -qF "starship init" "$rc" 2>/dev/null; then
+        ok "starship sudah aktif di $rc"
+    elif ask "Aktifkan prompt starship di $rc?"; then
+        mkdir -p "$(dirname "$rc")"
+        printf '\n# me-shell\n%s\n' "$line" >>"$rc"
+        ok "starship ditambahkan ke $rc"
+    fi
+}
+
 # --- Shell --------------------------------------------------------------------
 
 in_hyprland() { [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; }
@@ -345,6 +385,7 @@ cmd_install() {
 
     write_hypr_files
     setup_hyprland_conf
+    setup_terminal "$root"
 
     step "Selesai"
     if in_hyprland; then
@@ -400,6 +441,15 @@ cmd_uninstall() {
     { grep -rlF --include='*.conf' "$MARK" "$CONF/hypr" 2>/dev/null || true; } | while read -r f; do
         sed -i "s/^$MARK //" "$f"
         ok "Dikembalikan: $f"
+    done
+    if [ -f "$KITTY_CONF" ]; then
+        sed -i '\|^include .*/assets/kitty/me-shell.conf$|d; /^# me-shell$/d' "$KITTY_CONF"
+        ok "Gaya me-shell dilepas dari kitty.conf"
+    fi
+    for rc in "$HOME/.bashrc" "${ZDOTDIR:-$HOME}/.zshrc" "$CONF/fish/config.fish"; do
+        [ -f "$rc" ] && grep -qx "# me-shell" "$rc" || continue
+        sed -i '/^# me-shell$/{N;/starship init/d}' "$rc"
+        ok "starship dilepas dari $rc"
     done
     rm -f "$QS_LINK" "$BIN"
     ok "Symlink dihapus"
