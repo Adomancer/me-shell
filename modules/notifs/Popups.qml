@@ -33,19 +33,35 @@ Item {
             id: card
 
             required property var modelData
+            required property int index
 
             width: ListView.view.width
             notif: modelData
-            background: Appearance.colors.surfaceContainerHigh
+            // Sudah di atas permukaan pojok; tanpa kotak kedua
+            background: "transparent"
+            progress: critical ? -1 : 1
 
-            HoverHandler {
-                id: hover
+            // Hitung mundur; berhenti selama kursor di atas kartu
+            NumberAnimation on progress {
+                running: !card.critical
+                paused: card.hovered
+                from: 1
+                to: 0
+                duration: Config.notifTimeout * 1000
+                onFinished: Notifs.dismissPopup(card.modelData)
             }
 
-            Timer {
-                interval: Config.notifTimeout * 1000
-                running: !card.critical && !hover.hovered
-                onTriggered: Notifs.dismissPopup(card.modelData)
+            // Pemisah antar popup
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: Appearance.padding.normal
+                anchors.rightMargin: Appearance.padding.normal
+                anchors.top: parent.bottom
+                anchors.topMargin: list.spacing / 2
+                visible: card.index < list.count - 1
+                height: 1
+                color: Appearance.colors.hairline
             }
         }
 

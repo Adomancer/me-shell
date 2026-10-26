@@ -7,16 +7,19 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Kartu notifikasi. Geser ke kanan untuk menutup.
+// Kartu notifikasi. Geser ke kanan untuk menutup. progress >= 0 menampilkan sisa waktu popup sebagai
+// deretan segmen di bawah.
 Item {
     id: root
 
     property var notif
     property color background: Appearance.colors.surfaceContainer
+    // -1 = tanpa hitung mundur
+    property real progress: -1
     readonly property bool critical: notif?.urgency === NotificationUrgency.Critical
     readonly property string image: notif?.image ?? ""
     readonly property string appIcon: notif?.appIcon ? Quickshell.iconPath(notif.appIcon, true) : ""
-    readonly property color ink: critical ? Appearance.colors.errorContainerText : Appearance.colors.text
+    readonly property bool hovered: hover.hovered
 
     implicitHeight: card.implicitHeight
 
@@ -24,13 +27,17 @@ Item {
         root.notif?.dismiss();
     }
 
+    HoverHandler {
+        id: hover
+    }
+
     StyledRect {
         id: card
 
         width: parent.width
-        implicitHeight: layout.implicitHeight + Appearance.padding.normal * 2
+        implicitHeight: layout.implicitHeight + Appearance.padding.normal * 2 + (root.progress >= 0 ? 10 : 0)
         radius: Appearance.radius.normal
-        color: root.critical ? Appearance.colors.errorContainer : root.background
+        color: root.background
         opacity: 1 - Math.min(1, Math.abs(x) / width) * 0.8
 
         // Kembali ke tempat dengan pegas kalau geseran kurang jauh
@@ -67,26 +74,30 @@ Item {
             anchors.margins: Appearance.padding.normal
             spacing: Appearance.spacing.large
 
-            // Gambar notifikasi, ikon app, atau ikon lonceng
-            StyledClippingRect {
+            // Gambar notifikasi, ikon app, atau ikon lonceng; tanpa lingkaran berisi
+            Item {
                 Layout.alignment: Qt.AlignTop
                 implicitWidth: 40
                 implicitHeight: 40
-                radius: root.image ? Appearance.radius.small : height / 2
-                color: root.critical ? Appearance.colors.error : Appearance.colors.primaryContainer
 
-                Image {
+                StyledClippingRect {
                     anchors.fill: parent
                     visible: root.image !== ""
-                    source: root.image
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
+                    radius: Appearance.radius.normal
+                    color: Appearance.colors.surfaceContainerHigh
+
+                    Image {
+                        anchors.fill: parent
+                        source: root.image
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
                 }
 
                 IconImage {
                     anchors.centerIn: parent
                     visible: root.image === "" && root.appIcon !== ""
-                    implicitSize: 26
+                    implicitSize: 32
                     source: root.appIcon
                     asynchronous: true
                 }
@@ -95,8 +106,8 @@ Item {
                     anchors.centerIn: parent
                     visible: root.image === "" && root.appIcon === ""
                     text: root.critical ? "priority_high" : "notifications"
-                    fill: 1
-                    color: root.critical ? Appearance.colors.errorText : Appearance.colors.primaryContainerText
+                    font.pixelSize: 28
+                    color: root.critical ? Appearance.colors.error : Appearance.colors.textDim
                 }
             }
 
@@ -108,18 +119,43 @@ Item {
                     Layout.fillWidth: true
                     spacing: Appearance.spacing.small
 
+                    // Penanda penting: titik merah
+                    Rectangle {
+                        visible: root.critical
+                        implicitWidth: 6
+                        implicitHeight: 6
+                        radius: 3
+                        color: Appearance.colors.error
+                    }
+
                     Caption {
                         Layout.fillWidth: true
-                        text: [root.notif?.appName ?? "", Notifs.ago(root.notif)].filter(s => s).join("  ·  ")
-                        color: root.critical ? root.ink : Appearance.colors.textDim
-                        font.pixelSize: Appearance.font.size.small
+                        text: [root.critical ? "Penting" : "", root.notif?.appName ?? ""].filter(s => s).join("  ·  ")
+                        color: root.critical ? Appearance.colors.error : Appearance.colors.textDim
                         elide: Text.ElideRight
                     }
 
+                    StyledText {
+                        text: Notifs.ago(root.notif)
+                        color: Appearance.colors.outline
+                        font.family: Appearance.font.family.mono
+                        font.pixelSize: Appearance.font.size.small
+                    }
+
+                    // Muncul saat kursor di atas kartu
                     IconButton {
                         icon: "close"
                         size: Appearance.font.size.larger
                         padding: 2
+                        opacity: root.hovered ? 1 : 0
+                        visible: opacity > 0
+
+                        Behavior on opacity {
+                            Anim {
+                                duration: Appearance.anim.durations.small
+                            }
+                        }
+
                         onClicked: root.dismiss()
                     }
                 }
@@ -127,7 +163,6 @@ Item {
                 StyledText {
                     Layout.fillWidth: true
                     text: root.notif?.summary ?? ""
-                    color: root.ink
                     font.pixelSize: Appearance.font.size.larger
                     font.weight: Font.Medium
                     wrapMode: Text.Wrap
@@ -140,7 +175,7 @@ Item {
                     visible: text !== ""
                     text: root.notif?.body ?? ""
                     textFormat: Text.StyledText
-                    color: root.critical ? root.ink : Appearance.colors.textDim
+                    color: Appearance.colors.textDim
                     wrapMode: Text.Wrap
                     maximumLineCount: 4
                     elide: Text.ElideRight
@@ -164,6 +199,22 @@ Item {
                     }
                 }
             }
+        }
+
+        // Sisa waktu popup
+        SegmentBar {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: Appearance.padding.normal
+            anchors.bottomMargin: Appearance.padding.small + 2
+            visible: root.progress >= 0
+            height: 3
+            segments: 40
+            instant: true
+            value: root.progress
+            onColor: root.critical ? Appearance.colors.error : Appearance.colors.textDim
+            opacity: root.hovered ? 0.4 : 1
         }
     }
 }
