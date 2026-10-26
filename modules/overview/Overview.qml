@@ -119,15 +119,14 @@ Item {
                     opacity: 0.45
                 }
 
-                StyledText {
+                DisplayText {
                     anchors.left: parent.left
                     anchors.bottom: parent.bottom
                     anchors.margins: Appearance.padding.small
                     text: card.ws
-                    color: card.isActive ? Appearance.colors.primary : Appearance.colors.textDim
-                    font.family: Appearance.font.family.mono
+                    color: card.isActive ? Appearance.colors.primary : Appearance.colors.text
+                    weight: 900
                     font.pixelSize: Appearance.font.size.extraLarge
-                    font.bold: true
                     opacity: 0.9
                 }
 
@@ -162,7 +161,7 @@ Item {
 
                         StyledClippingRect {
                             anchors.fill: parent
-                            radius: Appearance.radius.small - 4
+                            radius: Appearance.radius.small
                             color: Appearance.colors.surfaceContainerHigh
                             border.width: win.modelData.activated ? 2 : 0
                             border.color: Appearance.colors.primary
