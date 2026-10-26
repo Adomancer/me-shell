@@ -75,4 +75,35 @@ ColumnLayout {
             onPicked: v => Config.set("launcherMaxResults", v)
         }
     }
+
+    SettingSection {
+        title: "Fokus"
+    }
+
+    SettingRow {
+        label: "Durasi fokus"
+        description: "Satu sesi pomodoro di tab FOKUS"
+
+        SettingStepper {
+            from: 5
+            to: 90
+            stepSize: 5
+            unit: " mnt"
+            value: Config.focusMinutes
+            onPicked: v => Config.set("focusMinutes", v)
+        }
+    }
+
+    SettingRow {
+        label: "Durasi istirahat"
+        description: "Mulai otomatis setelah sesi fokus selesai"
+
+        SettingStepper {
+            from: 1
+            to: 30
+            unit: " mnt"
+            value: Config.breakMinutes
+            onPicked: v => Config.set("breakMinutes", v)
+        }
+    }
 }
