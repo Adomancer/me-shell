@@ -77,7 +77,8 @@ Singleton {
             }
         }
         onExited: code => {
-            if (root.elapsed > 0)
+            // SIGINT membuat wf-recorder keluar dengan 0 setelah menutup file
+            if (code === 0 || root.elapsed > 0)
                 Toaster.show("video_file", "Rekaman disimpan", file.split("/").pop(), "");
             else
                 Toaster.show("error", "Rekaman gagal", `wf-recorder keluar dengan kode ${code}`, "");
