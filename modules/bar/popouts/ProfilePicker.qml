@@ -5,7 +5,7 @@ import qs.components
 import qs.services
 import qs.utils
 
-// Tiga tombol power profile; yang aktif melebar dan berwarna aksen.
+// Tiga tombol power profile; yang aktif melebar, terisi netral, dengan ikon dan label aksen.
 ColumnLayout {
     id: root
 
@@ -46,13 +46,13 @@ ColumnLayout {
                 required property var modelData
                 readonly property bool isActive: Battery.profile === modelData.value
                 readonly property bool usable: modelData.value !== PowerProfile.Performance || Battery.hasPerformance
-                readonly property color ink: isActive ? Appearance.colors.primaryText : Appearance.colors.text
+                readonly property color ink: isActive ? Appearance.colors.secondaryContainerText : Appearance.colors.text
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: isActive ? 140 : 90
                 implicitHeight: 40
                 radius: height / 2
-                color: isActive ? Appearance.colors.primary : "transparent"
+                color: isActive ? Appearance.colors.secondaryContainer : "transparent"
                 border.width: isActive ? 0 : 1
                 border.color: Appearance.colors.hairline
                 opacity: usable ? 1 : 0.38

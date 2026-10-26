@@ -68,12 +68,13 @@ Item {
                 border.color: Appearance.colors.outline
             }
 
-            IconImage {
+            AppIcon {
                 anchors.centerIn: parent
                 visible: cell.appIcon !== ""
-                implicitSize: 14
+                size: 14
+                // Workspace kosong: jangan cari ikon sama sekali
                 source: cell.appIcon ? Quickshell.iconPath(cell.appIcon, "application-x-executable") : ""
-                asynchronous: true
+                lit: cell.isActive
                 opacity: cell.isActive ? 1 : 0.6
             }
 

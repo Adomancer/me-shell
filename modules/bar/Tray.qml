@@ -35,14 +35,16 @@ StyledRect {
                 implicitWidth: 26
                 implicitHeight: 26
 
-                IconImage {
+                AppIcon {
                     anchors.centerIn: parent
-                    implicitSize: 16
+                    size: 16
                     source: item.modelData.icon
-                    asynchronous: true
+                    lit: trayLayer.containsMouse
                 }
 
                 StateLayer {
+                    id: trayLayer
+
                     radius: Appearance.radius.small
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: mouse => {

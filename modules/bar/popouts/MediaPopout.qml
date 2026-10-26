@@ -9,41 +9,18 @@ RowLayout {
     id: root
 
     readonly property var player: Media.active
-    readonly property real progress: player && player.length > 0 ? Math.min(1, player.position / player.length) : 0
-
-    function fmt(sec: real): string {
-        const s = Math.max(0, Math.floor(sec));
-        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-    }
 
     readonly property int pageWidth: 380
 
     spacing: Appearance.spacing.large
 
-    StyledClippingRect {
+    CoverArt {
         implicitWidth: 112
         implicitHeight: 112
         radius: Appearance.radius.normal
-        color: Appearance.colors.secondaryContainer
-
-        Image {
-            id: art
-
-            anchors.fill: parent
-            source: root.player?.trackArtUrl ?? ""
-            sourceSize: Qt.size(224, 224)
-            fillMode: Image.PreserveAspectCrop
-            asynchronous: true
-            visible: status === Image.Ready
-        }
-
-        MaterialIcon {
-            anchors.centerIn: parent
-            visible: !art.visible
-            text: "music_note"
-            font.pixelSize: Appearance.font.size.huge
-            color: Appearance.colors.secondaryContainerText
-        }
+        source: root.player?.trackArtUrl ?? ""
+        title: root.player?.trackTitle ?? ""
+        progress: Media.progress
 
         StateLayer {
             onClicked: DrawerState.togglePanel("media")
@@ -82,7 +59,7 @@ RowLayout {
             }
 
             StyledRect {
-                width: parent.width * root.progress
+                width: parent.width * Media.progress
                 height: parent.height
                 radius: 3
                 color: Appearance.colors.primary
@@ -112,7 +89,7 @@ RowLayout {
 
             StyledText {
                 visible: (root.player?.length ?? 0) > 0
-                text: `${root.fmt(root.player?.position ?? 0)} / ${root.fmt(root.player?.length ?? 0)}`
+                text: `${Media.formatTime(Media.position)} / ${Media.formatTime(Media.length)}`
                 color: Appearance.colors.textDim
                 font.family: Appearance.font.family.mono
                 font.pixelSize: Appearance.font.size.small

@@ -105,10 +105,9 @@ ColumnLayout {
             Layout.leftMargin: Appearance.padding.small
             spacing: Appearance.spacing.normal
 
-            IconImage {
-                implicitSize: 24
+            AppIcon {
+                size: 24
                 source: Quickshell.iconPath(stream.modelData.properties["application.icon-name"] || "audio-x-generic", "audio-x-generic")
-                asynchronous: true
             }
 
             ColumnLayout {

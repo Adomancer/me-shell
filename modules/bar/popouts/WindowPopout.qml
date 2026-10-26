@@ -47,11 +47,10 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: Appearance.spacing.normal
 
-        IconImage {
+        AppIcon {
             visible: root.toplevel !== null
-            implicitSize: 32
-            source: Quickshell.iconPath(root.entry?.icon || "application-x-executable", "application-x-executable")
-            asynchronous: true
+            size: 32
+            icon: root.entry?.icon ?? ""
         }
 
         ColumnLayout {

@@ -34,6 +34,7 @@ StyledRect {
 
         Row {
             anchors.verticalCenter: parent.verticalCenter
+            spacing: 3
 
             Repeater {
                 model: root.parts
@@ -44,14 +45,26 @@ StyledRect {
                     required property string modelData
                     required property int index
 
-                    StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 3
+
+                    // Titik dua: dua titik bulat, lebih jelas dari glyph Doto di ukuran kecil
+                    Column {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: part.index > 0
-                        text: ":"
-                        color: Appearance.colors.primary
-                        font.family: Appearance.font.family.display
-                        font.pixelSize: 24
-                        opacity: root.tick ? 1 : 0.15
+                        spacing: 5
+                        opacity: root.tick ? 1 : 0.35
+
+                        Repeater {
+                            model: 2
+
+                            Rectangle {
+                                width: 3
+                                height: 3
+                                radius: 1.5
+                                color: Appearance.colors.primary
+                            }
+                        }
                     }
 
                     DisplayText {
