@@ -14,7 +14,7 @@ Item {
 
     StyledRect {
         anchors.fill: parent
-        radius: height / 2
+        radius: Appearance.radius.small
         color: root.checked ? Appearance.colors.primary : Appearance.colors.surfaceContainerHighest
         border.width: root.checked ? 0 : 2
         border.color: Appearance.colors.outline
@@ -28,7 +28,7 @@ Item {
             x: root.checked ? parent.width - size - (parent.height - size) / 2 : (parent.height - size) / 2
             width: size
             height: size
-            radius: size / 2
+            radius: 2
             color: root.checked ? Appearance.colors.primaryText : Appearance.colors.outline
 
             Behavior on x {

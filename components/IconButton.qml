@@ -1,7 +1,7 @@
 import QtQuick
 import qs.utils
 
-// Tombol ikon bulat. type: "text" (tanpa latar), "tonal", "filled". toggled = aktif.
+// Tombol ikon bersudut kecil. type: "text" (tanpa latar), "tonal", "filled". toggled = aktif.
 StyledRect {
     id: root
 
@@ -20,17 +20,11 @@ StyledRect {
 
     implicitWidth: label.implicitWidth + padding * 2
     implicitHeight: label.implicitHeight + padding * 2
-    // Saat aktif sudutnya sedikit mengotak, ciri tombol M3 expressive
-    radius: toggled ? Math.min(height / 2, Appearance.radius.small + 2) : height / 2
+    radius: Appearance.radius.small
+    border.width: type === "text" ? 0 : Appearance.border.thin
+    border.color: toggled ? activeColor : Appearance.colors.outlineVariant
     color: toggled ? activeColor : idleColor
     opacity: disabled ? 0.38 : 1
-
-    Behavior on radius {
-        Anim {
-            duration: Appearance.anim.durations.expressiveFast
-            easing.bezierCurve: Appearance.anim.curves.expressiveFast
-        }
-    }
 
     MaterialIcon {
         id: label

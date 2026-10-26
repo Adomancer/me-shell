@@ -16,7 +16,9 @@ StyledRect {
 
     implicitWidth: row.implicitWidth + Appearance.padding.large * 2
     implicitHeight: 36
-    radius: height / 2
+    radius: Appearance.radius.small
+    border.width: type === "text" ? 0 : Appearance.border.thin
+    border.color: type === "filled" ? Appearance.colors.primary : Appearance.colors.outlineVariant
     color: type === "filled" ? Appearance.colors.primary : type === "tonal" ? Appearance.colors.secondaryContainer : "transparent"
     opacity: disabled ? 0.38 : 1
 

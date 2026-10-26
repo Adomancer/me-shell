@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.utils
 
-// Kartu Material 3: latar container, sudut bulat, judul kecil ber-ikon (opsional).
+// Kartu: latar container, garis tepi tipis, judul kecil ber-ikon (opsional).
 // Isi disusun vertikal; anak pakai Layout.fillWidth.
 StyledRect {
     id: root
@@ -17,6 +17,8 @@ StyledRect {
     implicitHeight: col.implicitHeight + pad * 2
     radius: Appearance.radius.normal
     color: Appearance.colors.surfaceContainer
+    border.width: Appearance.border.thin
+    border.color: Appearance.colors.outlineVariant
 
     ColumnLayout {
         id: col
@@ -39,10 +41,8 @@ StyledRect {
                 color: Appearance.colors.primary
             }
 
-            StyledText {
+            Caption {
                 text: root.title
-                color: Appearance.colors.primary
-                font.weight: Font.Medium
             }
 
             Item {

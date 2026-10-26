@@ -16,8 +16,10 @@ Item {
 
     StyledRect {
         anchors.fill: parent
-        radius: width / 2
+        radius: Appearance.radius.small
         color: Appearance.colors.secondaryContainer
+        border.width: Appearance.border.thin
+        border.color: Appearance.colors.outlineVariant
 
         StyledRect {
             id: fill

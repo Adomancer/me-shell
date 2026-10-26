@@ -12,6 +12,8 @@ StyledRect {
     implicitHeight: 26
     radius: Appearance.radius.small - 2
     color: Appearance.colors.surfaceContainerHigh
+    border.width: Appearance.border.thin
+    border.color: Appearance.colors.outlineVariant
 
     Row {
         id: row

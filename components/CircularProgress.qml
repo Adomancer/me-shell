@@ -33,7 +33,7 @@ Item {
             fillColor: "transparent"
             strokeColor: Appearance.colors.secondaryContainer
             strokeWidth: root.thickness
-            capStyle: ShapePath.RoundCap
+            capStyle: ShapePath.FlatCap
 
             PathAngleArc {
                 centerX: root.size / 2
@@ -50,7 +50,7 @@ Item {
             fillColor: "transparent"
             strokeColor: root.color
             strokeWidth: root.thickness
-            capStyle: ShapePath.RoundCap
+            capStyle: ShapePath.FlatCap
 
             PathAngleArc {
                 centerX: root.size / 2

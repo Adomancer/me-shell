@@ -11,7 +11,7 @@ StyledClippingRect {
 
     implicitWidth: size
     implicitHeight: size
-    radius: size / 2
+    radius: Appearance.radius.normal
     color: Appearance.colors.primaryContainer
 
     Image {
