@@ -14,6 +14,8 @@ SOURCE_LINE="source = $HYPR_DIR/me-shell.conf"
 BIN="$HOME/.local/bin/me-shell"
 # Penanda baris config lain yang dimatikan oleh installer, supaya bisa dikembalikan saat uninstall
 MARK="#me-shell-off#"
+# Program yang tugasnya diambil alih me-shell (bar, notifikasi, idle)
+CLASH="waybar|swaync|mako|dunst|hyprpanel|ags|hypridle"
 
 YES=0
 
@@ -85,7 +87,7 @@ install_deps() {
     step "Dependency ($d)"
     case "$d" in
     arch)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cava ttf-jetbrains-mono qt6-svg qt6-imageformats qt6-shadertools)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava ttf-jetbrains-mono qt6-svg qt6-imageformats qt6-shadertools)
         local aur=(quickshell matugen-bin)
         need_terminal && pkgs+=(kitty)
         note "pacman: ${pkgs[*]}"
@@ -111,10 +113,11 @@ install_deps() {
         fi
         ;;
     fedora)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cava jetbrains-mono-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools)
+        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava jetbrains-mono-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools)
         need_terminal && pkgs+=(kitty)
         # Hyprland dan matugen tidak ada di repo resmi Fedora (cek: Fedora 44); diambil dari COPR.
-        # sdegler/hyprland punya build untuk Fedora 43-45 + rawhide, lionheartp/Hyprland cadangannya.
+        # sdegler/hyprland punya build untuk Fedora 43-45 + rawhide (juga hyprpicker dan hyprsunset),
+        # lionheartp/Hyprland cadangannya.
         note "COPR:   errornointernet/quickshell, sdegler/hyprland"
         note "dnf:    ${pkgs[*]}"
         ask "Install sekarang?" || { warn "Dependency dilewati"; return; }
@@ -138,7 +141,8 @@ install_deps() {
         ;;
     *)
         warn "Distro tidak dikenal. Install manual: hyprland, quickshell, git, curl, brightnessctl,"
-        warn "NetworkManager, bluez, wl-clipboard, cava, font JetBrains Mono, matugen"
+        warn "NetworkManager, bluez, wl-clipboard, cava, font JetBrains Mono, matugen,"
+        warn "grim, wf-recorder, cliphist, hyprpicker, hyprsunset (screenshot, rekam, clipboard, lampu malam)"
         ;;
     esac
 }
@@ -279,13 +283,13 @@ setup_hyprland_conf() {
 
     # Bar/notif lain bentrok dengan me-shell; cari di semua file config Hyprland
     local hits
-    hits="$(grep -rnE --include='*.conf' '^[[:space:]]*exec(-once)?[[:space:]]*=.*\b(waybar|swaync|mako|dunst|hyprpanel|ags)\b' "$CONF/hypr" 2>/dev/null | grep -v "$MARK" || true)"
+    hits="$(grep -rnE --include='*.conf' "^[[:space:]]*exec(-once)?[[:space:]]*=.*\b($CLASH)\b" "$CONF/hypr" 2>/dev/null | grep -v "$MARK" || true)"
     if [ -n "$hits" ]; then
         warn "Ditemukan program yang bentrok dengan me-shell:"
         printf '%s\n' "$hits" | sed 's/^/      /'
         if ask "Matikan baris-baris itu? (bisa dikembalikan lewat 'me-shell uninstall')"; then
             printf '%s\n' "$hits" | cut -d: -f1 | sort -u | while read -r f; do
-                sed -i -E "s/^([[:space:]]*exec(-once)?[[:space:]]*=.*\b(waybar|swaync|mako|dunst|hyprpanel|ags)\b.*)$/$MARK \1/" "$f"
+                sed -i -E "s/^([[:space:]]*exec(-once)?[[:space:]]*=.*\b($CLASH)\b.*)$/$MARK \1/" "$f"
             done
             ok "Dimatikan"
         fi
