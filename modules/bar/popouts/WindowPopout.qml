@@ -50,7 +50,7 @@ ColumnLayout {
         IconImage {
             visible: root.toplevel !== null
             implicitSize: 32
-            source: Quickshell.iconPath(root.entry?.icon ?? "", "application-x-executable")
+            source: Quickshell.iconPath(root.entry?.icon || "application-x-executable", "application-x-executable")
             asynchronous: true
         }
 

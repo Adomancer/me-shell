@@ -110,7 +110,7 @@ ColumnLayout {
 
             IconImage {
                 implicitSize: 24
-                source: Quickshell.iconPath(stream.modelData.properties["application.icon-name"] ?? "", "audio-x-generic")
+                source: Quickshell.iconPath(stream.modelData.properties["application.icon-name"] || "audio-x-generic", "audio-x-generic")
                 asynchronous: true
             }
 
