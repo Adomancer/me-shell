@@ -17,6 +17,7 @@ Singleton {
     readonly property string dateFormat: adapter.dateFormat
     readonly property string fontFamily: adapter.fontFamily
     readonly property string fontSans: adapter.fontSans
+    readonly property string fontDisplay: adapter.fontDisplay
     readonly property bool frameEnabled: adapter.frameEnabled
     readonly property int frameThickness: adapter.frameThickness
     readonly property int workspaces: adapter.workspaces
@@ -71,9 +72,10 @@ Singleton {
             property bool barShowTray: true
             property string clockFormat: "hh:mm"
             property string dateFormat: "ddd, dd MMM"
-            // Font mono untuk angka dan jam; font sans untuk teks lain
-            property string fontFamily: "JetBrains Mono"
-            property string fontSans: "Rubik"
+            // Font mono untuk label dan angka kecil; sans untuk teks lain; display (dot-matrix) untuk angka besar
+            property string fontFamily: "Space Mono"
+            property string fontSans: "Space Grotesk"
+            property string fontDisplay: "Doto"
             // Bingkai di sekeliling layar tempat drawer menempel
             property bool frameEnabled: true
             property int frameThickness: 8
@@ -95,7 +97,7 @@ Singleton {
             // Popout saat kursor di atas ikon bar
             property bool barPopouts: true
             // Ikon aplikasi menggantikan nomor di workspace yang berisi window
-            property bool barWorkspaceIcons: true
+            property bool barWorkspaceIcons: false
             // Buka drawer dengan menyentuh tepi/pojok layar
             property bool hoverOpen: true
             // Menit diam sebelum aksi idle; 0 = mati
