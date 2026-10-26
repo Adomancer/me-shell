@@ -224,7 +224,7 @@ ColumnLayout {
             icon: Notifs.dnd ? "notifications_off" : "notifications"
             toggled: Notifs.dnd
             padding: Appearance.padding.normal - 2
-            onClicked: Notifs.dnd = !Notifs.dnd
+            onClicked: Notifs.toggleDnd()
         }
 
         IconButton {
@@ -233,6 +233,30 @@ ColumnLayout {
             toggled: !Audio.micMuted
             padding: Appearance.padding.normal - 2
             onClicked: Audio.toggleMic()
+        }
+
+        IconButton {
+            type: "tonal"
+            icon: "coffee"
+            toggled: Idle.inhibited
+            padding: Appearance.padding.normal - 2
+            onClicked: Idle.toggleInhibit()
+        }
+
+        IconButton {
+            type: "tonal"
+            icon: "nightlight"
+            toggled: NightLight.enabled
+            padding: Appearance.padding.normal - 2
+            onClicked: NightLight.toggle()
+        }
+
+        IconButton {
+            type: "tonal"
+            icon: "sports_esports"
+            toggled: GameMode.enabled
+            padding: Appearance.padding.normal - 2
+            onClicked: GameMode.toggle()
         }
 
         IconButton {
