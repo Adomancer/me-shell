@@ -106,5 +106,9 @@ Singleton {
         function screen(): void {
             root.full();
         }
+
+        function color(): void {
+            root.pickColor();
+        }
     }
 }

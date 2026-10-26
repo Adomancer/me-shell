@@ -98,8 +98,9 @@ Singleton {
             root.toggle();
         }
 
+        // Untuk keybind: berhenti kalau sedang merekam, kalau tidak buka picker
         function region(): void {
-            Screenshot.openPicker("record");
+            root.recording ? root.stop() : Screenshot.openPicker("record");
         }
 
         function isRecording(): bool {

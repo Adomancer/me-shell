@@ -54,6 +54,48 @@ Singleton {
             cmd: "drawers toggle settings"
         },
         {
+            id: "utilities",
+            label: "Utilitas",
+            mods: "SUPER",
+            key: "A",
+            cmd: "drawers toggle utilities"
+        },
+        {
+            id: "clipboard",
+            label: "Riwayat clipboard",
+            mods: "SUPER",
+            key: "V",
+            cmd: "drawers launcher ';'"
+        },
+        {
+            id: "screenshot",
+            label: "Screenshot area / window",
+            mods: "SUPER SHIFT",
+            key: "S",
+            cmd: "picker open"
+        },
+        {
+            id: "screenshotFull",
+            label: "Screenshot layar penuh",
+            mods: "",
+            key: "Print",
+            cmd: "picker screen"
+        },
+        {
+            id: "record",
+            label: "Rekam layar (mulai/berhenti)",
+            mods: "SUPER SHIFT",
+            key: "R",
+            cmd: "recorder region"
+        },
+        {
+            id: "colorPicker",
+            label: "Ambil warna dari layar",
+            mods: "SUPER SHIFT",
+            key: "C",
+            cmd: "picker color"
+        },
+        {
             id: "session",
             label: "Session menu",
             mods: "CTRL ALT",
