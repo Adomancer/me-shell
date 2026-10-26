@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI me-shell: install, update, restart, log, uninstall.
+# CLI me-shell: install, update, restart, log, uninstall, dev.
 # Dipasang ke ~/.local/bin/me-shell oleh "me-shell install".
 set -euo pipefail
 
@@ -77,6 +77,53 @@ distro() {
     esac
 }
 
+have() { command -v "$1" >/dev/null; }
+
+# Seperti ask, tapi default "tidak"; -y juga dianggap "tidak" (untuk hal besar yang harus dipilih sendiri)
+ask_no() {
+    [ "$YES" = 1 ] && return 1
+    local ans
+    read -rp "   $1 [y/N] " ans </dev/tty || ans=n
+    [[ $ans == [yY]* ]]
+}
+
+# Nama AUR helper (paru/yay); tawarkan pasang yay-bin kalau belum ada. Gagal = tidak ada helper.
+aur_helper() {
+    have paru && { echo paru; return; }
+    have yay && { echo yay; return; }
+    ask "Tidak ada AUR helper. Pasang yay?" || return 1
+    {
+        sudo pacman -S --needed --noconfirm base-devel git
+        local tmp
+        tmp="$(mktemp -d)"
+        git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$tmp/yay-bin"
+        (cd "$tmp/yay-bin" && makepkg -si --noconfirm)
+        rm -rf "$tmp"
+    } >&2
+    have yay && echo yay
+}
+
+aur_install() {
+    local helper
+    helper="$(aur_helper)" || return 1
+    "$helper" -S --needed --noconfirm "$@"
+}
+
+# Paket dari repo distro; paket yang tidak ada di Fedora dilewati, bukan menggagalkan semuanya
+pkg_install() {
+    case "$(distro)" in
+    arch) sudo pacman -S --needed --noconfirm "$@" ;;
+    fedora) sudo dnf install -y --skip-unavailable "$@" ;;
+    *) return 1 ;;
+    esac
+}
+
+# Tambah repo dari file .repo (dnf5 lalu dnf4), dilewati kalau sudah ada
+dnf_repo() {
+    [ -f "/etc/yum.repos.d/$(basename "$1")" ] && return
+    sudo dnf config-manager addrepo --from-repofile="$1" 2>/dev/null || sudo dnf config-manager --add-repo "$1"
+}
+
 install_deps() {
     local d
     d="$(distro)"
@@ -89,23 +136,7 @@ install_deps() {
         note "AUR:    ${aur[*]}"
         ask "Install sekarang?" || { warn "Dependency dilewati"; return; }
         sudo pacman -S --needed --noconfirm "${pkgs[@]}"
-        local helper=""
-        command -v paru >/dev/null && helper=paru
-        [ -z "$helper" ] && command -v yay >/dev/null && helper=yay
-        if [ -z "$helper" ] && ask "Tidak ada AUR helper. Pasang yay?"; then
-            sudo pacman -S --needed --noconfirm base-devel
-            local tmp
-            tmp="$(mktemp -d)"
-            git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$tmp/yay-bin"
-            (cd "$tmp/yay-bin" && makepkg -si --noconfirm)
-            rm -rf "$tmp"
-            helper=yay
-        fi
-        if [ -n "$helper" ]; then
-            "$helper" -S --needed --noconfirm "${aur[@]}"
-        else
-            warn "Install manual dari AUR: ${aur[*]}"
-        fi
+        aur_install "${aur[@]}" || warn "Install manual dari AUR: ${aur[*]}"
         ;;
     fedora)
         local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava tesseract tesseract-langpack-ind ddcutil jetbrains-mono-fonts google-noto-color-emoji-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools kitty)
@@ -180,6 +211,179 @@ install_fonts() {
     fc-cache -f "$FONT_DIR" >/dev/null 2>&1 || true
 }
 
+# --- Paket dev (opsional) -----------------------------------------------------
+
+DEV_GROUPS=(base vscode python node php go java docker podman db apps)
+
+# "Judul|paket yang ditampilkan" per grup dan distro
+dev_info() {
+    local d="$1" g="$2"
+    case "$g:$d" in
+    base:fedora) echo "Dasar & CLI|git gh git-lfs make gcc gcc-c++ ripgrep fd-find fzf bat eza jq btop neovim tmux zoxide httpie lazygit (COPR)" ;;
+    base:arch) echo "Dasar & CLI|git github-cli git-lfs base-devel ripgrep fd fzf bat eza jq btop neovim tmux zoxide httpie lazygit" ;;
+    vscode:fedora) echo "VS Code|code (repo resmi Microsoft)" ;;
+    vscode:arch) echo "VS Code|visual-studio-code-bin (AUR)" ;;
+    python:fedora) echo "Python|python3 python3-pip python3-devel pipx uv" ;;
+    python:arch) echo "Python|python python-pip python-pipx uv" ;;
+    node:*) echo "Node.js|nodejs npm + corepack (pnpm/yarn) di ~/.local/bin" ;;
+    php:fedora) echo "PHP|php-cli php-fpm php-mbstring php-xml php-pdo php-mysqlnd php-pgsql php-gd php-zip php-intl php-bcmath php-opcache composer" ;;
+    php:arch) echo "PHP|php php-fpm php-gd php-intl php-pgsql php-sqlite composer (+ ekstensi diaktifkan di php.ini)" ;;
+    go:fedora) echo "Go|golang" ;;
+    go:arch) echo "Go|go" ;;
+    java:fedora) echo "Java|java-21-openjdk-devel maven" ;;
+    java:arch) echo "Java|jdk21-openjdk maven" ;;
+    docker:fedora) echo "Docker|docker-ce + compose + buildx (repo resmi Docker), grup docker" ;;
+    docker:arch) echo "Docker|docker docker-compose docker-buildx, grup docker" ;;
+    podman:*) echo "Podman|podman podman-compose" ;;
+    db:fedora) echo "Database|mariadb-server postgresql-server valkey (service tidak dinyalakan otomatis)" ;;
+    db:arch) echo "Database|mariadb postgresql valkey (service tidak dinyalakan otomatis)" ;;
+    apps:fedora) echo "Aplikasi|brave-browser (repo resmi Brave), Discord (Flatpak dari Flathub)" ;;
+    apps:arch) echo "Aplikasi|brave-bin (AUR), discord" ;;
+    esac
+}
+
+dev_base() {
+    if [ "$1" = fedora ]; then
+        pkg_install git gh git-lfs make gcc gcc-c++ ripgrep fd-find fzf bat eza jq btop neovim tmux zoxide httpie
+        have lazygit || { sudo dnf copr enable -y atim/lazygit && sudo dnf install -y lazygit; } || warn "lazygit dilewati"
+    else
+        pkg_install git github-cli git-lfs base-devel ripgrep fd fzf bat eza jq btop neovim tmux zoxide httpie lazygit
+    fi
+}
+
+dev_vscode() {
+    have code && return
+    if [ "$1" = fedora ]; then
+        sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+        printf '%s\n' "[code]" "name=Visual Studio Code" "baseurl=https://packages.microsoft.com/yumrepos/vscode" \
+            "enabled=1" "autorefresh=1" "type=rpm-md" "gpgcheck=1" "gpgkey=https://packages.microsoft.com/keys/microsoft.asc" |
+            sudo tee /etc/yum.repos.d/vscode.repo >/dev/null
+        sudo dnf install -y code
+    else
+        aur_install visual-studio-code-bin
+    fi
+}
+
+dev_python() {
+    if [ "$1" = fedora ]; then
+        pkg_install python3 python3-pip python3-devel pipx uv
+    else
+        pkg_install python python-pip python-pipx uv
+    fi
+}
+
+# Corepack (pnpm/yarn) dipasang di ~/.local supaya tidak perlu sudo untuk npm global
+dev_node() {
+    pkg_install nodejs npm
+    have corepack || npm install -g --prefix "$HOME/.local" corepack
+    "$HOME/.local/bin/corepack" enable --install-directory "$HOME/.local/bin" 2>/dev/null ||
+        corepack enable --install-directory "$HOME/.local/bin"
+}
+
+dev_php() {
+    if [ "$1" = fedora ]; then
+        pkg_install php-cli php-fpm php-mbstring php-xml php-pdo php-mysqlnd php-pgsql php-gd php-zip php-intl php-bcmath php-opcache composer
+    else
+        pkg_install php php-fpm php-gd php-intl php-pgsql php-sqlite composer
+        # Di Arch ekstensi bawaan dimatikan di php.ini; nyalakan yang umum dipakai framework
+        local ini=/etc/php/php.ini
+        [ -f "$ini.me-shell.bak" ] || sudo cp "$ini" "$ini.me-shell.bak"
+        sudo sed -i -E 's/^;(extension=(bcmath|gd|iconv|intl|mysqli|pdo_mysql|pdo_pgsql|pdo_sqlite|pgsql|sqlite3|zip))$/\1/' "$ini"
+    fi
+}
+
+dev_go() {
+    if [ "$1" = fedora ]; then pkg_install golang; else pkg_install go; fi
+}
+
+dev_java() {
+    if [ "$1" = fedora ]; then pkg_install java-21-openjdk-devel maven; else pkg_install jdk21-openjdk maven; fi
+}
+
+dev_docker() {
+    if [ "$1" = fedora ]; then
+        if ! have docker; then
+            # Repo Docker kadang belum punya build untuk Fedora terbaru; moby-engine dari Fedora jadi cadangan
+            { dnf_repo https://download.docker.com/linux/fedora/docker-ce.repo &&
+                sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; } ||
+                { warn "Repo Docker gagal, pakai moby-engine dari Fedora"; sudo dnf install -y moby-engine docker-compose; }
+        fi
+    else
+        pkg_install docker docker-compose docker-buildx
+    fi
+    sudo systemctl enable --now docker
+    if ! id -nG "$USER" | grep -qw docker; then
+        sudo usermod -aG docker "$USER"
+        note "Logout lalu login lagi supaya docker bisa dipakai tanpa sudo"
+    fi
+}
+
+# podman-docker sengaja tidak dipasang: bentrok dengan docker-ce
+dev_podman() {
+    pkg_install podman podman-compose
+}
+
+dev_db() {
+    if [ "$1" = fedora ]; then
+        pkg_install mariadb-server postgresql-server valkey
+        sudo test -d /var/lib/pgsql/data/base || sudo postgresql-setup --initdb
+    else
+        pkg_install mariadb postgresql valkey
+        sudo test -d /var/lib/mysql/mysql || sudo mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
+        sudo test -f /var/lib/postgres/data/PG_VERSION || sudo -u postgres initdb -D /var/lib/postgres/data
+    fi
+    note "Nyalakan saat perlu: sudo systemctl enable --now mariadb postgresql valkey"
+}
+
+dev_apps() {
+    if [ "$1" = fedora ]; then
+        have brave-browser || { dnf_repo https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo && sudo dnf install -y brave-browser; }
+        pkg_install flatpak
+        flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+        flatpak --user install -y --noninteractive flathub com.discordapp.Discord
+    else
+        have brave || aur_install brave-bin
+        pkg_install discord
+    fi
+}
+
+cmd_dev() {
+    local d g info title pkgs
+    d="$(distro)"
+    [ "$d" = unknown ] && die "Paket dev hanya untuk Fedora dan Arch."
+    local done_=() skipped=() failed=()
+    for g in "${DEV_GROUPS[@]}"; do
+        info="$(dev_info "$d" "$g")"
+        title="${info%%|*}"
+        pkgs="${info#*|}"
+        step "Paket dev: $title"
+        note "$pkgs"
+        if ! ask "Install?"; then
+            skipped+=("$title")
+            continue
+        fi
+        # Subshell + set -e: satu grup gagal tidak menghentikan grup lain. Bukan di dalam `if`, karena di sana
+        # bash mengabaikan set -e dan grup yang gagal di tengah bisa tercatat berhasil.
+        local rc=0
+        set +e
+        (set -e; "dev_$g" "$d")
+        rc=$?
+        set -e
+        if [ "$rc" = 0 ]; then
+            ok "$title"
+            done_+=("$title")
+        else
+            warn "$title gagal, lihat pesan di atas"
+            failed+=("$title")
+        fi
+    done
+    step "Ringkasan paket dev"
+    [ ${#done_[@]} -gt 0 ] && ok "Terpasang: ${done_[*]}"
+    [ ${#skipped[@]} -gt 0 ] && note "Dilewati: ${skipped[*]}"
+    [ ${#failed[@]} -gt 0 ] && warn "Gagal: ${failed[*]}"
+    true
+}
+
 # --- File config --------------------------------------------------------------
 
 link() {
@@ -203,6 +407,9 @@ write_hypr_files() {
 #   $SOURCE_LINE
 
 exec-once = qs -c me-shell
+
+# Aplikasi Electron/Chromium (VS Code, Discord, Brave) jalan native di Wayland, tidak buram lewat XWayland
+env = ELECTRON_OZONE_PLATFORM_HINT,auto
 
 misc {
     allow_session_lock_restore = true
@@ -402,6 +609,13 @@ cmd_install() {
     setup_hyprland_conf
     setup_terminal "$root"
 
+    step "Paket dev"
+    if ask_no "Pasang juga alat developer (VS Code, PHP, Python, Node, Docker, database, Brave, Discord)?"; then
+        cmd_dev
+    else
+        note "Bisa dipasang kapan saja: me-shell dev"
+    fi
+
     step "Selesai"
     if in_hyprland; then
         hyprctl reload >/dev/null && ok "Hyprland di-reload"
@@ -489,6 +703,7 @@ Pemakaian: me-shell <perintah> [-y]
   restart     matikan lalu nyalakan lagi shell
   log         jalankan shell di terminal dan simpan log (untuk lapor error)
   uninstall   lepas me-shell dari Hyprland dan hapus symlink
+  dev         pasang alat developer per grup (editor, bahasa, container, database, aplikasi)
 
   -y          jawab "ya" untuk semua pertanyaan
 EOF
@@ -506,6 +721,7 @@ main() {
     restart) cmd_restart ;;
     log) cmd_log ;;
     uninstall) cmd_uninstall ;;
+    dev) cmd_dev ;;
     -h | --help | help) usage ;;
     *) usage; exit 1 ;;
     esac
