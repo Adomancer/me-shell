@@ -39,6 +39,12 @@ Item {
             ActiveDot {
                 active: parent.toggled
             }
+
+            // Scroll di pojok kiri = kecerahan (ala end-4); volume ada di ikon status kanan
+            WheelHandler {
+                enabled: Brightness.available
+                onWheel: event => Brightness.set(Math.max(0, Math.min(1, Brightness.value + (event.angleDelta.y > 0 ? 0.05 : -0.05))))
+            }
         }
 
         Workspaces {

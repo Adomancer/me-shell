@@ -65,6 +65,28 @@ Row {
 
     spacing: 0
 
+    // Indikator privasi: ada aplikasi yang sedang memakai mikrofon atau mengambil video
+    Row {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: Audio.micUsers.length > 0 || Audio.videoUsers.length > 0
+        rightPadding: Appearance.spacing.small
+        spacing: 2
+
+        MaterialIcon {
+            visible: Audio.micUsers.length > 0
+            text: "mic"
+            fill: 1
+            color: Appearance.colors.primary
+        }
+
+        MaterialIcon {
+            visible: Audio.videoUsers.length > 0
+            text: "videocam"
+            fill: 1
+            color: Appearance.colors.primary
+        }
+    }
+
     StatusIcon {
         popout: "network"
 
