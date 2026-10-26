@@ -50,9 +50,11 @@ ColumnLayout {
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: isActive ? 140 : 90
-                implicitHeight: 44
-                radius: Appearance.radius.small
-                color: isActive ? Appearance.colors.primary : Appearance.colors.surfaceContainerHigh
+                implicitHeight: 40
+                radius: height / 2
+                color: isActive ? Appearance.colors.primary : "transparent"
+                border.width: isActive ? 0 : 1
+                border.color: Appearance.colors.hairline
                 opacity: usable ? 1 : 0.38
 
                 Behavior on Layout.preferredWidth {

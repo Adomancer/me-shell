@@ -3,7 +3,8 @@ import QtQuick.Layouts
 import qs.components
 import qs.utils
 
-// Satu baris daftar di popout (jaringan, perangkat, output audio). Baris aktif berlatar tonal.
+// Satu baris daftar di popout (jaringan, perangkat, output audio). Tanpa latar; baris aktif ditandai
+// batang aksen di kiri dan teks aksen, hover = fill tipis.
 StyledRect {
     id: root
 
@@ -16,14 +17,29 @@ StyledRect {
     property bool busy: false
     default property alias extra: slot.data
 
-    readonly property color ink: active ? Appearance.colors.secondaryContainerText : Appearance.colors.text
+    readonly property color ink: active ? Appearance.colors.primary : Appearance.colors.text
 
     signal clicked
 
     Layout.fillWidth: true
     implicitHeight: Math.max(44, texts.implicitHeight + Appearance.padding.small * 2)
-    radius: Appearance.radius.small
-    color: active ? Appearance.colors.secondaryContainer : "transparent"
+    radius: Appearance.radius.normal
+
+    Rectangle {
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: 3
+        height: root.active ? parent.height * 0.5 : 0
+        radius: 1.5
+        color: Appearance.colors.primary
+
+        Behavior on height {
+            Anim {
+                duration: Appearance.anim.durations.expressiveFast
+                easing.bezierCurve: Appearance.anim.curves.expressiveFast
+            }
+        }
+    }
 
     RowLayout {
         anchors.fill: parent
