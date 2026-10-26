@@ -55,7 +55,7 @@ Canvas {
         const last = pts[pts.length - 1];
         ctx.lineTo(last.x, last.y);
         ctx.strokeStyle = root.color;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1.5;
         ctx.lineJoin = "round";
         ctx.stroke();
 
@@ -63,7 +63,7 @@ Canvas {
         ctx.lineTo(0, height);
         ctx.closePath();
         const g = ctx.createLinearGradient(0, 0, 0, height);
-        g.addColorStop(0, Appearance.alpha(root.color, 0.35));
+        g.addColorStop(0, Appearance.alpha(root.color, 0.12));
         g.addColorStop(1, Appearance.alpha(root.color, 0));
         ctx.fillStyle = g;
         ctx.fill();

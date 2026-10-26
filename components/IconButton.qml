@@ -18,8 +18,9 @@ StyledRect {
 
     signal clicked
 
-    implicitWidth: label.implicitWidth + padding * 2
-    implicitHeight: label.implicitHeight + padding * 2
+    // Selalu bulat sempurna: sisi = ukuran ikon terbesar + padding
+    implicitWidth: Math.max(label.implicitWidth, label.implicitHeight) + padding * 2
+    implicitHeight: implicitWidth
     radius: height / 2
     color: solid ? Appearance.colors.primary : "transparent"
     border.width: type === "tonal" && !solid ? 1 : 0
