@@ -200,15 +200,18 @@ Scope {
             onCleared: DrawerState.close()
         }
 
-        // Semua latar dalam satu Shape, dengan bayangan lembut di sekelilingnya
+        // Semua latar dalam satu Shape, dengan bayangan keras di sekelilingnya
         Item {
             anchors.fill: parent
             layer.enabled: true
+            // Bayangan keras tanpa blur, bergeser ke kanan bawah (aksen retro)
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                blurMax: 18
-                shadowBlur: 1
-                shadowColor: Appearance.alpha(Appearance.colors.shadow, 0.55)
+                blurMax: 0
+                shadowBlur: 0
+                shadowHorizontalOffset: 3
+                shadowVerticalOffset: 3
+                shadowColor: Appearance.alpha(Appearance.colors.shadow, 0.6)
             }
 
             Shape {
