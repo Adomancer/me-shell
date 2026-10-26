@@ -94,12 +94,11 @@ Item {
                     }
                 }
 
-                IconImage {
+                AppIcon {
                     anchors.centerIn: parent
                     visible: root.image === "" && root.appIcon !== ""
-                    implicitSize: 32
+                    size: 32
                     source: root.appIcon
-                    asynchronous: true
                 }
 
                 MaterialIcon {
