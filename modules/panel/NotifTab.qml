@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
 import qs.components
@@ -54,15 +55,98 @@ ColumnLayout {
         spacing: Appearance.spacing.normal
         boundsBehavior: Flickable.StopAtBounds
 
+        // Satu baris per aplikasi, urut dari notifikasi terbaru. Nilainya string, jadi delegate tetap
+        // sama saat notifikasi dalam grup bertambah/berkurang.
         model: ScriptModel {
-            values: [...Notifs.list].reverse()
+            values: [...new Set([...Notifs.list].reverse().map(n => n.appName || "Lainnya"))]
         }
 
-        delegate: NotifCard {
-            required property var modelData
+        delegate: Column {
+            id: group
+
+            required property string modelData
+            readonly property var items: [...Notifs.list].reverse().filter(n => (n.appName || "Lainnya") === modelData)
+            property bool expanded: false
 
             width: ListView.view.width
-            notif: modelData
+            spacing: Appearance.spacing.small
+
+            RowLayout {
+                width: parent.width
+                spacing: Appearance.spacing.small
+
+                IconImage {
+                    readonly property string icon: group.items[0]?.appIcon ?? ""
+
+                    visible: icon !== ""
+                    implicitSize: 18
+                    source: icon ? Quickshell.iconPath(icon, true) : ""
+                    asynchronous: true
+                }
+
+                StyledText {
+                    text: group.modelData
+                    color: Appearance.colors.primary
+                    font.weight: Font.Medium
+                }
+
+                StyledRect {
+                    implicitWidth: Math.max(implicitHeight, groupCount.implicitWidth + 10)
+                    implicitHeight: 18
+                    radius: height / 2
+                    color: Appearance.colors.secondaryContainer
+
+                    StyledText {
+                        id: groupCount
+
+                        anchors.centerIn: parent
+                        text: group.items.length
+                        color: Appearance.colors.secondaryContainerText
+                        font.family: Appearance.font.family.mono
+                        font.pixelSize: Appearance.font.size.small
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                IconButton {
+                    visible: group.items.length > 1
+                    icon: group.expanded ? "expand_less" : "expand_more"
+                    onClicked: group.expanded = !group.expanded
+                }
+
+                IconButton {
+                    icon: "clear_all"
+                    onClicked: {
+                        for (const n of group.items)
+                            n.dismiss();
+                    }
+                }
+            }
+
+            // Tertutup: hanya yang terbaru; terbuka: semua
+            Repeater {
+                model: ScriptModel {
+                    values: group.expanded ? group.items : group.items.slice(0, 1)
+                }
+
+                NotifCard {
+                    required property var modelData
+
+                    width: group.width
+                    notif: modelData
+                }
+            }
+
+            TextButton {
+                visible: !group.expanded && group.items.length > 1
+                type: "text"
+                icon: "unfold_more"
+                text: `${group.items.length - 1} lainnya`
+                onClicked: group.expanded = true
+            }
         }
 
         add: Transition {
