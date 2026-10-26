@@ -12,7 +12,7 @@ Singleton {
 
     property string active: ""
     property string screen: ""
-    // Tab control panel yang aktif ("dash", "media", "perf", "weather", "notif")
+    // Tab control panel yang aktif ("dash", "media", "perf", "weather", "notif", "focus")
     property string panelTab: "dash"
     // Teks awal launcher saat dibuka, misalnya ":" untuk mode wallpaper
     property string launcherQuery: ""
