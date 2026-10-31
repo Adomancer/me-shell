@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import qs.components
+import qs.modules.settings
 import qs.services
 import qs.utils
 
@@ -8,19 +9,25 @@ ColumnLayout {
     id: root
 
     property string period: "today"
+    property string mode: "apps"
     readonly property var report: {
         Usage.revision;
         Usage.today;
+        Config.usageAppCategories;
         return Usage.summary(period);
     }
     readonly property var days: Usage.ready ? (report.days || []) : []
     readonly property var apps: Usage.ready ? (report.apps || []).slice().sort((a, b) => b.seconds - a.seconds) : []
+    readonly property var categories: Usage.ready ? (report.categories || []).filter(category => category.seconds > 0).sort((a, b) => b.seconds - a.seconds) : []
+    readonly property var entries: mode === "categories" ? categories : apps
+    readonly property var categoryOptions: ["", ...Usage.categories.map(category => category.id)]
     readonly property real total: Usage.ready ? report.total : 0
     readonly property real peak: Math.max(1, ...days.map(day => day.seconds))
     readonly property string periodLabel: period === "today" ? "Hari ini" : period === "week" ? "Minggu ini" : "Minggu lalu"
 
     spacing: Appearance.spacing.normal
     onPeriodChanged: list.positionViewAtBeginning()
+    onModeChanged: list.positionViewAtBeginning()
 
     RowLayout {
         Layout.fillWidth: true
@@ -194,13 +201,28 @@ ColumnLayout {
             RowLayout {
                 Layout.fillWidth: true
 
-                Caption {
+                Row {
+                    spacing: Appearance.spacing.small
+
+                    TextButton {
+                        text: "Aplikasi"
+                        type: root.mode === "apps" ? "filled" : "text"
+                        onClicked: root.mode = "apps"
+                    }
+
+                    TextButton {
+                        text: "Kategori"
+                        type: root.mode === "categories" ? "filled" : "text"
+                        onClicked: root.mode = "categories"
+                    }
+                }
+
+                Item {
                     Layout.fillWidth: true
-                    text: "Aplikasi teratas"
                 }
 
                 StyledText {
-                    text: String(root.apps.length).padStart(2, "0")
+                    text: String(root.entries.length).padStart(2, "0")
                     color: Appearance.colors.outline
                     font.family: Appearance.font.family.mono
                     font.pixelSize: Appearance.font.size.small
@@ -215,16 +237,17 @@ ColumnLayout {
                 clip: true
                 spacing: Appearance.spacing.small
                 boundsBehavior: Flickable.StopAtBounds
-                model: root.apps
+                model: root.entries
 
                 delegate: Item {
                     id: app
 
                     required property var modelData
                     required property int index
+                    readonly property bool isCategory: root.mode === "categories"
 
                     width: ListView.view.width - Appearance.spacing.normal
-                    implicitHeight: 58
+                    implicitHeight: isCategory ? 58 : 72
 
                     RowLayout {
                         anchors.fill: parent
@@ -239,14 +262,22 @@ ColumnLayout {
                         }
 
                         AppIcon {
+                            visible: !app.isCategory
                             size: 26
                             icon: app.modelData.icon || "application-x-executable"
+                        }
+
+                        MaterialIcon {
+                            visible: app.isCategory
+                            text: app.modelData.icon || "category"
+                            font.pixelSize: 26
+                            color: Appearance.colors.primary
                         }
 
                         ColumnLayout {
                             Layout.fillWidth: true
                             Layout.minimumWidth: 0
-                            spacing: Appearance.spacing.small
+                            spacing: 2
 
                             RowLayout {
                                 Layout.fillWidth: true
@@ -255,7 +286,7 @@ ColumnLayout {
                                 StyledText {
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
-                                    text: app.modelData.name || app.modelData.id
+                                    text: app.isCategory ? app.modelData.label : app.modelData.name || app.modelData.id
                                     elide: Text.ElideRight
                                 }
 
@@ -265,6 +296,18 @@ ColumnLayout {
                                     font.family: Appearance.font.family.mono
                                     font.pixelSize: Appearance.font.size.small
                                 }
+                            }
+
+                            SettingCycle {
+                                visible: !app.isCategory
+                                labelWidth: Math.max(0, Math.min(160, app.width - 150))
+                                options: root.categoryOptions
+                                value: {
+                                    Config.usageAppCategories;
+                                    return app.isCategory ? "" : Usage.categoryOverride(app.modelData.id);
+                                }
+                                format: v => app.isCategory ? "" : v === "" ? `Otomatis · ${Usage.categoryLabel(app.modelData.category)}` : Usage.categoryLabel(v)
+                                onPicked: v => Usage.setCategory(app.modelData.id, v)
                             }
 
                             SegmentBar {
@@ -281,7 +324,7 @@ ColumnLayout {
                 ColumnLayout {
                     anchors.centerIn: parent
                     width: parent.width - Appearance.padding.large * 2
-                    visible: root.apps.length === 0
+                    visible: root.entries.length === 0
                     spacing: Appearance.spacing.normal
 
                     MaterialIcon {

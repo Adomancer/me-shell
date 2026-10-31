@@ -104,7 +104,7 @@ ColumnLayout {
 
     SettingRow {
         label: "Batas tidak aktif"
-        description: "Berhenti mencatat setelah tidak ada input; kafein/media tidak menahannya"
+        description: "Berhenti mencatat setelah tidak ada input; kafein tidak menahannya. Pengecualian media hanya jika opsi di bawah aktif"
 
         SettingStepper {
             from: 1
@@ -112,6 +112,16 @@ ColumnLayout {
             unit: " mnt"
             value: Config.usageIdleMinutes
             onPicked: v => Config.set("usageIdleMinutes", v)
+        }
+    }
+
+    SettingRow {
+        label: "Hitung media aktif"
+        description: "Opsional, mati secara bawaan. Hanya pemutar MPRIS yang sedang memutar dan cocok dengan aplikasi fokus yang melewati batas tidak aktif; bukan pemutaran latar belakang. Jeda pelacakan, layar terkunci, dan aplikasi dikecualikan tetap menghentikan pencatatan"
+
+        SettingToggle {
+            checked: Config.usageMediaAware === true
+            onToggled: v => Config.set("usageMediaAware", v)
         }
     }
 

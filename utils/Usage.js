@@ -23,6 +23,95 @@ function isExcluded(rawId, desktopId, excluded) {
     return excluded.some(id => normalizeId(id) !== "" && (normalizeId(id) === normalizeId(rawId) || normalizeId(id) === normalizeId(desktopId)));
 }
 
+function categoryDefinitions() {
+    return [
+        { id: "development", label: "Pengembangan", icon: "code" },
+        { id: "entertainment", label: "Hiburan", icon: "movie" },
+        { id: "communication", label: "Komunikasi", icon: "forum" },
+        { id: "productivity", label: "Produktivitas", icon: "work" },
+        { id: "browsing", label: "Browsing", icon: "language" },
+        { id: "other", label: "Lainnya", icon: "apps" }
+    ];
+}
+
+function categoryOverride(appId, overrides) {
+    const definitions = categoryDefinitions();
+    const id = typeof appId === "string" ? normalizeId(appId) : "";
+    if (id && overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
+        for (const key of Object.keys(overrides)) {
+            if (normalizeId(key) === id && definitions.some(category => category.id === overrides[key]))
+                return overrides[key];
+        }
+    }
+    return "";
+}
+
+function withCategoryOverride(appId, categoryId, overrides) {
+    const result = {};
+    const id = typeof appId === "string" ? normalizeId(appId) : "";
+    const valid = categoryId === "" || categoryDefinitions().some(category => category.id === categoryId);
+    if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
+        for (const key of Object.keys(overrides)) {
+            if (id && valid && normalizeId(key) === id)
+                continue;
+            Object.defineProperty(result, key, {
+                value: overrides[key], writable: true, enumerable: true, configurable: true
+            });
+        }
+    }
+    if (id && valid && categoryId !== "") {
+        Object.defineProperty(result, id, {
+            value: categoryId, writable: true, enumerable: true, configurable: true
+        });
+    }
+    return result;
+}
+
+function categoryFor(appId, desktopCategories, overrides) {
+    const override = categoryOverride(appId, overrides);
+    if (override)
+        return override;
+    const categories = (typeof desktopCategories === "string" ? desktopCategories.split(";")
+        : Array.isArray(desktopCategories) ? desktopCategories : [])
+        .filter(category => typeof category === "string").map(category => category.trim());
+    // Desktop entries can contain several categories; priority is independent of their order.
+    const priorities = [
+        { id: "communication", matches: ["Chat", "InstantMessaging", "Email", "Telephony", "VideoConference"] },
+        { id: "browsing", matches: ["WebBrowser"] },
+        { id: "development", matches: ["Development"] },
+        { id: "entertainment", matches: ["Game", "AudioVideo", "Audio", "Video", "Player"] },
+        { id: "productivity", matches: ["Office", "Graphics", "Science", "Education"] }
+    ];
+    for (const category of priorities) {
+        if (category.matches.some(value => categories.indexOf(value) !== -1))
+            return category.id;
+    }
+    return "other";
+}
+
+function categorize(report, resolver) {
+    const categories = categoryDefinitions().map(category => Object.assign({}, category, { seconds: 0 }));
+    const source = report && typeof report === "object" && !Array.isArray(report) ? report : {};
+    const apps = (Array.isArray(source.apps) ? source.apps : [])
+        .filter(app => app && typeof app === "object" && !Array.isArray(app))
+        .map(app => {
+            const resolved = typeof resolver === "function" ? resolver(app.id) : "other";
+            const category = categories.find(value => value.id === resolved) || categories[categories.length - 1];
+            if (Number.isFinite(app.seconds))
+                category.seconds += app.seconds;
+            return Object.assign({}, app, { category: category.id });
+        });
+    return Object.assign({}, source, { apps: apps, categories: categories });
+}
+
+function mediaMatches(rawId, desktopId, playerDesktopId, resolvedPlayerId) {
+    if (typeof playerDesktopId !== "string" || !normalizeId(playerDesktopId))
+        return false;
+    const apps = [rawId, desktopId].filter(id => typeof id === "string").map(normalizeId).filter(id => id !== "");
+    const players = [playerDesktopId, resolvedPlayerId].filter(id => typeof id === "string").map(normalizeId).filter(id => id !== "");
+    return apps.some(id => players.indexOf(id) !== -1);
+}
+
 // Discard delayed callbacks, suspend gaps, and clock corrections instead of inventing usage.
 function validInterval(elapsed, wallElapsed) {
     return Number.isFinite(elapsed) && elapsed > 0 && elapsed <= 15
@@ -101,6 +190,38 @@ function totals(days, start, end) {
 
 function summary(days, period, now) {
     const today = midnight(now);
+    if (period === "month" || period === "lastMonth") {
+        const start = new Date(today.getFullYear(), today.getMonth() - (period === "lastMonth" ? 1 : 0), 1);
+        const nextMonth = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+        const length = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+        const elapsedDays = period === "month" ? today.getDate() : length;
+        const end = period === "month" ? shiftDay(today, 1) : nextMonth;
+        const previousStart = new Date(start.getFullYear(), start.getMonth() - 1, 1);
+        const previousLength = new Date(start.getFullYear(), start.getMonth(), 0).getDate();
+        const comparisonDays = Math.min(elapsedDays, previousLength);
+        const result = totals(days, start, end);
+        result.average = result.total / elapsedDays;
+        result.elapsedDays = elapsedDays;
+        result.comparisonDays = comparisonDays;
+        // Clamp both windows: a longer month's total can exceed its fair comparison total.
+        result.comparisonTotal = totals(days, start, shiftDay(start, comparisonDays)).total;
+        result.previousTotal = totals(days, previousStart, shiftDay(previousStart, comparisonDays)).total;
+        result.change = result.comparisonTotal - result.previousTotal;
+        result.changePercent = result.previousTotal > 0 ? result.change / result.previousTotal * 100 : null;
+        result.start = dayKey(start);
+        result.end = dayKey(end);
+        result.comparisonStart = dayKey(previousStart);
+        result.comparisonEnd = dayKey(shiftDay(previousStart, comparisonDays));
+        const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        result.monthLabel = `${months[start.getMonth()]} ${start.getFullYear()}`;
+        result.days = [];
+        for (let i = 0; i < length; i++) {
+            const date = shiftDay(start, i);
+            const future = date > today;
+            result.days.push({ date: dayKey(date), label: String(i + 1), seconds: future ? 0 : totals(days, date, shiftDay(date, 1)).total, today: dayKey(date) === dayKey(today), future: future });
+        }
+        return result;
+    }
     const monday = shiftDay(today, -((today.getDay() + 6) % 7));
     const start = period === "today" ? today : shiftDay(monday, period === "lastWeek" ? -7 : 0);
     const length = period === "today" ? 1 : 7;

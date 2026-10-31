@@ -199,7 +199,7 @@ Every option is listed in [`utils/Config.qml`](utils/Config.qml).
 - The lockscreen CRT shader needs `scripts/build-shaders.sh` once before `crtShader` works.
 - Your own kitty settings go below the `include` line in `kitty.conf`, so they win over the me-shell style.
 
-### App usage (v1)
+### App usage
 
 Open the control panel (`SUPER + SHIFT + E`) and select **Usage**, or run:
 
@@ -207,9 +207,13 @@ Open the control panel (`SUPER + SHIFT + E`) and select **Usage**, or run:
 qs -c me-shell ipc call drawers panel usage
 ```
 
-Usage counts the globally focused application, not background processes or every visible window. The tab shows today, this week, and last week, with previous-period totals and a ranked app list. Today's chart covers the trailing seven days; weekly charts run Monday–Sunday. History begins when this version first runs; missing days are shown as zero, not reconstructed.
+Usage counts the globally focused application, not background processes or every visible window. The tab shows today, this week, and last week, with previous-period totals and ranked app/category lists. Today's chart covers the trailing seven days; weekly charts run Monday–Sunday. History begins when tracking first runs; missing days are shown as zero, not reconstructed.
 
-Tracking is enabled by default while me-shell is running. It stops while locked, paused, idle (five minutes without input by default), or using a focus-taking shell panel. Hover panels do not interrupt tracking. Caffeine and media playback do not override usage idle detection, so watching a video without input eventually stops counting.
+Switch between **Aplikasi** and **Kategori** to see apps or category totals. Categories are detected from installed desktop entries: development, entertainment, communication, productivity, browsing, and other. Each app row has a category selector; choose a category to override detection, or **Otomatis** to reset. Overrides are saved in configuration and immediately reclassify all retained history without changing recorded durations. Unknown/uninstalled apps fall back to other unless overridden. These are app-level categories, not website or document classifications.
+
+Tracking is enabled by default while me-shell is running. It stops while locked, paused, idle (five minutes without input by default), or using a focus-taking shell panel. Hover panels do not interrupt tracking. Caffeine never overrides usage idle detection.
+
+**Media-aware tracking is optional and off by default.** Enable **Hitung media aktif** in Settings → Services → Waktu penggunaan to keep counting the focused app past the idle threshold while a matching MPRIS player is playing. Background music from another app does not keep the focused app active. Pausing/stopping playback, switching to a different app, locking, pausing tracking, disabling tracking, or exclusions still stop idle-time counting. A player must expose a matching desktop-entry ID; missing or unresolvable IDs fall back to normal idle handling. Matching is app-level, so this cannot distinguish browser tabs or separate windows of the same app. No track metadata is stored.
 
 In **Settings → Services → Waktu penggunaan**, you can disable tracking, change the idle threshold, exclude comma-separated application IDs, set retention (21–365 days, default 90), or clear all history with confirmation. Exclusions affect future tracking, not existing history. The Usage tab's pause lasts until resumed or the shell process restarts; it survives hot reloads.
 
@@ -217,7 +221,21 @@ Only app IDs, display names, icons, and daily accumulated durations are saved in
 
 Accounting uses Quickshell's monotonic `ElapsedTimer`, checkpoints every five seconds and on focus/state transitions, and saves atomically every 30 seconds and when tracking stops. Long timer gaps and clock corrections are discarded rather than backfilled. Sleep and shell downtime are not reconstructed; reloads may lose the final five seconds, and an abrupt stop may lose roughly 30 seconds of unsaved usage with healthy storage. Invalid history is left untouched until explicitly cleared. This is a focused-app estimate, not a complete measure of human attention.
 
-Configuration keys: `usageEnabled`, `usageIdleMinutes`, `usageRetentionDays`, and `usageExcludedApps` (an array of app IDs, e.g. `["firefox", "kitty"]`). Node is only needed to run the developer tests, not to use tracking.
+Configuration keys: `usageEnabled`, `usageIdleMinutes`, `usageRetentionDays`, `usageExcludedApps` (an array of app IDs, e.g. `["firefox", "kitty"]`), `usageMediaAware` (default `false`), and `usageAppCategories` (an app-ID-to-category object).
+
+For example:
+
+```json
+{
+  "usageMediaAware": true,
+  "usageAppCategories": {
+    "dev.zed.Zed": "development",
+    "firefox": "productivity"
+  }
+}
+```
+
+Supported category IDs: `development`, `entertainment`, `communication`, `productivity`, `browsing`, and `other`. Remove an override or select **Otomatis** to restore detection. Node is only needed to run the developer tests, not to use tracking.
 
 ## Development
 
@@ -230,7 +248,7 @@ node --test tests/*.test.cjs
 TZ=America/New_York node --test tests/*.test.cjs
 ```
 
-The tests cover calendar boundaries, DST, retention, summaries, state transitions, and persistence logic. QML signals, compositor behavior, and rendering still need a live Hyprland session.
+The tests cover calendar boundaries, DST, retention, summaries, state transitions, persistence, category detection/overrides, and focused-player media-aware idle handling. QML signals, compositor behavior, and rendering still need a live Hyprland session.
 
 Testing in VirtualBox, Qt can crash on the virtual GPU driver. Add `env = LIBGL_ALWAYS_SOFTWARE,1` and `env = MESA_LOADER_DRIVER_OVERRIDE,llvmpipe` to `~/.config/me-shell/hypr/user.conf`. Animations look choppier because the CPU draws them; real hardware is smooth.
 

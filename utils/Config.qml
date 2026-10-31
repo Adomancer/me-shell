@@ -59,6 +59,8 @@ Singleton {
     readonly property int usageIdleMinutes: adapter.usageIdleMinutes
     readonly property int usageRetentionDays: adapter.usageRetentionDays
     readonly property var usageExcludedApps: Array.isArray(adapter.usageExcludedApps) ? adapter.usageExcludedApps : []
+    readonly property bool usageMediaAware: adapter.usageMediaAware
+    readonly property var usageAppCategories: adapter.usageAppCategories !== null && typeof adapter.usageAppCategories === "object" && !Array.isArray(adapter.usageAppCategories) ? adapter.usageAppCategories : ({})
 
     // Ubah satu setting lalu simpan ke config.json
     function set(key: string, value: var): void {
@@ -161,6 +163,9 @@ Singleton {
             property int usageIdleMinutes: 5
             property int usageRetentionDays: 90
             property var usageExcludedApps: []
+            property bool usageMediaAware: false
+            // ID aplikasi -> kategori; tidak mengubah riwayat durasi yang tersimpan.
+            property var usageAppCategories: ({})
         }
     }
 }

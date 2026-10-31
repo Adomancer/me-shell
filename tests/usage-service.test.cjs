@@ -32,11 +32,11 @@ function handler(text, name, indent = 4) {
 }
 
 const methods = Array.from(source.matchAll(/^    function (\w+)\(([^)]*)\): \w+ \{([\s\S]*?)^    \}/gm));
-for (const name of ['remember', 'restore', 'snapshot', 'checkpoint', 'save', 'clearHistory', 'summary', 'formatDuration'])
+for (const name of ['remember', 'restore', 'snapshot', 'checkpoint', 'save', 'clearHistory', 'playerMatches', 'categoryLabel', 'categoryOverride', 'setCategory', 'summary', 'formatDuration'])
     assert.ok(methods.some(match => match[1] === name), 'Missing service method: ' + name);
 const methodSource = methods.map(match => 'function ' + match[1] + '(' + match[2].replace(/:\s*\w+/g, '') + ') {' + match[3] + '\n}').join('\n');
 const bindings = Array.from(source.matchAll(/^    readonly property \w+ (\w+): ([^\r\n]*(?:\r?\n {8}\S[^\r\n]*)*)/gm));
-for (const name of ['appId', 'tracking', 'excluded', 'shellFocused', 'retention'])
+for (const name of ['appId', 'tracking', 'excluded', 'shellFocused', 'categories', 'mediaActive', 'retention'])
     assert.ok(bindings.some(match => match[1] === name), 'Missing service binding: ' + name);
 const persistentSource = object('PersistentProperties', 'persistent');
 const readerSource = object('FileView', 'reader');
@@ -48,18 +48,25 @@ function createService({ configReady = true, diskText = null } = {}) {
     const clock = { now: new Date('2026-11-01T12:00:00').getTime(), elapsed: 0 };
     const disk = { text: diskText };
     const entries = {
-        firefox: { id: 'firefox.desktop', name: 'Firefox', icon: 'firefox' },
-        kitty: { id: 'kitty.desktop', name: 'Kitty', icon: 'kitty' }
+        firefox: { id: 'firefox.desktop', name: 'Firefox', icon: 'firefox', categories: ['Network', 'WebBrowser'] },
+        kitty: { id: 'kitty.desktop', name: 'Kitty', icon: 'kitty', categories: ['System', 'Development'] },
+        vlc: { id: 'vlc.desktop', name: 'VLC', icon: 'vlc', categories: ['AudioVideo', 'Player'] }
     };
     const context = vm.createContext({
         Accounting: accounting,
         Date: class extends Date { static now() { return clock.now; } },
         Paths: { state: '/state' },
-        Config: { ready: configReady, usageEnabled: true, usageRetentionDays: 90, usageExcludedApps: [] },
+        Config: {
+            ready: configReady, usageEnabled: true, usageRetentionDays: 90, usageExcludedApps: [],
+            usageMediaAware: false, usageAppCategories: {}, setCalls: [],
+            set(key, value) { this.setCalls.push({ key, value: plain(value) }); this[key] = value; }
+        },
+        Media: { players: [] },
+        MprisPlaybackState: { Playing: 1, Paused: 2, Stopped: 3 },
         Session: { locked: false },
         DrawerState: { active: '', hoverOpened: false },
         ToplevelManager: { activeToplevel: { appId: 'firefox' } },
-        DesktopEntries: { heuristicLookup: id => entries[id] || null },
+        DesktopEntries: { heuristicLookup: id => entries[accounting.normalizeId(id)] || null },
         activity: { isIdle: false },
         persistent: { payload: '', paused: false },
         FileViewError: { FileNotFound: 2, PermissionDenied: 3, toString: error => 'FileView error ' + error },
@@ -251,6 +258,203 @@ test('hover-open drawers preserve tracking, but pinned drawers suspend it', () =
     assert.equal(seconds(f.service), 7);
 });
 
+function enableIdleMedia(f) {
+    f.change(s => {
+        s.Config.usageMediaAware = true;
+        s.Media.players = [{ desktopEntry: ' Firefox.DESKTOP ', playbackState: s.MprisPlaybackState.Playing }];
+        s.activity.isIdle = true;
+    });
+}
+
+test('media awareness defaults off, so even matching playback cannot bypass idle', () => {
+    const f = boot();
+    assert.equal(f.service.Config.usageMediaAware, false);
+    assert.deepEqual(f.service.Media.players, []);
+    f.advance(2);
+    f.change(s => {
+        s.Media.players = [{ desktopEntry: 'firefox.desktop', playbackState: s.MprisPlaybackState.Playing }];
+        s.activity.isIdle = true;
+    });
+    assert.equal(f.service.mediaActive, false);
+    assert.equal(f.service.tracking, false);
+    f.advance(5);
+    f.service.checkpoint();
+    assert.equal(seconds(f.service), 2);
+});
+
+test('matching focused playback bypasses idle only while media awareness is enabled', () => {
+    const f = boot();
+    enableIdleMedia(f);
+    assert.equal(f.service.activity.isIdle, true);
+    assert.equal(f.service.mediaActive, true);
+    assert.equal(f.service.tracking, true);
+    f.advance(3);
+    f.service.checkpoint();
+    assert.equal(seconds(f.service), 3);
+    f.advance(2);
+    f.change(s => { s.Config.usageMediaAware = false; });
+    assert.equal(f.service.mediaActive, false);
+    assert.equal(f.service.tracking, false);
+    assert.equal(JSON.parse(f.disk.text).days['2026-11-01'].firefox.seconds, 5);
+    f.advance(4);
+    f.service.checkpoint();
+    assert.equal(seconds(f.service), 5);
+    f.change(s => { s.Config.usageMediaAware = true; });
+    f.advance(2);
+    f.service.save();
+    assert.equal(seconds(f.service), 7);
+});
+
+for (const [name, player] of Object.entries({
+    unrelated: { desktopEntry: 'vlc.desktop' },
+    'similar but not matching': { desktopEntry: 'firefox-nightly.desktop' },
+    'missing desktop entry': {},
+    'empty desktop entry': { desktopEntry: '' }
+})) {
+    test(name + ' playing media cannot bypass idle or count background playback', () => {
+        const f = boot();
+        f.advance(2);
+        f.change(s => {
+            s.Config.usageMediaAware = true;
+            s.Media.players = [{ ...player, playbackState: s.MprisPlaybackState.Playing }];
+            s.activity.isIdle = true;
+        });
+        assert.equal(f.service.mediaActive, false);
+        assert.equal(f.service.tracking, false);
+        f.advance(5);
+        f.service.checkpoint();
+        assert.equal(seconds(f.service), 2);
+        assert.equal(seconds(f.service, 'vlc'), 0);
+        assert.deepEqual(Object.keys(f.service.days['2026-11-01']), ['firefox']);
+    });
+}
+
+for (const state of ['Paused', 'Stopped', 'removed']) {
+    test(state + ' matching player stops idle accounting and playback can resume it', () => {
+        const f = boot();
+        enableIdleMedia(f);
+        f.advance(3);
+        f.change(s => {
+            if (state === 'removed')
+                s.Media.players = [];
+            else
+                s.Media.players[0].playbackState = s.MprisPlaybackState[state];
+        });
+        assert.equal(f.service.mediaActive, false);
+        assert.equal(f.service.tracking, false);
+        assert.equal(JSON.parse(f.disk.text).days['2026-11-01'].firefox.seconds, 3);
+        f.advance(5);
+        f.service.checkpoint();
+        assert.equal(seconds(f.service), 3);
+        enableIdleMedia(f);
+        f.advance(2);
+        f.service.save();
+        assert.equal(seconds(f.service), 5);
+    });
+}
+
+test('media matching checks every player, not just Media.active or the first player', () => {
+    const f = boot();
+    enableIdleMedia(f);
+    f.change(s => {
+        s.Media.players = [
+            { desktopEntry: 'vlc.desktop', playbackState: s.MprisPlaybackState.Playing },
+            { desktopEntry: 'firefox', playbackState: s.MprisPlaybackState.Paused },
+            { desktopEntry: 'firefox.desktop', playbackState: s.MprisPlaybackState.Playing }
+        ];
+        s.Media.active = s.Media.players[0];
+    });
+    assert.equal(f.service.mediaActive, true);
+    assert.equal(f.service.tracking, true);
+    f.advance(3);
+    f.service.checkpoint();
+    assert.equal(seconds(f.service), 3);
+    assert.equal(seconds(f.service, 'vlc'), 0);
+    f.change(s => { s.Media.players.pop(); });
+    assert.equal(f.service.mediaActive, false);
+    assert.equal(f.service.tracking, false);
+    f.advance(4);
+    f.service.checkpoint();
+    assert.equal(seconds(f.service), 3);
+});
+
+test('player matching resolves canonical desktop IDs and rejects a missing player ID', () => {
+    const f = boot();
+    const lookup = f.service.DesktopEntries.heuristicLookup;
+    f.service.DesktopEntries.heuristicLookup = id => id === 'browser-alias' ? lookup('firefox.desktop') : lookup(id);
+    enableIdleMedia(f);
+    f.change(s => { s.Media.players[0].desktopEntry = 'browser-alias'; });
+    assert.equal(f.service.playerMatches('browser-alias'), true);
+    assert.equal(f.service.playerMatches(undefined), false);
+    assert.equal(f.service.mediaActive, true);
+    f.advance(2);
+    f.service.checkpoint();
+    assert.equal(seconds(f.service), 2);
+});
+
+test('idle focus switches credit the previous app and never count its background player', () => {
+    const f = boot();
+    enableIdleMedia(f);
+    f.advance(3);
+    f.change(s => { s.ToplevelManager.activeToplevel = { appId: 'kitty.desktop' }; });
+    assert.equal(seconds(f.service), 3);
+    assert.equal(f.service.previousApp.id, 'kitty');
+    assert.equal(f.service.tracking, false);
+    f.advance(4);
+    f.service.checkpoint();
+    assert.equal(seconds(f.service), 3);
+    assert.equal(seconds(f.service, 'kitty'), 0);
+    f.change(s => { s.Media.players.push({ desktopEntry: 'kitty', playbackState: s.MprisPlaybackState.Playing }); });
+    assert.equal(f.service.tracking, true);
+    f.advance(2);
+    f.change(s => { s.ToplevelManager.activeToplevel = { appId: 'firefox.desktop' }; });
+    assert.equal(seconds(f.service, 'kitty'), 2);
+    assert.equal(seconds(f.service), 3);
+    f.advance(1);
+    f.service.save();
+    assert.equal(seconds(f.service), 4);
+    assert.equal(seconds(f.service, 'kitty'), 2);
+    assert.equal(f.service.summary('today').total, 6);
+});
+
+for (const [name, update] of Object.entries({
+    paused: transitions.paused,
+    locked: transitions.locked,
+    disabled: transitions.disabled,
+    excluded: transitions.excluded,
+    'shell focused': (s, stopped) => { s.DrawerState.active = stopped ? 'panel' : ''; }
+})) {
+    test(name + ' still suspends tracking despite matching idle media', () => {
+        const f = boot();
+        enableIdleMedia(f);
+        f.advance(3);
+        f.change(s => update(s, true));
+        assert.equal(f.service.mediaActive, true);
+        assert.equal(f.service.tracking, false);
+        assert.equal(JSON.parse(f.disk.text).days['2026-11-01'].firefox.seconds, 3);
+        f.advance(5);
+        f.service.checkpoint();
+        assert.equal(seconds(f.service), 3);
+        f.change(s => update(s, false));
+        assert.equal(f.service.tracking, true);
+        f.advance(2);
+        f.service.save();
+        assert.equal(seconds(f.service), 5);
+    });
+}
+
+test('missing focus cannot be replaced by a playing media app', () => {
+    const f = boot();
+    enableIdleMedia(f);
+    f.advance(2);
+    f.change(s => { s.ToplevelManager.activeToplevel = null; });
+    assert.equal(f.service.mediaActive, false);
+    assert.equal(f.service.tracking, false);
+    f.advance(4);
+    f.service.checkpoint();
+    assert.equal(seconds(f.service), 2);
+});
+
 test('initial config gating prevents accounting and premature retention pruning', () => {
     const f = boot({ configReady: false, diskText: history(60, '2026-01-01') });
     assert.equal(f.service.ready, true);
@@ -405,6 +609,117 @@ test('clean disk history is not rewritten merely by loading or saving', () => {
     f.service.save();
     assert.equal(seconds(f.service), 30);
     assert.equal(f.writer.attempts, 0);
+});
+
+test('category definitions and labels come from the readonly service binding', () => {
+    const f = boot();
+    assert.equal(Object.getOwnPropertyDescriptor(f.service, 'categories').set, undefined);
+    assert.deepEqual(plain(f.service.categories), [
+        { id: 'development', label: 'Pengembangan', icon: 'code' },
+        { id: 'entertainment', label: 'Hiburan', icon: 'movie' },
+        { id: 'communication', label: 'Komunikasi', icon: 'forum' },
+        { id: 'productivity', label: 'Produktivitas', icon: 'work' },
+        { id: 'browsing', label: 'Browsing', icon: 'language' },
+        { id: 'other', label: 'Lainnya', icon: 'apps' }
+    ]);
+    for (const category of f.service.categories)
+        assert.equal(f.service.categoryLabel(category.id), category.label);
+    assert.equal(f.service.categoryLabel('unknown'), 'Lainnya');
+    assert.deepEqual(plain(f.service.Config.usageAppCategories), {});
+    const report = f.service.summary('today');
+    assert.equal(report.total, 0);
+    assert.deepEqual(plain(report.apps), []);
+    assert.deepEqual(plain(report.categories), plain(f.service.categories).map(category => ({ ...category, seconds: 0 })));
+});
+
+test('category summaries and config edits reclassify historical usage without mutating days', () => {
+    const record = (name, seconds) => ({ name, icon: '', seconds });
+    const diskText = JSON.stringify({ version: 1, days: {
+        '2026-10-25': { firefox: record('Firefox', 50) },
+        '2026-10-31': { firefox: record('Firefox', 40) },
+        '2026-11-01': {
+            firefox: record('Firefox', 60), kitty: record('Kitty', 30),
+            vlc: record('VLC', 20), missing: record('Missing desktop entry', 10)
+        }
+    } });
+    const f = boot({ diskText });
+    const days = f.service.days;
+    const before = plain(days);
+    const payload = f.service.persistent.payload;
+    const revision = f.service.revision;
+    const reports = Object.fromEntries(['today', 'week', 'lastWeek'].map(period => [period, plain(f.service.summary(period))]));
+    assert.equal(reports.today.total, 120);
+    assert.equal(reports.today.previousTotal, 40);
+    assert.equal(reports.week.total, 160);
+    assert.equal(reports.lastWeek.total, 50);
+    assert.deepEqual(Object.fromEntries(reports.today.apps.map(app => [app.id, app.category])), {
+        firefox: 'browsing', kitty: 'development', vlc: 'entertainment', missing: 'other'
+    });
+    assert.deepEqual(Object.fromEntries(reports.today.categories.map(category => [category.id, category.seconds])), {
+        development: 30, entertainment: 20, communication: 0, productivity: 0, browsing: 60, other: 10
+    });
+    const checkReports = category => {
+        for (const period of Object.keys(reports)) {
+            const report = plain(f.service.summary(period));
+            assert.equal(report.apps.find(app => app.id === 'firefox').category, category);
+            assert.equal(report.categories.reduce((total, item) => total + item.seconds, 0), report.total);
+            assert.equal(report.apps.reduce((total, app) => total + app.seconds, 0), report.total);
+            const uncategorized = ({ categories, apps, ...rest }) => ({ ...rest, apps: apps.map(({ category, ...app }) => app) });
+            assert.deepEqual(uncategorized(report), uncategorized(reports[period]));
+        }
+        assert.strictEqual(f.service.days, days);
+        assert.deepEqual(plain(days), before);
+        assert.equal(f.service.persistent.payload, payload);
+        assert.equal(f.service.revision, revision);
+        assert.equal(f.service.dirty, false);
+        assert.equal(f.writer.attempts, 0);
+        assert.equal(f.disk.text, diskText);
+    };
+    checkReports('browsing');
+    assert.equal(f.service.categoryOverride('firefox'), '');
+    f.service.setCategory(' Firefox.DESKTOP ', 'entertainment');
+    assert.equal(f.service.categoryOverride('FIREFOX.desktop'), 'entertainment');
+    assert.deepEqual(plain(f.service.Config.setCalls), [{ key: 'usageAppCategories', value: { firefox: 'entertainment' } }]);
+    checkReports('entertainment');
+    assert.equal(f.service.summary('today').categories.find(category => category.id === 'entertainment').seconds, 80);
+    f.change(s => { s.Config.set('usageAppCategories', { ' FIREFOX.desktop ': 'communication', kitty: 'productivity' }); });
+    assert.equal(f.service.categoryOverride('firefox'), 'communication');
+    checkReports('communication');
+    assert.equal(f.service.summary('today').apps.find(app => app.id === 'kitty').category, 'productivity');
+    f.service.setCategory('firefox.desktop', '');
+    assert.equal(f.service.categoryOverride('firefox'), '');
+    assert.deepEqual(plain(f.service.Config.usageAppCategories), { kitty: 'productivity' });
+    checkReports('browsing');
+    f.change(s => { s.Config.set('usageAppCategories', {}); });
+    for (const period of Object.keys(reports))
+        assert.deepEqual(plain(f.service.summary(period)), reports[period]);
+    checkReports('browsing');
+});
+
+test('category edits canonicalize equivalent overrides and reset only the requested app', () => {
+    const f = boot();
+    const original = { FIREFOX: 'development', ' Firefox.desktop ': 'entertainment', kitty: 'productivity' };
+    const before = plain(original);
+    f.service.Config.usageAppCategories = original;
+    f.service.setCategory(' FIREFOX.desktop ', 'communication');
+    assert.deepEqual(original, before);
+    assert.deepEqual(plain(f.service.Config.usageAppCategories), { kitty: 'productivity', firefox: 'communication' });
+    assert.equal(f.service.categoryOverride('firefox.desktop'), 'communication');
+    f.service.setCategory('Firefox', '');
+    assert.deepEqual(plain(f.service.Config.usageAppCategories), { kitty: 'productivity' });
+    assert.equal(f.service.categoryOverride('firefox'), '');
+    assert.equal(f.service.Config.setCalls.length, 2);
+});
+
+test('category edits reject invalid IDs, categories and config that is not ready', () => {
+    const f = boot();
+    for (const [id, category] of [['', 'browsing'], ['   ', 'other'], ['firefox', 'unknown']])
+        f.service.setCategory(id, category);
+    f.change(s => { s.Config.ready = false; });
+    f.service.setCategory('firefox', 'entertainment');
+    f.service.setCategory('firefox', '');
+    assert.deepEqual(plain(f.service.Config.setCalls), []);
+    assert.deepEqual(plain(f.service.Config.usageAppCategories), {});
 });
 
 test('the actual retention binding clamps to 21 through 365 days', () => {

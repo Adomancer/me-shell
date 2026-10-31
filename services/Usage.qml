@@ -3,6 +3,7 @@ pragma Singleton
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Services.Mpris
 import QtQuick
 import qs.services
 import qs.utils
@@ -24,12 +25,14 @@ Singleton {
     readonly property string appId: Accounting.normalizeId(entry?.id || rawAppId)
     readonly property bool excluded: Accounting.isExcluded(rawAppId, appId, Config.usageExcludedApps)
     readonly property bool shellFocused: DrawerState.active !== "" && !DrawerState.hoverOpened
+    readonly property var categories: Accounting.categoryDefinitions()
+    readonly property bool mediaActive: Config.usageMediaAware && Media.players.some(player => player.playbackState === MprisPlaybackState.Playing && root.playerMatches(player.desktopEntry))
     readonly property bool tracking: ready && Config.ready && Config.usageEnabled && !paused && !Session.locked
-        && !activity.isIdle && appId !== "" && !excluded && !shellFocused
+        && (!activity.isIdle || mediaActive) && appId !== "" && !excluded && !shellFocused
     readonly property string status: !ready || !Config.ready ? "Riwayat belum tersedia" : !Config.usageEnabled ? "Pelacakan dinonaktifkan"
-        : paused ? "Pelacakan dijeda" : Session.locked ? "Layar terkunci" : activity.isIdle ? "Tidak aktif"
+        : paused ? "Pelacakan dijeda" : Session.locked ? "Layar terkunci" : activity.isIdle && !mediaActive ? "Tidak aktif"
         : excluded ? "Aplikasi dikecualikan" : shellFocused ? "Panel shell terbuka"
-        : appId === "" ? "Tidak ada aplikasi aktif" : `Mencatat ${entry?.name || rawAppId}`
+        : appId === "" ? "Tidak ada aplikasi aktif" : activity.isIdle && mediaActive ? `Media aktif · ${entry?.name || rawAppId}` : `Mencatat ${entry?.name || rawAppId}`
     readonly property int retention: Math.max(21, Math.min(365, Config.usageRetentionDays))
     readonly property string historyPath: `${Paths.state}/usage.json`
 
@@ -116,8 +119,32 @@ Singleton {
         save();
     }
 
+    function playerMatches(desktopId: string): bool {
+        if (!desktopId)
+            return false;
+        const playerEntry = DesktopEntries.heuristicLookup(desktopId);
+        return Accounting.mediaMatches(rawAppId, appId, desktopId, playerEntry?.id || "");
+    }
+
+    function categoryLabel(id: string): string {
+        return categories.find(category => category.id === id)?.label || "Lainnya";
+    }
+
+    function categoryOverride(id: string): string {
+        return Accounting.categoryOverride(id, Config.usageAppCategories);
+    }
+
+    function setCategory(id: string, category: string): void {
+        if (!Config.ready || !Accounting.normalizeId(id) || (category !== "" && !categories.some(item => item.id === category)))
+            return;
+        Config.set("usageAppCategories", Accounting.withCategoryOverride(id, category, Config.usageAppCategories));
+    }
+
     function summary(period: string): var {
-        return Accounting.summary(days, period, Date.now());
+        return Accounting.categorize(Accounting.summary(days, period, Date.now()), id => {
+            const app = DesktopEntries.heuristicLookup(id);
+            return Accounting.categoryFor(id, Array.from(app?.categories || []), Config.usageAppCategories);
+        });
     }
 
     function formatDuration(seconds: real): string {
@@ -175,7 +202,7 @@ Singleton {
 
         enabled: Config.ready && Config.usageEnabled
         timeout: Math.max(1, Config.usageIdleMinutes) * 60
-        // Media playback/caffeine must not turn background playback into human activity.
+        // Keep real idle detection: only a matching focused player may bypass it in tracking.
         respectInhibitors: false
     }
 
