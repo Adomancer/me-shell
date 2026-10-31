@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 import QtQuick.Layouts
 import qs.components
@@ -342,6 +343,14 @@ ColumnLayout {
                     required property var modelData
                     required property int index
                     readonly property bool isCategory: root.mode === "categories"
+                    readonly property var desktopEntry: {
+                        DesktopEntries.applications.values;
+                        return !isCategory ? DesktopEntries.heuristicLookup(modelData.id) : null;
+                    }
+                    readonly property string displayName: desktopEntry?.name || modelData.name || modelData.id || "?"
+                    readonly property string appIconName: desktopEntry?.icon || modelData.icon || "application-x-executable"
+                    // Jangan tampilkan ikon generik/mosaik jika identitas ikon aplikasi belum tersedia.
+                    readonly property string appIconSource: !isCategory && (desktopEntry?.icon || modelData.icon) ? Quickshell.iconPath(appIconName, true) : ""
 
                     width: ListView.view.width - Appearance.spacing.normal
                     implicitHeight: isCategory ? 58 : 72
@@ -358,10 +367,33 @@ ColumnLayout {
                             font.pixelSize: Appearance.font.size.small
                         }
 
-                        AppIcon {
+                        Item {
                             visible: !app.isCategory
-                            size: 26
-                            icon: app.modelData.icon || "application-x-executable"
+                            implicitWidth: 26
+                            implicitHeight: 26
+
+                            AppIcon {
+                                anchors.fill: parent
+                                visible: app.appIconSource !== ""
+                                size: 26
+                                icon: app.appIconName
+                                source: app.appIconSource
+                            }
+
+                            Rectangle {
+                                anchors.fill: parent
+                                visible: app.appIconSource === ""
+                                radius: width / 2
+                                color: Appearance.colors.primaryContainer
+
+                                StyledText {
+                                    anchors.centerIn: parent
+                                    text: (Array.from(app.displayName.trim())[0] || "?").toUpperCase()
+                                    color: Appearance.colors.primary
+                                    font.family: Appearance.font.family.mono
+                                    font.pixelSize: Appearance.font.size.larger
+                                }
+                            }
                         }
 
                         MaterialIcon {
@@ -383,7 +415,7 @@ ColumnLayout {
                                 StyledText {
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
-                                    text: app.isCategory ? app.modelData.label : app.modelData.name || app.modelData.id
+                                    text: app.isCategory ? app.modelData.label : app.displayName
                                     elide: Text.ElideRight
                                 }
 

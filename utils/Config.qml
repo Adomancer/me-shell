@@ -160,7 +160,7 @@ Singleton {
             property bool lyricsEnabled: true
             // Hanya aplikasi yang fokus; tidak menyimpan judul jendela atau URL.
             property bool usageEnabled: true
-            property int usageIdleMinutes: 5
+            property int usageIdleMinutes: 2
             property int usageRetentionDays: 90
             property var usageExcludedApps: []
             property bool usageMediaAware: false

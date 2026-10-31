@@ -21,12 +21,12 @@ Singleton {
     property string today: Accounting.dayKey(Date.now())
 
     readonly property string rawAppId: ToplevelManager.activeToplevel?.appId ?? ""
-    readonly property var entry: rawAppId ? DesktopEntries.heuristicLookup(rawAppId) : null
+    readonly property var entry: DesktopEntries.applications.values && rawAppId ? DesktopEntries.heuristicLookup(rawAppId) : null
     readonly property string appId: Accounting.normalizeId(entry?.id || rawAppId)
     readonly property bool excluded: Accounting.isExcluded(rawAppId, appId, Config.usageExcludedApps)
     readonly property bool shellFocused: DrawerState.active !== "" && !DrawerState.hoverOpened
     readonly property var categories: Accounting.categoryDefinitions()
-    readonly property bool mediaActive: Config.usageMediaAware && Media.players.some(player => player.playbackState === MprisPlaybackState.Playing && root.playerMatches(player.desktopEntry))
+    readonly property bool mediaActive: Config.usageMediaAware && !mediaLimit.isIdle && Media.players.some(player => player.playbackState === MprisPlaybackState.Playing && root.playerMatches(player.desktopEntry))
     readonly property bool tracking: ready && Config.ready && Config.usageEnabled && !paused && !Session.locked
         && (!activity.isIdle || mediaActive) && appId !== "" && !excluded && !shellFocused
     readonly property string status: !ready || !Config.ready ? "Riwayat belum tersedia" : !Config.usageEnabled ? "Pelacakan dinonaktifkan"
@@ -152,6 +152,7 @@ Singleton {
     }
 
     onAppIdChanged: checkpoint()
+    onEntryChanged: checkpoint()
     onTrackingChanged: {
         checkpoint();
         if (!tracking)
@@ -203,6 +204,15 @@ Singleton {
         enabled: Config.ready && Config.usageEnabled
         timeout: Math.max(1, Config.usageIdleMinutes) * 60
         // Keep real idle detection: only a matching focused player may bypass it in tracking.
+        respectInhibitors: false
+    }
+
+    IdleMonitor {
+        id: mediaLimit
+
+        enabled: Config.ready && Config.usageEnabled
+        // Batasi media yang ditinggal memutar: maksimal 60 menit sejak input terakhir.
+        timeout: 60 * 60
         respectInhibitors: false
     }
 

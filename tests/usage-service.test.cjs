@@ -36,7 +36,7 @@ for (const name of ['remember', 'restore', 'snapshot', 'checkpoint', 'save', 'cl
     assert.ok(methods.some(match => match[1] === name), 'Missing service method: ' + name);
 const methodSource = methods.map(match => 'function ' + match[1] + '(' + match[2].replace(/:\s*\w+/g, '') + ') {' + match[3] + '\n}').join('\n');
 const bindings = Array.from(source.matchAll(/^    readonly property \w+ (\w+): ([^\r\n]*(?:\r?\n {8}\S[^\r\n]*)*)/gm));
-for (const name of ['appId', 'tracking', 'excluded', 'shellFocused', 'categories', 'mediaActive', 'retention'])
+for (const name of ['entry', 'appId', 'tracking', 'excluded', 'shellFocused', 'categories', 'mediaActive', 'retention'])
     assert.ok(bindings.some(match => match[1] === name), 'Missing service binding: ' + name);
 const persistentSource = object('PersistentProperties', 'persistent');
 const readerSource = object('FileView', 'reader');
@@ -44,7 +44,7 @@ const writerSource = object('FileView', 'writer');
 const configReadyMethod = source.match(/^        function onReadyChanged\(\): void \{([\s\S]*?)^        \}/m);
 assert.ok(configReadyMethod, 'Missing Config.ready handler');
 
-function createService({ configReady = true, diskText = null } = {}) {
+function createService({ configReady = true, diskText = null, desktopEntriesReady = true } = {}) {
     const clock = { now: new Date('2026-11-01T12:00:00').getTime(), elapsed: 0 };
     const disk = { text: diskText };
     const entries = {
@@ -52,6 +52,7 @@ function createService({ configReady = true, diskText = null } = {}) {
         kitty: { id: 'kitty.desktop', name: 'Kitty', icon: 'kitty', categories: ['System', 'Development'] },
         vlc: { id: 'vlc.desktop', name: 'VLC', icon: 'vlc', categories: ['AudioVideo', 'Player'] }
     };
+    const applications = { values: desktopEntriesReady ? Object.values(entries) : [] };
     const context = vm.createContext({
         Accounting: accounting,
         Date: class extends Date { static now() { return clock.now; } },
@@ -66,8 +67,12 @@ function createService({ configReady = true, diskText = null } = {}) {
         Session: { locked: false },
         DrawerState: { active: '', hoverOpened: false },
         ToplevelManager: { activeToplevel: { appId: 'firefox' } },
-        DesktopEntries: { heuristicLookup: id => entries[accounting.normalizeId(id)] || null },
+        DesktopEntries: {
+            applications,
+            heuristicLookup: id => applications.values.find(entry => accounting.normalizeId(entry.id) === accounting.normalizeId(id)) || null
+        },
         activity: { isIdle: false },
+        mediaLimit: { isIdle: false },
         persistent: { payload: '', paused: false },
         FileViewError: { FileNotFound: 2, PermissionDenied: 3, toString: error => 'FileView error ' + error },
         initialized: false, ready: false, dirty: false, days: {}, revision: 0,
@@ -87,6 +92,7 @@ function createService({ configReady = true, diskText = null } = {}) {
     const compile = (body, scope) => vm.runInContext('(function(error) { ' + (scope ? 'with (' + scope + ') {' + body + '}' : body) + '\n})', context);
     const signal = name => compile(handler(source, name));
     const onAppIdChanged = signal('onAppIdChanged');
+    const onEntryChanged = signal('onEntryChanged');
     const onTrackingChanged = signal('onTrackingChanged');
     const onRetentionChanged = signal('onRetentionChanged');
     const onConfigReadyChanged = compile(configReadyMethod[1]);
@@ -166,12 +172,14 @@ function createService({ configReady = true, diskText = null } = {}) {
             return true;
         },
         // Node has no QML dependency engine. Explicitly deliver the extracted
-        // change handlers in app/tracking/retention/config order, not all possible orders.
+        // change handlers in app/entry/tracking/retention/config order, not all possible orders.
         change(update) {
-            const before = { app: context.appId, tracking: context.tracking, retention: context.retention, config: context.Config.ready };
+            const before = { app: context.appId, entry: context.entry, tracking: context.tracking, retention: context.retention, config: context.Config.ready };
             update(context);
             if (before.app !== context.appId)
                 onAppIdChanged();
+            if (before.entry !== context.entry)
+                onEntryChanged();
             if (before.tracking !== context.tracking)
                 onTrackingChanged();
             if (before.retention !== context.retention)
@@ -211,6 +219,40 @@ test('focus changes credit the previous app before recording the next app', () =
     assert.equal(seconds(f.service, 'kitty'), 3);
     assert.equal(f.service.previousApp.name, 'Kitty');
     assert.deepEqual(JSON.parse(f.service.persistent.payload).days, plain(f.service.days));
+});
+
+test('the entry binding observes the desktop application list and raw app ID', () => {
+    const expression = bindings.find(match => match[1] === 'entry')[2];
+    assert.match(expression, /DesktopEntries\.applications\.values\s*&&\s*rawAppId/);
+    assert.match(expression, /DesktopEntries\.heuristicLookup\(rawAppId\)/);
+});
+
+test('desktop entries loading checkpoints upgraded metadata even when the normalized app ID is unchanged', () => {
+    const f = boot({ desktopEntriesReady: false });
+    assert.deepEqual(f.service.DesktopEntries.applications.values, []);
+    assert.equal(f.service.rawAppId, 'firefox');
+    assert.equal(f.service.entry, null);
+    assert.equal(f.service.appId, 'firefox');
+    assert.deepEqual(plain(f.service.previousApp), { id: 'firefox', name: 'firefox', icon: '' });
+
+    f.advance(3);
+    f.change(s => {
+        s.DesktopEntries.applications.values = [
+            { id: 'firefox.desktop', name: 'Firefox', icon: 'firefox', categories: ['Network', 'WebBrowser'] }
+        ];
+    });
+    assert.equal(f.service.rawAppId, 'firefox');
+    assert.equal(f.service.entry.id, 'firefox.desktop');
+    assert.equal(f.service.appId, 'firefox');
+    assert.equal(seconds(f.service), 3);
+    assert.deepEqual(plain(f.service.previousApp), { id: 'firefox', name: 'Firefox', icon: 'firefox' });
+    assert.deepEqual(plain(f.service.days['2026-11-01'].firefox), { name: 'firefox', icon: '', seconds: 3 });
+
+    f.advance(2);
+    f.service.save();
+    assert.deepEqual(JSON.parse(f.disk.text).days['2026-11-01'].firefox, {
+        name: 'Firefox', icon: 'firefox', seconds: 5
+    });
 });
 
 const transitions = {
@@ -303,6 +345,57 @@ test('matching focused playback bypasses idle only while media awareness is enab
     f.advance(2);
     f.service.save();
     assert.equal(seconds(f.service), 7);
+});
+
+test('both idle monitors ignore inhibitors and the media cap is one hour', () => {
+    const activitySource = object('IdleMonitor', 'activity');
+    const mediaLimitSource = object('IdleMonitor', 'mediaLimit');
+    for (const monitor of [activitySource, mediaLimitSource]) {
+        assert.match(monitor, /enabled: Config\.ready && Config\.usageEnabled/);
+        assert.match(monitor, /respectInhibitors: false/);
+    }
+    assert.match(mediaLimitSource, /timeout: 60\s*\*\s*60\s*\r?\n/);
+});
+
+test('the media idle cap stops matching playback without retroactive counting and input resumes tracking', () => {
+    const f = boot();
+    assert.equal(f.service.mediaLimit.isIdle, false);
+    enableIdleMedia(f);
+    f.advance(3);
+    f.service.checkpoint();
+    f.advance(2);
+    f.change(s => { s.mediaLimit.isIdle = true; });
+    assert.equal(f.service.activity.isIdle, true);
+    assert.equal(f.service.Media.players[0].playbackState, f.service.MprisPlaybackState.Playing);
+    assert.equal(f.service.playerMatches(f.service.Media.players[0].desktopEntry), true);
+    assert.equal(f.service.mediaActive, false);
+    assert.equal(f.service.tracking, false);
+    assert.equal(f.service.previousTracking, false);
+    assert.equal(JSON.parse(f.disk.text).days['2026-11-01'].firefox.seconds, 5);
+
+    f.advance(4);
+    f.service.checkpoint();
+    assert.equal(seconds(f.service), 5);
+    f.advance(2);
+    f.change(s => {
+        s.activity.isIdle = false;
+        s.mediaLimit.isIdle = false;
+    });
+    assert.equal(f.service.activity.isIdle, false);
+    assert.equal(f.service.mediaLimit.isIdle, false);
+    assert.equal(f.service.mediaActive, true);
+    assert.equal(f.service.tracking, true);
+    assert.equal(seconds(f.service), 5);
+    f.advance(2);
+    f.service.save();
+    assert.equal(seconds(f.service), 7);
+
+    f.change(s => { s.activity.isIdle = true; });
+    assert.equal(f.service.mediaActive, true);
+    assert.equal(f.service.tracking, true);
+    f.advance(1);
+    f.service.save();
+    assert.equal(JSON.parse(f.disk.text).days['2026-11-01'].firefox.seconds, 8);
 });
 
 for (const [name, player] of Object.entries({

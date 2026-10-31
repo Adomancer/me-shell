@@ -78,7 +78,7 @@ function categoryFor(appId, desktopCategories, overrides) {
     const priorities = [
         { id: "communication", matches: ["Chat", "InstantMessaging", "Email", "Telephony", "VideoConference"] },
         { id: "browsing", matches: ["WebBrowser"] },
-        { id: "development", matches: ["Development"] },
+        { id: "development", matches: ["Development", "TerminalEmulator", "TextEditor", "IDE"] },
         { id: "entertainment", matches: ["Game", "AudioVideo", "Audio", "Video", "Player"] },
         { id: "productivity", matches: ["Office", "Graphics", "Science", "Education"] }
     ];
@@ -128,9 +128,9 @@ function addInterval(days, app, start, end, seconds) {
         if (!Object.prototype.hasOwnProperty.call(days, key))
             days[key] = {};
         const apps = days[key];
-        const previous = Object.prototype.hasOwnProperty.call(apps, app.id) ? apps[app.id].seconds : 0;
+        const previous = Object.prototype.hasOwnProperty.call(apps, app.id) ? apps[app.id] : { seconds: 0 };
         Object.defineProperty(apps, app.id, {
-            value: { name: app.name || app.id, icon: app.icon || "", seconds: previous + seconds * (boundary - cursor) / (end - start) },
+            value: { name: app.name || previous.name || app.id, icon: app.icon || previous.icon || "", seconds: previous.seconds + seconds * (boundary - cursor) / (end - start) },
             writable: true, enumerable: true, configurable: true
         });
         cursor = boundary;
@@ -139,10 +139,9 @@ function addInterval(days, app, start, end, seconds) {
 
 function prune(days, now, retention) {
     const cutoff = dayKey(shiftDay(now, 1 - retention));
-    const today = dayKey(now);
     let changed = false;
     for (const key of Object.keys(days)) {
-        if (key < cutoff || key > today) {
+        if (key < cutoff) {
             delete days[key];
             changed = true;
         }

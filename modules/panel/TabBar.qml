@@ -41,7 +41,7 @@ Item {
         },
         {
             name: "usage",
-            label: "Usage",
+            label: "Waktu",
             icon: "monitoring"
         }
     ]

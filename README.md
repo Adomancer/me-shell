@@ -201,7 +201,7 @@ Every option is listed in [`utils/Config.qml`](utils/Config.qml).
 
 ### App usage
 
-Open the control panel (`SUPER + SHIFT + E`) and select **Usage**, or run:
+Open the control panel (`SUPER + SHIFT + E`) and select **Waktu**, or run:
 
 ```sh
 qs -c me-shell ipc call drawers panel usage
@@ -215,9 +215,9 @@ Monthly totals use retained history only. Empty days may mean no recorded activi
 
 Switch between **Aplikasi** and **Kategori** to see apps or category totals. Categories are detected from installed desktop entries: development, entertainment, communication, productivity, browsing, and other. Each app row has a category selector; choose a category to override detection, or **Otomatis** to reset. Overrides are saved in configuration and immediately reclassify all retained history without changing recorded durations. Unknown/uninstalled apps fall back to other unless overridden. These are app-level categories, not website or document classifications.
 
-Tracking is enabled by default while me-shell is running. It stops while locked, paused, idle (five minutes without input by default), or using a focus-taking shell panel. Hover panels do not interrupt tracking. Caffeine never overrides usage idle detection.
+Tracking is enabled by default while me-shell is running. It stops while locked, paused, idle (two minutes without input by default), or using a focus-taking shell panel. Existing configured idle thresholds are unchanged. The idle grace period is still counted as active, including the final minute before the system becomes idle, so reported usage can be slightly higher than actual active use. Hover panels do not interrupt tracking. Caffeine never overrides usage idle detection.
 
-**Media-aware tracking is optional and off by default.** Enable **Hitung media aktif** in Settings → Services → Waktu penggunaan to keep counting the focused app past the idle threshold while a matching MPRIS player is playing. Background music from another app does not keep the focused app active. Pausing/stopping playback, switching to a different app, locking, pausing tracking, disabling tracking, or exclusions still stop idle-time counting. A player must expose a matching desktop-entry ID; missing or unresolvable IDs fall back to normal idle handling. Matching is app-level, so this cannot distinguish browser tabs or separate windows of the same app. No track metadata is stored.
+**Media-aware tracking is optional and off by default.** Enable **Hitung media aktif** in Settings → Services → Waktu penggunaan to keep counting the focused app past the idle threshold while a matching MPRIS player is playing. Background music from another app does not keep the focused app active. Pausing/stopping playback, switching to a different app, locking, pausing tracking, disabling tracking, or exclusions still stop idle-time counting. A player must expose a matching desktop-entry ID; missing or unresolvable IDs fall back to normal idle handling. Matching is app-level, so this cannot distinguish browser tabs or separate windows of the same app. Even matching playback stops bypassing idle after 60 minutes without user input; new input resets that limit. No track metadata is stored.
 
 In **Settings → Services → Waktu penggunaan**, you can disable tracking, change the idle threshold, exclude comma-separated application IDs, set retention (21–365 days, default 90), or clear all history with confirmation. Exclusions affect future tracking, not existing history. The Usage tab's pause lasts until resumed or the shell process restarts; it survives hot reloads.
 

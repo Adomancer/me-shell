@@ -24,6 +24,60 @@ test('accumulates only the supplied focused app and merges sessions', () => {
     assert.deepEqual(Object.keys(days['2026-11-02'].firefox).sort(), ['icon', 'name', 'seconds']);
 });
 
+test('repeated incomplete metadata preserves known fields and all seconds', () => {
+    const days = {};
+    const start = date('2026-11-02T12:00:00');
+    const end = start + 5000;
+    accounting.addInterval(days, app, start, end, 5);
+    for (const incomplete of [{ id: app.id }, { id: app.id, name: '', icon: '' }, { id: app.id, name: null, icon: null }])
+        accounting.addInterval(days, incomplete, start, end, 5);
+    assert.deepEqual(plain(days['2026-11-02'].firefox), { name: 'Firefox', icon: 'firefox', seconds: 20 });
+});
+
+test('empty metadata starts with defaults and later metadata upgrades independently', () => {
+    const days = {};
+    const start = date('2026-11-02T12:00:00');
+    const end = start + 5000;
+    accounting.addInterval(days, { id: 'editor', name: '', icon: '' }, start, end, 5);
+    assert.deepEqual(plain(days['2026-11-02'].editor), { name: 'editor', icon: '', seconds: 5 });
+    accounting.addInterval(days, { id: 'editor', name: 'Editor' }, start, end, 5);
+    assert.deepEqual(plain(days['2026-11-02'].editor), { name: 'Editor', icon: '', seconds: 10 });
+    accounting.addInterval(days, { id: 'editor', name: '', icon: 'editor-icon' }, start, end, 5);
+    assert.deepEqual(plain(days['2026-11-02'].editor), { name: 'Editor', icon: 'editor-icon', seconds: 15 });
+    accounting.addInterval(days, { id: 'editor', name: 'New Editor', icon: 'new-icon' }, start, end, 5);
+    assert.deepEqual(plain(days['2026-11-02'].editor), { name: 'New Editor', icon: 'new-icon', seconds: 20 });
+});
+
+test('metadata merging ignores inherited app records and safely updates prototype IDs', () => {
+    const inherited = { name: 'Inherited', icon: 'inherited-icon', seconds: 1000 };
+    const apps = Object.create({ editor: inherited });
+    const days = { '2026-11-02': apps };
+    const start = date('2026-11-02T12:00:00');
+    for (const id of ['editor', '__proto__', 'constructor', 'toString']) {
+        accounting.addInterval(days, { id }, start, start + 5000, 5);
+        assert.equal(Object.hasOwn(apps, id), true);
+        assert.deepEqual(plain(apps[id]), { name: id, icon: '', seconds: 5 });
+        accounting.addInterval(days, { id, name: 'Known', icon: 'known-icon' }, start, start + 5000, 5);
+        accounting.addInterval(days, { id, name: '', icon: '' }, start, start + 5000, 5);
+        assert.deepEqual(plain(apps[id]), { name: 'Known', icon: 'known-icon', seconds: 15 });
+    }
+    assert.deepEqual(inherited, { name: 'Inherited', icon: 'inherited-icon', seconds: 1000 });
+    assert.equal(Object.getPrototypeOf(apps).editor, inherited);
+});
+
+test('midnight metadata merging uses each day’s own record without losing seconds', () => {
+    const days = {};
+    accounting.addInterval(days, app, date('2026-12-31T12:00:00'), date('2026-12-31T12:00:05'), 5);
+    accounting.addInterval(days, { id: app.id }, date('2026-12-31T23:59:58'), date('2027-01-01T00:00:03'), 5);
+    assert.deepEqual(plain(days['2026-12-31'].firefox), { name: 'Firefox', icon: 'firefox', seconds: 7 });
+    assert.deepEqual(plain(days['2027-01-01'].firefox), { name: 'firefox', icon: '', seconds: 3 });
+    accounting.addInterval(days, { id: app.id, name: 'Updated', icon: 'updated-icon' }, date('2026-12-31T23:59:58'), date('2027-01-01T00:00:03'), 5);
+    accounting.addInterval(days, { id: app.id }, date('2026-12-31T23:59:58'), date('2027-01-01T00:00:03'), 5);
+    assert.deepEqual(plain(days['2026-12-31'].firefox), { name: 'Updated', icon: 'updated-icon', seconds: 11 });
+    assert.deepEqual(plain(days['2027-01-01'].firefox), { name: 'Updated', icon: 'updated-icon', seconds: 9 });
+    assert.equal(accounting.totals(days, date('2026-12-31T00:00:00'), date('2027-01-02T00:00:00')).total, 20);
+});
+
 test('splits an interval at local midnight, including year rollover', () => {
     const days = {};
     accounting.addInterval(days, app, date('2026-12-31T23:59:58'), date('2027-01-01T00:00:03'), 5);
@@ -330,13 +384,39 @@ test('monthly calendar windows and averages survive spring and fall DST transiti
     `, path.join(__dirname, '../utils/Usage.js')], { env: { ...process.env, TZ: 'America/New_York' }, timeout: 10000 });
 });
 
-test('retention keeps exactly N local dates and removes future records', () => {
+test('retention removes only dates before the cutoff and preserves future records', () => {
     const days = {};
     for (const day of ['2026-10-26', '2026-10-27', '2026-11-02', '2026-11-03'])
         record(days, 'kitty', day, 5);
     assert.equal(accounting.prune(days, date('2026-11-02T18:00:00'), 7), true);
-    assert.deepEqual(Object.keys(days), ['2026-10-27', '2026-11-02']);
+    assert.deepEqual(Object.keys(days), ['2026-10-27', '2026-11-02', '2026-11-03']);
     assert.equal(accounting.prune(days, date('2026-11-02T18:00:00'), 7), false);
+});
+
+test('clock rewind preserves future history while reports respect their queried ranges', () => {
+    const days = {};
+    record(days, 'past', '2026-10-27', 5);
+    record(days, 'current', '2026-11-02', 10);
+    record(days, 'future', '2026-11-03', 20);
+    record(days, 'later', '2026-12-01', 40);
+    const before = plain(days);
+    assert.equal(accounting.prune(days, date('2026-12-01T18:00:00'), 60), false);
+    const now = date('2026-11-02T18:00:00');
+    assert.equal(accounting.prune(days, now, 60), false);
+    assert.deepEqual(plain(days), before);
+    assert.equal(accounting.summary(days, 'today', now).total, 10);
+    const month = accounting.summary(days, 'month', now);
+    assert.equal(month.total, 10);
+    assert.equal(month.days.find(day => day.date === '2026-11-03').seconds, 0);
+    const week = accounting.summary(days, 'week', now);
+    assert.equal(week.total, 30);
+    assert.deepEqual(plain(week.apps.map(app => app.id)), ['future', 'current']);
+    const report = accounting.totals(days, date('2026-11-02T00:00:00'), date('2026-11-03T00:00:00'));
+    assert.equal(report.total, 10);
+    assert.deepEqual(plain(report.apps.map(app => app.id)), ['current']);
+    assert.equal(accounting.totals(days, date('2026-11-03T00:00:00'), date('2026-11-04T00:00:00')).total, 20);
+    assert.equal(accounting.summary(days, 'today', date('2026-12-01T18:00:00')).total, 40);
+    assert.deepEqual(plain(days), before);
 });
 
 test('history survives JSON roundtrips; malformed or unsupported data is rejected', () => {
@@ -387,7 +467,7 @@ test('category definitions are complete, ordered and independent between calls',
 
 test('desktop categories map every supported freedesktop token', () => {
     const groups = {
-        development: ['Development'],
+        development: ['Development', 'TerminalEmulator', 'TextEditor', 'IDE'],
         communication: ['Chat', 'InstantMessaging', 'Email', 'Telephony', 'VideoConference'],
         browsing: ['WebBrowser'],
         entertainment: ['Game', 'AudioVideo', 'Audio', 'Video', 'Player'],
@@ -398,6 +478,25 @@ test('desktop categories map every supported freedesktop token', () => {
             assert.equal(accounting.categoryFor('app', [token]), id, token);
             assert.equal(accounting.categoryFor('app', `;Unknown; ${token} ;;`), id, token);
         }
+    }
+});
+
+test('typical terminal desktop categories classify kitty, foot and alacritty as development', () => {
+    for (const id of ['kitty', 'foot', 'Alacritty']) {
+        assert.equal(accounting.categoryFor(id, 'System;Utility;TerminalEmulator;'), 'development');
+        assert.equal(accounting.categoryFor(id, ['TerminalEmulator', 'Utility', 'System']), 'development');
+        assert.equal(accounting.categoryFor(id, 'System;Utility;'), 'other');
+    }
+});
+
+test('new development tokens retain precedence below communication and browsing', () => {
+    for (const token of ['TerminalEmulator', 'TextEditor', 'IDE']) {
+        for (const tokens of [[token, 'Game', 'Office'], ['WebBrowser', token, 'Game'], [token, 'WebBrowser', 'Chat']]) {
+            const expected = tokens.includes('Chat') ? 'communication' : tokens.includes('WebBrowser') ? 'browsing' : 'development';
+            assert.equal(accounting.categoryFor('app', tokens), expected);
+            assert.equal(accounting.categoryFor('app', tokens.slice().reverse().join(';')), expected);
+        }
+        assert.equal(accounting.categoryFor('app', [token], { app: 'productivity' }), 'productivity');
     }
 });
 
