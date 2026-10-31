@@ -10,6 +10,15 @@ ColumnLayout {
 
     property string period: "today"
     property string mode: "apps"
+    property int hoveredDay: -1
+    readonly property bool monthly: period === "month" || period === "lastMonth"
+    readonly property var periodLabels: ({
+        today: "Hari ini",
+        week: "Minggu ini",
+        lastWeek: "Minggu lalu",
+        month: "Bulan ini",
+        lastMonth: "Bulan lalu"
+    })
     readonly property var report: {
         Usage.revision;
         Usage.today;
@@ -23,10 +32,32 @@ ColumnLayout {
     readonly property var categoryOptions: ["", ...Usage.categories.map(category => category.id)]
     readonly property real total: Usage.ready ? report.total : 0
     readonly property real peak: Math.max(1, ...days.map(day => day.seconds))
-    readonly property string periodLabel: period === "today" ? "Hari ini" : period === "week" ? "Minggu ini" : "Minggu lalu"
+    readonly property string periodLabel: monthly && Usage.ready ? report.monthLabel : periodLabels[period]
+    readonly property int retentionDays: Math.max(21, Math.min(365, Config.usageRetentionDays))
+    readonly property string retentionBoundary: {
+        // Parse as a local calendar date, not an ISO timestamp (UTC).
+        const parts = Usage.today.split("-").map(Number);
+        const cutoff = new Date(parts[0], parts[1] - 1, parts[2]);
+        cutoff.setDate(cutoff.getDate() + 1 - retentionDays);
+        return `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
+    }
+    readonly property bool retentionLimited: monthly && Usage.ready
+        && (report.start < retentionBoundary || report.comparisonStart < retentionBoundary)
+    readonly property string monthlyComparison: {
+        if (!monthly || !Usage.ready)
+            return "Memuat riwayat penggunaan…";
+        const change = report.change;
+        const direction = change > 0 ? "Naik" : change < 0 ? "Turun" : "Tetap";
+        const difference = change === 0 ? direction : `${direction} ${Usage.formatDuration(Math.abs(change))}`;
+        const percent = report.changePercent === null ? "tanpa acuan persentase" : `${Math.abs(report.changePercent).toFixed(1).replace(".", ",")}%`;
+        return `${report.comparisonDays} hari pertama di kedua bulan\n${Usage.formatDuration(report.comparisonTotal)} vs ${Usage.formatDuration(report.previousTotal)} · bulan sebelumnya\n${difference} · ${percent}`;
+    }
 
     spacing: Appearance.spacing.normal
-    onPeriodChanged: list.positionViewAtBeginning()
+    onPeriodChanged: {
+        hoveredDay = -1;
+        list.positionViewAtBeginning();
+    }
     onModeChanged: list.positionViewAtBeginning()
 
     RowLayout {
@@ -38,24 +69,12 @@ ColumnLayout {
             text: "Waktu penggunaan"
         }
 
-        Row {
-            spacing: Appearance.spacing.small
-
-            Repeater {
-                model: [
-                    { key: "today", label: "Hari ini" },
-                    { key: "week", label: "Minggu ini" },
-                    { key: "lastWeek", label: "Minggu lalu" }
-                ]
-
-                TextButton {
-                    required property var modelData
-
-                    text: modelData.label
-                    type: root.period === modelData.key ? "filled" : "text"
-                    onClicked: root.period = modelData.key
-                }
-            }
+        SettingCycle {
+            labelWidth: 120
+            options: ["today", "week", "lastWeek", "month", "lastMonth"]
+            value: root.period
+            format: v => root.periodLabels[v]
+            onPicked: v => root.period = v
         }
 
         TextButton {
@@ -111,7 +130,7 @@ ColumnLayout {
                 Layout.minimumWidth: 0
                 text: Usage.ready ? Usage.formatDuration(root.total) : "—"
                 weight: 800
-                font.pixelSize: 56
+                font.pixelSize: root.monthly ? 44 : 56
                 minimumPixelSize: 28
                 fontSizeMode: Text.Fit
                 elide: Text.ElideRight
@@ -119,9 +138,19 @@ ColumnLayout {
 
             StyledText {
                 Layout.fillWidth: true
-                text: Usage.ready ? `Periode sebelumnya · ${Usage.formatDuration(root.report.previousTotal)}` : "Memuat riwayat penggunaan…"
+                visible: root.monthly
+                text: Usage.ready ? `Rata-rata harian · ${Usage.formatDuration(root.report.average)} · ${root.report.elapsedDays} hari` : "Rata-rata harian · —"
                 color: Appearance.colors.textDim
                 font.pixelSize: Appearance.font.size.small
+                elide: Text.ElideRight
+            }
+
+            StyledText {
+                Layout.fillWidth: true
+                text: root.monthly ? root.monthlyComparison : Usage.ready ? `Periode sebelumnya · ${Usage.formatDuration(root.report.previousTotal)}` : "Memuat riwayat penggunaan…"
+                color: Appearance.colors.textDim
+                font.pixelSize: Appearance.font.size.small
+                wrapMode: root.monthly ? Text.Wrap : Text.NoWrap
                 elide: Text.ElideRight
             }
 
@@ -131,33 +160,44 @@ ColumnLayout {
             }
 
             Caption {
-                text: "Aktivitas tujuh hari"
+                Layout.fillWidth: true
+                text: root.monthly ? root.hoveredDay >= 0 && root.days[root.hoveredDay]
+                    ? `${root.days[root.hoveredDay].date} · ${Usage.formatDuration(root.days[root.hoveredDay].future ? 0 : root.days[root.hoveredDay].seconds)}`
+                    : "Aktivitas harian · arahkan penunjuk" : "Aktivitas tujuh hari"
+                font.letterSpacing: root.monthly ? 0 : 1.5
+                elide: Text.ElideRight
             }
 
             RowLayout {
+                id: chart
+
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.preferredHeight: 150
-                Layout.minimumHeight: 110
-                spacing: Appearance.spacing.small
+                Layout.preferredHeight: root.monthly ? 100 : 150
+                Layout.minimumHeight: root.monthly ? 50 : 110
+                spacing: root.monthly ? 2 : Appearance.spacing.small
 
                 Repeater {
-                    model: 7
+                    model: root.monthly ? root.days.length : 7
 
                     ColumnLayout {
                         id: day
 
                         required property int index
                         readonly property var entry: root.days[index]
-                        readonly property real seconds: entry ? entry.seconds : 0
+                        readonly property real seconds: entry && !entry.future ? entry.seconds : 0
                         readonly property bool today: entry ? entry.today : false
+                        readonly property bool future: entry ? !!entry.future : false
 
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        Layout.preferredWidth: 1
                         Layout.fillHeight: true
                         spacing: Appearance.spacing.small
 
                         StyledText {
                             Layout.fillWidth: true
+                            visible: !root.monthly
                             text: Usage.ready && day.entry ? Usage.formatDuration(day.seconds) : "—"
                             horizontalAlignment: Text.AlignHCenter
                             font.family: Appearance.font.family.mono
@@ -167,6 +207,7 @@ ColumnLayout {
                         }
 
                         SegmentBar {
+                            visible: !root.monthly
                             Layout.alignment: Qt.AlignHCenter
                             Layout.fillHeight: true
                             implicitWidth: 22
@@ -176,13 +217,69 @@ ColumnLayout {
                             onColor: day.today ? Appearance.colors.primary : Appearance.colors.textDim
                         }
 
+                        Item {
+                            visible: root.monthly
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            opacity: day.future ? 0.3 : 1
+
+                            Rectangle {
+                                anchors.fill: parent
+                                color: Appearance.colors.surfaceContainerHighest
+                            }
+
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                width: parent.width
+                                height: day.seconds > 0 ? Math.max(2, parent.height * day.seconds / root.peak) : 0
+                                color: day.today || root.hoveredDay === day.index ? Appearance.colors.primary : Appearance.colors.textDim
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                acceptedButtons: Qt.NoButton
+                                onEntered: root.hoveredDay = day.index
+                                onExited: {
+                                    if (root.hoveredDay === day.index)
+                                        root.hoveredDay = -1;
+                                }
+                            }
+                        }
+
                         Caption {
                             Layout.fillWidth: true
+                            visible: !root.monthly
                             text: day.entry ? day.entry.label : "—"
                             horizontalAlignment: Text.AlignHCenter
                             font.letterSpacing: 0
                             color: day.today ? Appearance.colors.primary : Appearance.colors.textDim
                         }
+                    }
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                implicitHeight: Appearance.font.size.small + 2
+                visible: root.monthly
+
+                Repeater {
+                    model: root.monthly ? root.days : []
+
+                    StyledText {
+                        required property var modelData
+                        required property int index
+                        readonly property real cellWidth: (chart.width - chart.spacing * (root.days.length - 1)) / Math.max(1, root.days.length)
+
+                        width: 20
+                        x: Math.max(0, Math.min(parent.width - width, index * (cellWidth + chart.spacing) + cellWidth / 2 - width / 2))
+                        text: modelData.label
+                        visible: index === 0 || ((index + 1) <= 25 && (index + 1) % 5 === 0) || index === root.days.length - 1
+                        horizontalAlignment: Text.AlignHCenter
+                        font.pixelSize: Appearance.font.size.small
+                        color: modelData.today ? Appearance.colors.primary : Appearance.colors.textDim
+                        opacity: modelData.future ? 0.3 : 1
                     }
                 }
             }
@@ -362,6 +459,16 @@ ColumnLayout {
                 }
             }
         }
+    }
+
+    StyledText {
+        Layout.fillWidth: true
+        visible: root.monthly
+        text: "Hanya riwayat tersimpan; hari kosong mungkin belum tercatat."
+            + (root.retentionLimited ? `\nRetensi ${root.retentionDays} hari membatasi total dan perbandingan.` : "")
+        color: root.retentionLimited ? Appearance.colors.error : Appearance.colors.textDim
+        font.pixelSize: Appearance.font.size.small
+        wrapMode: Text.Wrap
     }
 
     Divider {}

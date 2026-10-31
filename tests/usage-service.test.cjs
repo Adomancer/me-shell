@@ -647,11 +647,19 @@ test('category summaries and config edits reclassify historical usage without mu
     const before = plain(days);
     const payload = f.service.persistent.payload;
     const revision = f.service.revision;
-    const reports = Object.fromEntries(['today', 'week', 'lastWeek'].map(period => [period, plain(f.service.summary(period))]));
+    const reports = Object.fromEntries(['today', 'week', 'lastWeek', 'month', 'lastMonth'].map(period => [period, plain(f.service.summary(period))]));
     assert.equal(reports.today.total, 120);
     assert.equal(reports.today.previousTotal, 40);
     assert.equal(reports.week.total, 160);
     assert.equal(reports.lastWeek.total, 50);
+    assert.equal(reports.month.total, 120);
+    assert.equal(reports.month.average, 120);
+    assert.equal(reports.month.comparisonDays, 1);
+    assert.equal(reports.month.previousTotal, 0);
+    assert.equal(reports.month.days.length, 30);
+    assert.equal(reports.lastMonth.total, 90);
+    assert.equal(reports.lastMonth.average, 90 / 31);
+    assert.equal(reports.lastMonth.days.length, 31);
     assert.deepEqual(Object.fromEntries(reports.today.apps.map(app => [app.id, app.category])), {
         firefox: 'browsing', kitty: 'development', vlc: 'entertainment', missing: 'other'
     });

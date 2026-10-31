@@ -207,7 +207,11 @@ Open the control panel (`SUPER + SHIFT + E`) and select **Usage**, or run:
 qs -c me-shell ipc call drawers panel usage
 ```
 
-Usage counts the globally focused application, not background processes or every visible window. The tab shows today, this week, and last week, with previous-period totals and ranked app/category lists. Today's chart covers the trailing seven days; weekly charts run Monday–Sunday. History begins when tracking first runs; missing days are shown as zero, not reconstructed.
+Usage counts the globally focused application, not background processes or every visible window. The period selector offers today, this week, last week, this month (**Bulan ini**), and last month (**Bulan lalu**), with previous-period totals and ranked app/category lists. Today's chart covers the trailing seven days; weekly charts run Monday–Sunday. History begins when tracking first runs; missing days are shown as zero, not reconstructed.
+
+Monthly views show the month's total, average per calendar day (including zero-usage days), a bar for each date, and app/category totals. Hover a daily bar to see its date and duration; future dates are dimmed. This month includes today, so today's partial usage can still grow. Comparisons use the first N days of both months, where N is the smaller of elapsed days and the previous month's length. For example, March 31 compares March 1–28 with February 1–28 in a non-leap year, while the displayed March total still includes all 31 days. A zero previous total has no percentage baseline rather than an infinite increase. Last month compares against the month before it using the same rule.
+
+Monthly totals use retained history only. Empty days may mean no recorded activity, tracking was off, or history was not yet available; they are not proof the computer was unused. The view warns when retention excludes part of the selected/comparison month. The default 90-day retention covers these month ranges, but cannot recover activity before tracking began or after history was cleared. No CSV or other export is added.
 
 Switch between **Aplikasi** and **Kategori** to see apps or category totals. Categories are detected from installed desktop entries: development, entertainment, communication, productivity, browsing, and other. Each app row has a category selector; choose a category to override detection, or **Otomatis** to reset. Overrides are saved in configuration and immediately reclassify all retained history without changing recorded durations. Unknown/uninstalled apps fall back to other unless overridden. These are app-level categories, not website or document classifications.
 
@@ -248,7 +252,7 @@ node --test tests/*.test.cjs
 TZ=America/New_York node --test tests/*.test.cjs
 ```
 
-The tests cover calendar boundaries, DST, retention, summaries, state transitions, persistence, category detection/overrides, and focused-player media-aware idle handling. QML signals, compositor behavior, and rendering still need a live Hyprland session.
+The tests cover calendar boundaries, DST, retention, summaries (including leap years and matched monthly comparisons), state transitions, persistence, category detection/overrides, and focused-player media-aware idle handling. QML signals, compositor behavior, and rendering still need a live Hyprland session.
 
 Testing in VirtualBox, Qt can crash on the virtual GPU driver. Add `env = LIBGL_ALWAYS_SOFTWARE,1` and `env = MESA_LOADER_DRIVER_OVERRIDE,llvmpipe` to `~/.config/me-shell/hypr/user.conf`. Animations look choppier because the CPU draws them; real hardware is smooth.
 

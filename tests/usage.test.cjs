@@ -319,7 +319,7 @@ test('monthly calendar windows and averages survive spring and fall DST transiti
                 assert.equal(report.total, hours * 3600);
                 assert.equal(report.average, hours * 3600 / elapsed);
                 assert.equal(report.elapsedDays, elapsed);
-                assert.equal(report.comparisonDays, elapsed);
+                assert.equal(report.comparisonDays, Math.min(elapsed, new Date(2026, month - 1, 0).getDate()));
                 assert.equal(report.days.length, length);
                 assert.equal(report.days[transition - 1].seconds, hours * 3600);
                 assert.equal(report.end, accounting.dayKey(period === 'month' ? end : new Date(2026, month, 1)));
