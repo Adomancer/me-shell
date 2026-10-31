@@ -38,6 +38,11 @@ Item {
             name: "focus",
             label: "Fokus",
             icon: "timer"
+        },
+        {
+            name: "usage",
+            label: "Usage",
+            icon: "monitoring"
         }
     ]
     readonly property int index: Math.max(0, items.findIndex(i => i.name === current))
@@ -81,7 +86,7 @@ Item {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: Appearance.spacing.small
+                    spacing: 4
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
@@ -95,14 +100,15 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: tab.modelData.label
                         color: tab.isActive ? Appearance.colors.text : Appearance.colors.textDim
-                        font.pixelSize: Appearance.font.size.smaller
+                        font.pixelSize: Appearance.font.size.small
+                        font.letterSpacing: 1
                     }
 
                     // Jumlah notifikasi: titik aksen + angka
                     Row {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: tab.modelData.name === "notif" && Notifs.list.length > 0
-                        spacing: 4
+                        spacing: 2
 
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
@@ -114,7 +120,7 @@ Item {
 
                         StyledText {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: Notifs.list.length
+                            text: Notifs.list.length > 99 ? "99+" : String(Notifs.list.length)
                             color: Appearance.colors.primary
                             font.family: Appearance.font.family.mono
                             font.pixelSize: Appearance.font.size.small

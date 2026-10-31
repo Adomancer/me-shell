@@ -98,6 +98,7 @@ The structure and motion come from [Caelestia](https://github.com/caelestia-dots
 - Dot-matrix clock and audio visualizer on the desktop
 - Screenshot and screen recording with an area picker: hover a window to pick it, or drag a region
 - Wallpaper rendering, with colors generated from it by matugen for the shell, kitty, and the starship prompt
+- App usage with daily totals, Monday–Sunday weekly summaries, a seven-day chart, and most-used apps
 - A settings window for everything, including keybinds
 
 Some panels also open on hover: rest on the clock for the dashboard, the bottom right corner for utilities, and the right edge for the volume slider. Turn this off in settings if it gets in the way.
@@ -198,9 +199,38 @@ Every option is listed in [`utils/Config.qml`](utils/Config.qml).
 - The lockscreen CRT shader needs `scripts/build-shaders.sh` once before `crtShader` works.
 - Your own kitty settings go below the `include` line in `kitty.conf`, so they win over the me-shell style.
 
+### App usage (v1)
+
+Open the control panel (`SUPER + SHIFT + E`) and select **Usage**, or run:
+
+```sh
+qs -c me-shell ipc call drawers panel usage
+```
+
+Usage counts the globally focused application, not background processes or every visible window. The tab shows today, this week, and last week, with previous-period totals and a ranked app list. Today's chart covers the trailing seven days; weekly charts run Monday–Sunday. History begins when this version first runs; missing days are shown as zero, not reconstructed.
+
+Tracking is enabled by default while me-shell is running. It stops while locked, paused, idle (five minutes without input by default), or using a focus-taking shell panel. Hover panels do not interrupt tracking. Caffeine and media playback do not override usage idle detection, so watching a video without input eventually stops counting.
+
+In **Settings → Services → Waktu penggunaan**, you can disable tracking, change the idle threshold, exclude comma-separated application IDs, set retention (21–365 days, default 90), or clear all history with confirmation. Exclusions affect future tracking, not existing history. The Usage tab's pause lasts until resumed or the shell process restarts; it survives hot reloads.
+
+Only app IDs, display names, icons, and daily accumulated durations are saved in `~/.local/state/me-shell/usage.json` (or the corresponding `XDG_STATE_HOME` directory). No window titles, URLs, document names, or event timeline are recorded or uploaded.
+
+Accounting uses Quickshell's monotonic `ElapsedTimer`, checkpoints every five seconds and on focus/state transitions, and saves atomically every 30 seconds and when tracking stops. Long timer gaps and clock corrections are discarded rather than backfilled. Sleep and shell downtime are not reconstructed; reloads may lose the final five seconds, and an abrupt stop may lose roughly 30 seconds of unsaved usage with healthy storage. Invalid history is left untouched until explicitly cleared. This is a focused-app estimate, not a complete measure of human attention.
+
+Configuration keys: `usageEnabled`, `usageIdleMinutes`, `usageRetentionDays`, and `usageExcludedApps` (an array of app IDs, e.g. `["firefox", "kitty"]`). Node is only needed to run the developer tests, not to use tracking.
+
 ## Development
 
 Run straight from the repo with `qs -p ~/me-shell`. Every save reloads the shell and errors show up in the terminal. All colors, sizes, and animation timings live in [`utils/Appearance.qml`](utils/Appearance.qml).
+
+Usage accounting and tracker regression tests can run without Quickshell using Node.js:
+
+```sh
+node --test tests/*.test.cjs
+TZ=America/New_York node --test tests/*.test.cjs
+```
+
+The tests cover calendar boundaries, DST, retention, summaries, state transitions, and persistence logic. QML signals, compositor behavior, and rendering still need a live Hyprland session.
 
 Testing in VirtualBox, Qt can crash on the virtual GPU driver. Add `env = LIBGL_ALWAYS_SOFTWARE,1` and `env = MESA_LOADER_DRIVER_OVERRIDE,llvmpipe` to `~/.config/me-shell/hypr/user.conf`. Animations look choppier because the CPU draws them; real hardware is smooth.
 

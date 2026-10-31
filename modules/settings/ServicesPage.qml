@@ -1,9 +1,14 @@
 import QtQuick
 import QtQuick.Layouts
+import qs.components
 import qs.services
 import qs.utils
 
 ColumnLayout {
+    id: root
+
+    property bool confirmClearUsage: false
+
     spacing: 2
 
     SettingSection {
@@ -81,6 +86,84 @@ ColumnLayout {
             checked: Config.lyricsEnabled
             onToggled: v => Config.set("lyricsEnabled", v)
         }
+    }
+
+    SettingSection {
+        title: "Waktu penggunaan"
+    }
+
+    SettingRow {
+        label: "Catat penggunaan aplikasi"
+        description: "Lokal saja; hanya aplikasi fokus, tanpa judul jendela atau URL"
+
+        SettingToggle {
+            checked: Config.usageEnabled
+            onToggled: v => Config.set("usageEnabled", v)
+        }
+    }
+
+    SettingRow {
+        label: "Batas tidak aktif"
+        description: "Berhenti mencatat setelah tidak ada input; kafein/media tidak menahannya"
+
+        SettingStepper {
+            from: 1
+            to: 30
+            unit: " mnt"
+            value: Config.usageIdleMinutes
+            onPicked: v => Config.set("usageIdleMinutes", v)
+        }
+    }
+
+    SettingRow {
+        label: "Simpan riwayat"
+        description: "Data yang lebih lama dihapus otomatis; mengurangi batas menghapus data lama"
+
+        SettingStepper {
+            from: 21
+            to: 365
+            unit: " hari"
+            value: Config.usageRetentionDays
+            onPicked: v => Config.set("usageRetentionDays", v)
+        }
+    }
+
+    SettingRow {
+        label: "Aplikasi dikecualikan"
+        description: "ID aplikasi dipisah koma, misalnya firefox, org.telegram.desktop; riwayat lama tetap ada"
+
+        SettingText {
+            value: Config.usageExcludedApps.join(", ")
+            placeholder: "firefox, kitty"
+            onCommitted: v => Config.set("usageExcludedApps", v.split(",").map(id => id.trim()).filter(id => id !== ""))
+        }
+    }
+
+    SettingRow {
+        label: "Hapus riwayat penggunaan"
+        description: "Tidak dapat dibatalkan; jika pencatatan aktif, data baru akan dicatat lagi"
+
+        TextButton {
+            text: root.confirmClearUsage ? "Ya, hapus semua" : "Hapus riwayat"
+            icon: "delete_outline"
+            type: root.confirmClearUsage ? "filled" : "tonal"
+            onClicked: {
+                if (root.confirmClearUsage) {
+                    Usage.clearHistory();
+                    root.confirmClearUsage = false;
+                    clearConfirmation.stop();
+                } else {
+                    root.confirmClearUsage = true;
+                    clearConfirmation.restart();
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: clearConfirmation
+        interval: 5000
+        onTriggered: root.confirmClearUsage = false
     }
 
     SettingSection {

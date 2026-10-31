@@ -10,6 +10,9 @@ import qs.utils
 Singleton {
     id: root
 
+    // Usage must not track or prune history before persisted privacy settings are loaded.
+    property bool ready: false
+
     readonly property int barHeight: adapter.barHeight
     readonly property bool barShowTitle: adapter.barShowTitle
     readonly property bool barShowTray: adapter.barShowTray
@@ -52,6 +55,10 @@ Singleton {
     readonly property int focusMinutes: adapter.focusMinutes
     readonly property int breakMinutes: adapter.breakMinutes
     readonly property bool lyricsEnabled: adapter.lyricsEnabled
+    readonly property bool usageEnabled: adapter.usageEnabled
+    readonly property int usageIdleMinutes: adapter.usageIdleMinutes
+    readonly property int usageRetentionDays: adapter.usageRetentionDays
+    readonly property var usageExcludedApps: Array.isArray(adapter.usageExcludedApps) ? adapter.usageExcludedApps : []
 
     // Ubah satu setting lalu simpan ke config.json
     function set(key: string, value: var): void {
@@ -69,7 +76,20 @@ Singleton {
 
         path: `${Paths.config}/config.json`
         watchChanges: true
-        onFileChanged: reload()
+        onFileChanged: {
+            root.ready = false;
+            reload();
+        }
+        onLoaded: Qt.callLater(() => {
+            // Wait until JsonAdapter has applied every field, not just its first change.
+            try {
+                const data = JSON.parse(file.text());
+                root.ready = data !== null && typeof data === "object" && !Array.isArray(data);
+            } catch (error) {
+                root.ready = false;
+            }
+        })
+        onLoadFailed: error => root.ready = error === FileViewError.FileNotFound
 
         JsonAdapter {
             id: adapter
@@ -136,6 +156,11 @@ Singleton {
             property int breakMinutes: 5
             // Lirik tersinkron dari lrclib.net di tab Media
             property bool lyricsEnabled: true
+            // Hanya aplikasi yang fokus; tidak menyimpan judul jendela atau URL.
+            property bool usageEnabled: true
+            property int usageIdleMinutes: 5
+            property int usageRetentionDays: 90
+            property var usageExcludedApps: []
         }
     }
 }

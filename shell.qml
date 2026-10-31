@@ -19,6 +19,7 @@ ShellRoot {
         Keyboard.layout;
         Updates.count;
         Todo.pending;
+        Usage.ready;
     }
 
     Background {}

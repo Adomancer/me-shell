@@ -11,7 +11,7 @@ Item {
 
     // Disimpan di DrawerState supaya IPC `drawers panel <tab>` bisa memilih tab
     readonly property string tab: DrawerState.panelTab
-    readonly property var tabs: ["dash", "media", "perf", "weather", "notif", "focus"]
+    readonly property var tabs: ["dash", "media", "perf", "weather", "notif", "focus", "usage"]
     readonly property int index: Math.max(0, tabs.indexOf(tab))
     readonly property int pageWidth: 856
     readonly property int pageHeight: 420
@@ -91,6 +91,10 @@ Item {
                     height: root.pageHeight
                 }
                 FocusTab {
+                    width: root.pageWidth
+                    height: root.pageHeight
+                }
+                UsageTab {
                     width: root.pageWidth
                     height: root.pageHeight
                 }
