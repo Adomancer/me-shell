@@ -142,7 +142,13 @@ ColumnLayout {
             color: Appearance.colors.textDim
             font.family: Appearance.font.family.mono
             font.pixelSize: Appearance.font.size.small
-            text: `${Keybinds.dir}/
+            text: Keybinds.lua ? `${Keybinds.dir}/
+  me-shell.lua     di-require dari hyprland.lua
+  keybinds.lua     dibuat dari halaman ini
+  user.lua         punyamu sendiri, tidak pernah ditimpa
+
+# di hyprland.lua cukup satu baris:
+pcall(require, "${Keybinds.dir}/me-shell")` : `${Keybinds.dir}/
   me-shell.conf    di-source dari hyprland.conf
   keybinds.conf    dibuat dari halaman ini
   user.conf        punyamu sendiri, tidak pernah ditimpa

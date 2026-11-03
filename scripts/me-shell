@@ -11,6 +11,11 @@ QS_LINK="$CONF/quickshell/me-shell"
 HYPR_DIR="$CONF/me-shell/hypr"
 HYPR_CONF="$CONF/hypr/hyprland.conf"
 SOURCE_LINE="source = $HYPR_DIR/me-shell.conf"
+# Hyprland >= 0.55 memakai Lua; blok ini disisipkan ke hyprland.lua dan dilepas lagi oleh uninstall
+HYPR_LUA="$CONF/hypr/hyprland.lua"
+LUA_BEGIN="-- >>> me-shell"
+LUA_END="-- <<< me-shell"
+LUA_MINIMAL_HEAD="-- Config Hyprland minimal dari me-shell. Bebas diubah."
 BIN="$HOME/.local/bin/me-shell"
 KITTY_CONF="$CONF/kitty/kitty.conf"
 # Penanda baris config lain yang dimatikan oleh installer, supaya bisa dikembalikan saat uninstall
@@ -124,13 +129,29 @@ dnf_repo() {
     sudo dnf config-manager addrepo --from-repofile="$1" 2>/dev/null || sudo dnf config-manager --add-repo "$1"
 }
 
+# xdg-desktop-portal dan backend Hyprland dibutuhkan untuk screenshare, file chooser, dan app Flatpak
+verify_portals() {
+    local p missing=()
+    for p in xdg-desktop-portal xdg-desktop-portal-hyprland; do
+        case "$(distro)" in
+        arch) pacman -Q "$p" >/dev/null 2>&1 || missing+=("$p") ;;
+        fedora) rpm -q "$p" >/dev/null 2>&1 || missing+=("$p") ;;
+        esac
+    done
+    if [ ${#missing[@]} -gt 0 ]; then
+        warn "Belum ter-install: ${missing[*]} (screenshare dan file chooser butuh paket ini)"
+    else
+        ok "xdg-desktop-portal dan xdg-desktop-portal-hyprland terpasang"
+    fi
+}
+
 install_deps() {
     local d
     d="$(distro)"
     step "Dependency ($d)"
     case "$d" in
     arch)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava tesseract tesseract-data-eng tesseract-data-ind ddcutil ttf-jetbrains-mono noto-fonts-emoji qt6-svg qt6-imageformats qt6-shadertools kitty starship)
+        local pkgs=(hyprland xdg-desktop-portal xdg-desktop-portal-hyprland git curl brightnessctl networkmanager bluez-utils wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava tesseract tesseract-data-eng tesseract-data-ind ddcutil ttf-jetbrains-mono noto-fonts-emoji qt6-svg qt6-imageformats qt6-shadertools kitty starship)
         local aur=(quickshell matugen-bin)
         note "pacman: ${pkgs[*]}"
         note "AUR:    ${aur[*]}"
@@ -139,7 +160,7 @@ install_deps() {
         aur_install "${aur[@]}" || warn "Install manual dari AUR: ${aur[*]}"
         ;;
     fedora)
-        local pkgs=(hyprland xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava tesseract tesseract-langpack-ind ddcutil jetbrains-mono-fonts google-noto-color-emoji-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools kitty)
+        local pkgs=(hyprland xdg-desktop-portal xdg-desktop-portal-hyprland matugen git curl quickshell brightnessctl NetworkManager bluez wl-clipboard cliphist grim wf-recorder hyprpicker hyprsunset cava tesseract tesseract-langpack-ind ddcutil jetbrains-mono-fonts google-noto-color-emoji-fonts qt6-qtsvg qt6-qtimageformats qt6-qtshadertools kitty)
         # Hyprland dan matugen tidak ada di repo resmi Fedora (cek: Fedora 44); diambil dari COPR.
         # sdegler/hyprland punya build untuk Fedora 43-45 + rawhide (juga hyprpicker dan hyprsunset),
         # lionheartp/Hyprland cadangannya.
@@ -175,6 +196,7 @@ install_deps() {
         warn "grim, wf-recorder, cliphist, hyprpicker, hyprsunset, tesseract (screenshot, rekam, clipboard, lampu malam, OCR)"
         ;;
     esac
+    case "$d" in arch | fedora) verify_portals ;; esac
     # ddcutil (brightness monitor eksternal lewat DDC/CI) butuh modul kernel i2c-dev
     if command -v ddcutil >/dev/null && [ ! -f /etc/modules-load.d/i2c-dev.conf ]; then
         echo i2c-dev | sudo tee /etc/modules-load.d/i2c-dev.conf >/dev/null && sudo modprobe i2c-dev &&
@@ -401,6 +423,13 @@ link() {
 write_hypr_files() {
     step "File Hyprland ($HYPR_DIR)"
     mkdir -p "$HYPR_DIR"
+    if [ "$(hypr_mode)" = lua ]; then
+        lua_main_file >"$HYPR_DIR/me-shell.lua"
+        [ -f "$HYPR_DIR/keybinds.lua" ] || echo "-- Diisi otomatis oleh me-shell saat start" >"$HYPR_DIR/keybinds.lua"
+        [ -f "$HYPR_DIR/user.lua" ] || echo "-- Keybind dan setting Hyprland milikmu sendiri. me-shell tidak pernah menimpa file ini." >"$HYPR_DIR/user.lua"
+        ok "Mode Lua: me-shell.lua, keybinds.lua, user.lua"
+        return
+    fi
     if [ ! -f "$HYPR_DIR/me-shell.conf" ]; then
         cat >"$HYPR_DIR/me-shell.conf" <<EOF
 # Dibuat oleh me-shell, ditulis ulang setiap shell start. Tambahkan di hyprland.conf:
@@ -421,7 +450,229 @@ EOF
     fi
     [ -f "$HYPR_DIR/keybinds.conf" ] || echo "# Diisi otomatis oleh me-shell saat start" >"$HYPR_DIR/keybinds.conf"
     [ -f "$HYPR_DIR/user.conf" ] || echo "# Keybind dan setting Hyprland milikmu sendiri. me-shell tidak pernah menimpa file ini." >"$HYPR_DIR/user.conf"
-    ok "me-shell.conf, keybinds.conf, user.conf"
+    ok "Mode legacy: me-shell.conf, keybinds.conf, user.conf"
+}
+
+# --- Mode config Hyprland -----------------------------------------------------
+
+# Hyprland >= 0.55 memakai Lua dan mengabaikan hyprland.conf kalau ada hyprland.lua (dibuat otomatis
+# bila belum ada). hyprlang hanya dipakai untuk Hyprland lama. ME_SHELL_HYPR_MODE=lua|legacy memaksa mode.
+hypr_version() {
+    local bin out
+    for bin in Hyprland hyprland; do
+        have "$bin" || continue
+        out="$("$bin" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n1 || true)"
+        if [ -n "$out" ]; then
+            echo "$out"
+            return
+        fi
+    done
+    return 0
+}
+
+# true kalau versi $1 >= $2 (urutan versi, bukan urutan huruf)
+ver_ge() { [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" = "$1" ]; }
+
+hypr_mode() {
+    case "${ME_SHELL_HYPR_MODE:-}" in
+    lua | legacy)
+        echo "$ME_SHELL_HYPR_MODE"
+        return
+        ;;
+    esac
+    if [ -f "$HYPR_LUA" ]; then
+        echo lua
+        return
+    fi
+    local v
+    v="$(hypr_version)"
+    # Versi tidak terbaca (Hyprland belum ter-install): anggap baru, karena itu yang akan terpasang
+    if [ -n "$v" ] && ! ver_ge "$v" 0.55; then echo legacy; else echo lua; fi
+}
+
+# String Lua dengan tanda kutip; sama dengan luaString di utils/Keybinds.js untuk path biasa
+lua_quote() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    printf '"%s"' "$s"
+}
+
+# Isi me-shell.lua. Harus identik dengan luaMain() di utils/Keybinds.js (dicek di tests/keybinds.test.cjs)
+lua_main_file() {
+    cat <<'EOF'
+-- Dibuat oleh me-shell, ditulis ulang setiap shell start. Jangan diedit; pakai user.lua.
+-- hyprland.lua memuatnya lewat blok bertanda "me-shell" (pcall(require, ...)).
+
+-- Urutan penting: environment dibagikan ke D-Bus dulu supaya xdg-desktop-portal bisa start, baru shell jalan
+hl.on("hyprland.start", function()
+    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP; exec qs -c me-shell")
+end)
+
+-- Aplikasi Electron/Chromium (VS Code, Discord, Brave) jalan native di Wayland, tidak buram lewat XWayland
+hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
+
+-- Kalau shell crash saat layar terkunci, opsi ini yang membuat lockscreen bisa kembali
+hl.config({
+    misc = {
+        allow_session_lock_restore = true,
+    },
+})
+
+EOF
+    printf 'require(%s)\n' "$(lua_quote "$HYPR_DIR/keybinds")"
+    printf 'require(%s)\n' "$(lua_quote "$HYPR_DIR/user")"
+    cat <<'EOF'
+
+-- Submap kosong: dipakai menu settings saat merekam kombinasi tombol baru
+hl.define_submap("me-shell-capture", function()
+    hl.bind("escape", hl.dsp.submap("reset"), { non_consuming = true })
+end)
+EOF
+}
+
+# Config Lua minimal untuk yang belum punya hyprland.lua. Tombol dipilih supaya tidak bentrok dengan
+# keybind shell (mis. SUPER+V dipakai clipboard, jadi float memakai SUPER+SHIFT+V).
+minimal_hyprland_lua() {
+    local t term=kitty
+    for t in kitty foot alacritty wezterm ghostty; do
+        command -v "$t" >/dev/null && { term="$t"; break; }
+    done
+    printf '%s\n' "$LUA_MINIMAL_HEAD"
+    cat <<EOF
+hl.monitor({
+    output   = "",
+    mode     = "preferred",
+    position = "auto",
+    scale    = "auto",
+})
+
+local terminal = $(lua_quote "$term")
+local mainMod  = "SUPER"
+
+hl.config({
+    input = {
+        kb_layout    = "us",
+        follow_mouse = 1,
+    },
+    general = {
+        gaps_in     = 4,
+        gaps_out    = 8,
+        border_size = 2,
+        layout      = "dwindle",
+    },
+    decoration = {
+        rounding = 4,
+    },
+})
+
+hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
+hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exit())
+hl.bind(mainMod .. " + SHIFT + V", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
+
+hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
+hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
+hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
+
+for i = 1, 9 do
+    hl.bind(mainMod .. " + " .. i,           hl.dsp.focus({ workspace = i }))
+    hl.bind(mainMod .. " + SHIFT + " .. i,   hl.dsp.window.move({ workspace = i }))
+end
+
+hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
+hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+EOF
+}
+
+# Program bentrok (CLASH) di semua config Hyprland: exec-once di *.conf dan hl.exec_cmd di *.lua.
+# Baris yang sudah dimatikan (MARK) dan komentar Lua tidak dihitung.
+clash_hits() {
+    {
+        grep -rnE --include='*.conf' "^[[:space:]]*exec(-once)?[[:space:]]*=.*\b($CLASH)\b" "$CONF/hypr" 2>/dev/null || true
+        grep -rnE --include='*.lua' "hl\.exec_cmd\(.*\b($CLASH)\b" "$CONF/hypr" 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*--' || true
+    } | grep -v "$MARK" || true
+}
+
+# Matikan baris bentrok dengan memberi MARK ($1 = hasil clash_hits). Lua memakai "--" di depan MARK supaya tetap valid.
+# Hanya baris yang diawali exec-once / hl.exec_cmd yang bisa dimatikan otomatis.
+disable_clashes() {
+    printf '%s\n' "$1" | cut -d: -f1 | sort -u | while read -r f; do
+        case "$f" in
+        *.lua) sed -i -E "s/^([[:space:]]*hl\.exec_cmd\(.*\b($CLASH)\b.*)$/--$MARK \1/" "$f" ;;
+        *) sed -i -E "s/^([[:space:]]*exec(-once)?[[:space:]]*=.*\b($CLASH)\b.*)$/$MARK \1/" "$f" ;;
+        esac
+    done
+}
+
+# Bar/notif lain bentrok dengan me-shell; cari di semua file config Hyprland
+handle_clashes() {
+    local hits left
+    hits="$(clash_hits)"
+    [ -n "$hits" ] || return 0
+    warn "Ditemukan program yang bentrok dengan me-shell:"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    if ask "Matikan baris-baris itu? (bisa dikembalikan lewat 'me-shell uninstall')"; then
+        disable_clashes "$hits"
+        ok "Dimatikan"
+        left="$(clash_hits)"
+        if [ -n "$left" ]; then
+            warn "Baris ini tidak bisa dimatikan otomatis (bukan di awal baris); hapus sendiri:"
+            printf '%s\n' "$left" | sed 's/^/      /'
+        fi
+    fi
+}
+
+setup_hyprland() {
+    if [ "$(hypr_mode)" = lua ]; then setup_hyprland_lua; else setup_hyprland_conf; fi
+}
+
+# Mode Lua: sambungkan ke hyprland.lua lewat require() dengan path absolut (Hyprland menerimanya).
+# Idempoten lewat marker; hyprland.conf tidak pernah dibuat.
+setup_hyprland_lua() {
+    step "Hyprland ($HYPR_LUA)"
+    local created=0
+    if [ ! -f "$HYPR_LUA" ]; then
+        if [ -f "$HYPR_CONF" ]; then
+            warn "Hyprland $(hypr_version) memakai Lua; hyprland.conf-mu tidak dikonversi dan tidak dipakai lagi."
+            if ! ask "Buat hyprland.lua minimal sekarang?"; then
+                warn "Dilewati. Tambahkan sendiri ke hyprland.lua:"
+                warn "  pcall(require, $(lua_quote "$HYPR_DIR/me-shell"))"
+                return
+            fi
+        fi
+        mkdir -p "$(dirname "$HYPR_LUA")"
+        minimal_hyprland_lua >"$HYPR_LUA"
+        created=1
+        ok "Belum ada hyprland.lua, dibuatkan yang minimal"
+    fi
+    if grep -q "^$LUA_BEGIN" "$HYPR_LUA"; then
+        ok "Blok me-shell sudah ada"
+    else
+        [ "$created" = 1 ] || cp "$HYPR_LUA" "$HYPR_LUA.me-shell.bak"
+        printf '\n%s (dikelola me-shell; dilepas oleh "me-shell uninstall")\npcall(require, %s)\n%s\n' \
+            "$LUA_BEGIN" "$(lua_quote "$HYPR_DIR/me-shell")" "$LUA_END" >>"$HYPR_LUA"
+        if [ "$created" = 1 ]; then
+            ok "Blok require ditambahkan"
+        else
+            ok "Blok require ditambahkan (backup: hyprland.lua.me-shell.bak)"
+        fi
+    fi
+    handle_clashes
+}
+
+# Hyprland yang sedang berjalan melaporkan error config lewat hyprctl configerrors (kosong = beres)
+check_hypr_errors() {
+    local errs
+    errs="$(hyprctl configerrors 2>/dev/null || true)"
+    if [ -n "${errs//[[:space:]]/}" ]; then
+        warn "Hyprland melaporkan error config:"
+        printf '%s\n' "$errs" | sed 's/^/      /'
+    else
+        ok "hyprctl configerrors kosong"
+    fi
 }
 
 # Config minimal untuk yang belum punya hyprland.conf
@@ -477,11 +728,6 @@ EOF
 
 setup_hyprland_conf() {
     step "Hyprland ($HYPR_CONF)"
-    if [ -f "$CONF/hypr/hyprland.lua" ] && [ ! -f "$HYPR_CONF" ]; then
-        warn "Config Hyprland-mu pakai Lua (hyprland.lua). Tambahkan sendiri source ke:"
-        warn "  $HYPR_DIR/me-shell.conf"
-        return
-    fi
     if [ ! -f "$HYPR_CONF" ]; then
         mkdir -p "$(dirname "$HYPR_CONF")"
         minimal_hyprland_conf >"$HYPR_CONF"
@@ -496,19 +742,7 @@ setup_hyprland_conf() {
         ok "Baris source ditambahkan (backup: hyprland.conf.me-shell.bak)"
     fi
 
-    # Bar/notif lain bentrok dengan me-shell; cari di semua file config Hyprland
-    local hits
-    hits="$(grep -rnE --include='*.conf' "^[[:space:]]*exec(-once)?[[:space:]]*=.*\b($CLASH)\b" "$CONF/hypr" 2>/dev/null | grep -v "$MARK" || true)"
-    if [ -n "$hits" ]; then
-        warn "Ditemukan program yang bentrok dengan me-shell:"
-        printf '%s\n' "$hits" | sed 's/^/      /'
-        if ask "Matikan baris-baris itu? (bisa dikembalikan lewat 'me-shell uninstall')"; then
-            printf '%s\n' "$hits" | cut -d: -f1 | sort -u | while read -r f; do
-                sed -i -E "s/^([[:space:]]*exec(-once)?[[:space:]]*=.*\b($CLASH)\b.*)$/$MARK \1/" "$f"
-            done
-            ok "Dimatikan"
-        fi
-    fi
+    handle_clashes
 }
 
 # --- Terminal -----------------------------------------------------------------
@@ -606,7 +840,7 @@ cmd_install() {
     case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "~/.local/bin belum ada di PATH; tambahkan supaya perintah 'me-shell' bisa dipakai" ;; esac
 
     write_hypr_files
-    setup_hyprland_conf
+    setup_hyprland
     setup_terminal "$root"
 
     step "Paket dev"
@@ -619,6 +853,7 @@ cmd_install() {
     step "Selesai"
     if in_hyprland; then
         hyprctl reload >/dev/null && ok "Hyprland di-reload"
+        check_hypr_errors
         stop_shell
         start_shell
         ok "me-shell dinyalakan"
@@ -658,19 +893,38 @@ cmd_log() {
     note "Jalankan 'me-shell restart' untuk menyalakan lagi di belakang."
 }
 
+# Lepas semua yang dipasang ke config Hyprland, di mode Lua maupun legacy (keduanya selalu dicek,
+# supaya instalasi lama yang pakai .conf tetap bisa dibersihkan setelah Hyprland di-upgrade)
+unhook_hyprland() {
+    if [ -f "$HYPR_LUA" ] && grep -q "^$LUA_BEGIN" "$HYPR_LUA"; then
+        sed -i "/^$LUA_BEGIN/,/^$LUA_END/d" "$HYPR_LUA"
+        # buang baris kosong sisa di akhir file
+        sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$HYPR_LUA"
+        ok "Blok me-shell dihapus dari hyprland.lua (backup lama, kalau ada: hyprland.lua.me-shell.bak)"
+        if [ "$(head -n1 "$HYPR_LUA")" = "$LUA_MINIMAL_HEAD" ] && ask_no "hyprland.lua itu dibuat me-shell. Hapus juga filenya?"; then
+            rm -f "$HYPR_LUA"
+            ok "hyprland.lua dihapus"
+        fi
+    fi
+    if [ -f "$HYPR_CONF" ]; then
+        sed -i "\\|^$SOURCE_LINE\$|d; /^# me-shell\$/d" "$HYPR_CONF"
+        ok "Baris source dihapus dari hyprland.conf"
+    fi
+    # grep keluar dengan status 1 kalau tidak ada yang cocok; tanpa "|| true" set -e menghentikan uninstall
+    { grep -rlF --include='*.conf' --include='*.lua' "$MARK" "$CONF/hypr" 2>/dev/null || true; } | while read -r f; do
+        case "$f" in
+        *.lua) sed -i "s/^--$MARK //" "$f" ;;
+        *) sed -i "s/^$MARK //" "$f" ;;
+        esac
+        ok "Dikembalikan: $f"
+    done
+}
+
 cmd_uninstall() {
     step "Uninstall"
     ask "Lanjut uninstall me-shell?" || exit 0
     stop_shell
-    if [ -f "$HYPR_CONF" ]; then
-        sed -i "\|^$SOURCE_LINE\$|d; /^# me-shell\$/d" "$HYPR_CONF"
-        ok "Baris source dihapus dari hyprland.conf"
-    fi
-    # grep keluar dengan status 1 kalau tidak ada yang cocok; tanpa "|| true" set -e menghentikan uninstall
-    { grep -rlF --include='*.conf' "$MARK" "$CONF/hypr" 2>/dev/null || true; } | while read -r f; do
-        sed -i "s/^$MARK //" "$f"
-        ok "Dikembalikan: $f"
-    done
+    unhook_hyprland
     if [ -f "$KITTY_CONF" ]; then
         sed -i '\|^include .*/assets/kitty/me-shell.conf$|d; /^# me-shell$/d' "$KITTY_CONF"
         ok "Gaya me-shell dilepas dari kitty.conf"
@@ -727,4 +981,7 @@ main() {
     esac
 }
 
-main "$@"
+# Bisa di-source (tests/me-shell-hypr.test.cjs) tanpa langsung menjalankan perintah
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    main "$@"
+fi

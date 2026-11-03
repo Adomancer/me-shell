@@ -4,17 +4,23 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 import qs.utils
+import "../utils/Keybinds.js" as KB
 
-// Keybind shell, dipecah ala JaKooLit di ~/.config/me-shell/hypr/:
-//   me-shell.conf  di-source dari hyprland.conf (ditulis ulang setiap start)
-//   keybinds.conf  dibuat dari daftar di bawah + perubahan dari menu settings
-//   user.conf      milik user, hanya dibuat kalau belum ada
+// Keybind shell, dipecah ala JaKooLit di ~/.config/me-shell/hypr/. Dua mode, ditentukan dari config Hyprland yang aktif:
+//   Lua (Hyprland >= 0.55):
+//     me-shell.lua   di-require dari hyprland.lua (ditulis ulang setiap start)
+//     keybinds.lua   dibuat dari daftar di bawah + perubahan dari menu settings
+//     user.lua       milik user, hanya dibuat kalau belum ada
+//   Legacy (hyprlang, < 0.55): me-shell.conf, keybinds.conf, user.conf dengan peran yang sama
 // Perubahan dari settings disimpan di ~/.config/me-shell/keybinds.json.
 Singleton {
     id: root
 
     readonly property string dir: `${Paths.config}/hypr`
     readonly property string ipc: "qs -c me-shell ipc call"
+    // "" = belum dicek, "lua" atau "legacy"
+    property string mode: ""
+    readonly property bool lua: mode === "lua"
 
     // Bisa diubah dari menu settings. Default mengikuti JaKooLit.
     readonly property var defaults: [
@@ -147,7 +153,7 @@ Singleton {
         ["bindel", "ALT", "XF86AudioLowerVolume", "volume downPrecise"],
         ["bindl", "", "XF86AudioMute", "volume mute"],
         ["bindl", "", "XF86AudioMicMute", "volume mic"],
-        ["bindl", "", "XF86AudioPlayPause", "media playPause"],
+
         ["bindl", "", "XF86AudioPause", "media playPause"],
         ["bindl", "", "XF86AudioPlay", "media playPause"],
         ["bindl", "", "XF86AudioNext", "media next"],
@@ -162,7 +168,7 @@ Singleton {
 
     // Daftar yang sedang dipakai: default + perubahan dari keybinds.json
     readonly property var binds: defaults.map(d => Object.assign({}, d, adapter.overrides[d.id] ?? {}))
-    // true = ada perubahan yang belum ditulis ke keybinds.conf
+    // true = ada perubahan yang belum ditulis ke keybinds.lua / keybinds.conf
     property bool dirty: false
 
     function setBind(id: string, mods: string, key: string): void {
@@ -192,6 +198,14 @@ Singleton {
         return lines.join("\n") + "\n";
     }
 
+    function generateLua(): string {
+        return KB.luaKeybinds(binds, fixed, ipc);
+    }
+
+    function mainLua(): string {
+        return KB.luaMain(dir);
+    }
+
     function mainConf(): string {
         return [
             "# Dibuat oleh me-shell, ditulis ulang setiap shell start. Tambahkan di hyprland.conf:",
@@ -217,19 +231,23 @@ Singleton {
         ].join("\n");
     }
 
-    // Tulis keybinds.conf lalu reload Hyprland
+    // Tulis keybinds.lua (atau keybinds.conf di mode legacy) lalu reload Hyprland
     function apply(): void {
-        writer.write("keybinds.conf", generate(), true);
+        if (lua)
+            writer.write([["w", "keybinds.lua", generateLua()]], true);
+        else
+            writer.write([["w", "keybinds.conf", generate()]], true);
         dirty = false;
     }
 
-    // Selama merekam, matikan keybind lain supaya tombolnya sampai ke shell
+    // Selama merekam, matikan keybind lain supaya tombolnya sampai ke shell.
+    // Mode Lua: `hyprctl dispatch` mengeksekusi kode Lua, bukan lagi "submap nama".
     function startCapture(): void {
-        Quickshell.execDetached(["hyprctl", "dispatch", "submap", "me-shell-capture"]);
+        Quickshell.execDetached(lua ? ["hyprctl", "dispatch", 'hl.dsp.submap("me-shell-capture")'] : ["hyprctl", "dispatch", "submap", "me-shell-capture"]);
     }
 
     function endCapture(): void {
-        Quickshell.execDetached(["hyprctl", "dispatch", "submap", "reset"]);
+        Quickshell.execDetached(lua ? ["hyprctl", "dispatch", 'hl.dsp.submap("reset")'] : ["hyprctl", "dispatch", "submap", "reset"]);
     }
 
     // Ubah event keyboard Qt jadi kombinasi Hyprland; null kalau cuma tombol modifier
@@ -288,21 +306,41 @@ Singleton {
         }
     }
 
-    // Menulis file di folder hypr/ (mkdir dulu); reload = jalankan hyprctl reload sesudahnya
+    // Menulis file di folder hypr/ (mkdir dulu), semuanya dalam satu proses supaya reload
+    // selalu terjadi setelah semua file siap. files: [["w" (timpa) | "n" (hanya kalau belum ada), nama, isi]]
     QtObject {
         id: writer
 
-        function write(name: string, text: string, reload: bool): void {
-            const script = 'mkdir -p "$1" && printf "%s" "$3" > "$1/$2"' + (reload ? " && hyprctl reload" : "");
-            Quickshell.execDetached(["sh", "-c", script, "sh", root.dir, name, text]);
+        function write(files: var, reload: bool): void {
+            const script = 'd="$1"; shift; mkdir -p "$d" || exit 1; while [ $# -ge 3 ]; do if [ "$1" = w ] || [ ! -e "$d/$2" ]; then printf "%s" "$3" > "$d/$2"; fi; shift 3; done' + (reload ? "; hyprctl reload" : "");
+            Quickshell.execDetached(["sh", "-c", script, "sh", root.dir].concat(files.flat()));
         }
+    }
+
+    // Config Hyprland yang aktif: Lua (>= 0.55) atau hyprlang. Kalau hyprctl tidak menjawab
+    // (bukan sesi Hyprland), ikuti keberadaan hyprland.lua.
+    Process {
+        id: detect
+
+        command: ["sh", "-c", 'p="$(hyprctl systeminfo 2>/dev/null | grep -i configProvider)"; case "$p" in *lua*) echo lua ;; "") [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.lua" ] && echo lua || echo legacy ;; *) echo legacy ;; esac']
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.mode = text.trim() === "lua" ? "lua" : "legacy";
+                root.writeFiles();
+            }
+        }
+    }
+
+    function writeFiles(): void {
+        // reload supaya keybind langsung aktif pada start pertama
+        if (lua)
+            writer.write([["w", "me-shell.lua", mainLua()], ["n", "user.lua", KB.LUA_USER_STUB], ["w", "keybinds.lua", generateLua()]], true);
+        else
+            writer.write([["w", "me-shell.conf", mainConf()], ["n", "user.conf", "# Keybind dan setting Hyprland milikmu sendiri. me-shell tidak pernah menimpa file ini.\n"], ["w", "keybinds.conf", generate()]], true);
     }
 
     // Dipanggil dari shell.qml saat start supaya file-file hypr/ selalu ada
     function ensureFiles(): void {
-        writer.write("me-shell.conf", mainConf(), false);
-        // reload supaya keybind langsung aktif pada start pertama
-        writer.write("keybinds.conf", generate(), true);
-        Quickshell.execDetached(["sh", "-c", 'mkdir -p "$1" && { [ -f "$1/user.conf" ] || printf "%s\\n" "# Keybind dan setting Hyprland milikmu sendiri. me-shell tidak pernah menimpa file ini." > "$1/user.conf"; }', "sh", dir]);
+        detect.running = true;
     }
 }

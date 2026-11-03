@@ -27,7 +27,9 @@ The structure and motion come from [Caelestia](https://github.com/caelestia-dots
 - one accent color, picked from your wallpaper
 
 > [!NOTE]
-> Tested on Fedora 44 (Hyprland 0.56, Quickshell 0.3) in a VM. Real laptops, multi-monitor, and Arch have not been tested yet, so expect rough edges. The interface text is in Indonesian for now.
+> Tested on Fedora 44 (Hyprland 0.57, Quickshell 0.3) on a laptop, after the first runs in a VM with Hyprland 0.56. Arch and multi-monitor setups have not been tested yet, so expect rough edges. The interface text is in Indonesian for now.
+>
+> Hyprland 0.55 and newer read their config from `hyprland.lua`; me-shell detects this and uses Lua. Older Hyprland (before 0.55) still gets the classic `hyprland.conf` setup.
 
 ## Screenshots
 
@@ -119,9 +121,13 @@ The script asks once before installing packages. Then log in to Hyprland and the
 - Installs Hyprland (if missing), Quickshell, matugen, kitty, starship, and the rest: grim, wf-recorder, cliphist, hyprpicker, hyprsunset, cava, and friends. On Fedora, Hyprland, Quickshell, and starship come from COPR.
 - Downloads Material Symbols, Rubik, Doto, Space Grotesk, and Space Mono to `~/.local/share/fonts/me-shell`.
 - Clones the repo to `~/.local/share/me-shell` and adds the `me-shell` command to `~/.local/bin`.
-- Creates `~/.config/me-shell/hypr/` and adds one `source` line to your `hyprland.conf`, with a backup. If you have no `hyprland.conf`, it writes a minimal one.
+- Installs `xdg-desktop-portal` and `xdg-desktop-portal-hyprland` (screen sharing, file chooser).
+- Creates `~/.config/me-shell/hypr/` and connects it to Hyprland:
+  - **Hyprland 0.55+ (Lua):** adds one marked `pcall(require, ".../me-shell")` block to `~/.config/hypr/hyprland.lua`, with a backup (`hyprland.lua.me-shell.bak`). If there is no `hyprland.lua`, it writes a minimal one. It never creates a `hyprland.conf`, because Hyprland ignores it. Running the installer again does not add the block twice.
+  - **Older Hyprland (hyprlang):** adds one `source` line to your `hyprland.conf`, with a backup. If you have no `hyprland.conf`, it writes a minimal one.
+  - The shell is started from Hyprland's `hyprland.start` event, after `dbus-update-activation-environment` so `xdg-desktop-portal` can start.
 - Adds the me-shell style to `kitty.conf` and turns on starship in your `.bashrc`, `.zshrc`, or `config.fish`, with backups.
-- Offers to disable Waybar, swaync, mako, dunst, hypridle, and other polkit agents if it finds them in your config, since they clash.
+- Offers to disable Waybar, swaync, mako, dunst, hypridle, and other polkit agents if it finds them in your config (`exec-once` in `.conf`, `hl.exec_cmd` in `.lua`), since they clash. `me-shell uninstall` turns them back on.
 
 </details>
 
@@ -139,11 +145,14 @@ me-shell uninstall   detach from Hyprland and restore what was disabled
 The defaults follow [JaKooLit](https://github.com/JaKooLit/Hyprland-Dots). Hyprland files are split like this:
 
 ```
+~/.config/hypr/hyprland.lua      yours; me-shell only adds one marked require() block
 ~/.config/me-shell/hypr/
-  me-shell.conf    the file your hyprland.conf sources
-  keybinds.conf    shell keybinds, written from the settings window
-  user.conf        yours, never overwritten
+  me-shell.lua     required from hyprland.lua: autostart, env, session-lock option
+  keybinds.lua     shell keybinds, written from the settings window
+  user.lua         yours, never overwritten
 ```
+
+On Hyprland older than 0.55 the same three files are `me-shell.conf`, `keybinds.conf`, and `user.conf`, and `hyprland.conf` has one `source` line instead of the require block. Only the files for the active mode are written.
 
 <details open>
 <summary>Default keybinds</summary>
@@ -173,7 +182,7 @@ Volume, mic, media, and brightness keys work out of the box. Every bind can be c
 Screenshots go to `~/Pictures/Screenshots` and are copied to the clipboard; recordings go to `~/Videos/Recordings`.
 
 > [!IMPORTANT]
-> Keep `allow_session_lock_restore = true` in `me-shell.conf`. If the shell ever crashes while the screen is locked, that option is what lets the lockscreen come back.
+> Keep `allow_session_lock_restore = true` in `me-shell.lua` (`me-shell.conf` on old Hyprland). If the shell ever crashes while the screen is locked, that option is what lets the lockscreen come back.
 
 ## Configuration
 
@@ -252,9 +261,9 @@ node --test tests/*.test.cjs
 TZ=America/New_York node --test tests/*.test.cjs
 ```
 
-The tests cover calendar boundaries, DST, retention, summaries (including leap years and matched monthly comparisons), state transitions, persistence, category detection/overrides, and focused-player media-aware idle handling. QML signals, compositor behavior, and rendering still need a live Hyprland session.
+The Hyprland tests (`tests/keybinds.test.cjs`, `tests/me-shell-hypr.test.cjs`) also run the generated Lua files through `Hyprland --verify-config` when Hyprland is installed, and are skipped otherwise. The tests cover calendar boundaries, DST, retention, summaries (including leap years and matched monthly comparisons), state transitions, persistence, category detection/overrides, and focused-player media-aware idle handling. QML signals, compositor behavior, and rendering still need a live Hyprland session.
 
-Testing in VirtualBox, Qt can crash on the virtual GPU driver. Add `env = LIBGL_ALWAYS_SOFTWARE,1` and `env = MESA_LOADER_DRIVER_OVERRIDE,llvmpipe` to `~/.config/me-shell/hypr/user.conf`. Animations look choppier because the CPU draws them; real hardware is smooth.
+Testing in VirtualBox, Qt can crash on the virtual GPU driver. Add `hl.env("LIBGL_ALWAYS_SOFTWARE", "1")` and `hl.env("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")` to `~/.config/me-shell/hypr/user.lua` (or `env = LIBGL_ALWAYS_SOFTWARE,1` and `env = MESA_LOADER_DRIVER_OVERRIDE,llvmpipe` in `user.conf` on old Hyprland). Animations look choppier because the CPU draws them; real hardware is smooth.
 
 ## Credits
 
