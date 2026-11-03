@@ -3,12 +3,15 @@ pragma Singleton
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import qs.services
 import qs.utils
 
 // Keybind shell, dipecah ala JaKooLit di ~/.config/me-shell/hypr/:
 //   me-shell.conf  di-source dari hyprland.conf (ditulis ulang setiap start)
 //   keybinds.conf  dibuat dari daftar di bawah + perubahan dari menu settings
 //   user.conf      milik user, hanya dibuat kalau belum ada
+// Kalau Hyprland memakai config Lua (hyprland.lua, Hyprland 0.55+), file-nya me-shell.lua, keybinds.lua, dan
+// user.lua, dan hyprland.lua memuat me-shell.lua lewat dofile (dipasang oleh "me-shell hypr").
 // Perubahan dari settings disimpan di ~/.config/me-shell/keybinds.json.
 Singleton {
     id: root
@@ -192,6 +195,65 @@ Singleton {
         return lines.join("\n") + "\n";
     }
 
+    // Bind tipe hyprlang -> flag hl.bind. bindel = locked + repeating, bindl = locked, bindn = non_consuming
+    readonly property var luaFlags: ({
+            bindel: "{ locked = true, repeating = true }",
+            bindl: "{ locked = true }",
+            bindn: "{ non_consuming = true }"
+        })
+
+    function luaStr(s: string): string {
+        return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+    }
+
+    // "SUPER SHIFT" + "E" -> "SUPER + SHIFT + E"
+    function luaKeys(mods: string, key: string): string {
+        return [...mods.split(/\s+/).filter(m => m !== ""), key].join(" + ");
+    }
+
+    function generateLua(): string {
+        const lines = ["-- Dibuat otomatis oleh me-shell dari menu settings. Jangan diedit, pakai user.lua.", `local meshell = ${luaStr(ipc)}`, ""];
+        for (const b of binds)
+            lines.push(`hl.bind(${luaStr(luaKeys(b.mods, b.key))}, hl.dsp.exec_cmd(meshell .. ${luaStr(" " + b.cmd)}))`);
+        lines.push("");
+        for (const f of fixed)
+            lines.push(`hl.bind(${luaStr(luaKeys(f[1], f[2]))}, hl.dsp.exec_cmd(meshell .. ${luaStr(" " + f[3])}), ${luaFlags[f[0]]})`);
+        return lines.join("\n") + "\n";
+    }
+
+    function mainLua(): string {
+        return [
+            "-- Dibuat oleh me-shell, ditulis ulang setiap shell start. hyprland.lua memuatnya dengan:",
+            `--   dofile(${luaStr(dir + "/me-shell.lua")})`,
+            "",
+            "hl.on(\"hyprland.start\", function()",
+            "    hl.exec_cmd(\"qs -c me-shell\")",
+            "end)",
+            "",
+            "-- Aplikasi Electron/Chromium (VS Code, Discord, Brave) jalan native di Wayland, tidak buram lewat XWayland",
+            "hl.env(\"ELECTRON_OZONE_PLATFORM_HINT\", \"auto\")",
+            "",
+            "hl.config({ misc = { allow_session_lock_restore = true } })",
+            "",
+            "-- Muat file kalau ada, supaya file yang belum dibuat tidak menghentikan config",
+            "local function load(file)",
+            "    local f = io.open(file, \"r\")",
+            "    if f then",
+            "        f:close()",
+            "        dofile(file)",
+            "    end",
+            "end",
+            `load(${luaStr(dir + "/keybinds.lua")})`,
+            `load(${luaStr(dir + "/user.lua")})`,
+            "",
+            "-- Submap kosong: dipakai menu settings saat merekam kombinasi tombol baru",
+            "hl.define_submap(\"me-shell-capture\", function()",
+            "    hl.bind(\"escape\", hl.dsp.submap(\"reset\"), { non_consuming = true })",
+            "end)",
+            ""
+        ].join("\n");
+    }
+
     function mainConf(): string {
         return [
             "# Dibuat oleh me-shell, ditulis ulang setiap shell start. Tambahkan di hyprland.conf:",
@@ -217,19 +279,22 @@ Singleton {
         ].join("\n");
     }
 
-    // Tulis keybinds.conf lalu reload Hyprland
+    // Tulis keybinds.conf (atau keybinds.lua) lalu reload Hyprland
     function apply(): void {
-        writer.write("keybinds.conf", generate(), true);
+        if (Hypr.lua)
+            writer.write("keybinds.lua", generateLua(), true);
+        else
+            writer.write("keybinds.conf", generate(), true);
         dirty = false;
     }
 
     // Selama merekam, matikan keybind lain supaya tombolnya sampai ke shell
     function startCapture(): void {
-        Quickshell.execDetached(["hyprctl", "dispatch", "submap", "me-shell-capture"]);
+        Hypr.submap("me-shell-capture");
     }
 
     function endCapture(): void {
-        Quickshell.execDetached(["hyprctl", "dispatch", "submap", "reset"]);
+        Hypr.submap("reset");
     }
 
     // Ubah event keyboard Qt jadi kombinasi Hyprland; null kalau cuma tombol modifier
@@ -300,6 +365,13 @@ Singleton {
 
     // Dipanggil dari shell.qml saat start supaya file-file hypr/ selalu ada
     function ensureFiles(): void {
+        if (Hypr.lua) {
+            writer.write("me-shell.lua", mainLua(), false);
+            // reload supaya keybind langsung aktif pada start pertama
+            writer.write("keybinds.lua", generateLua(), true);
+            Quickshell.execDetached(["sh", "-c", 'mkdir -p "$1" && { [ -f "$1/user.lua" ] || printf "%s\\n" "-- Keybind dan setting Hyprland milikmu sendiri. me-shell tidak pernah menimpa file ini." > "$1/user.lua"; }', "sh", dir]);
+            return;
+        }
         writer.write("me-shell.conf", mainConf(), false);
         // reload supaya keybind langsung aktif pada start pertama
         writer.write("keybinds.conf", generate(), true);

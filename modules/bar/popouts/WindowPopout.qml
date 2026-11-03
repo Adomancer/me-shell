@@ -77,14 +77,14 @@ ColumnLayout {
             visible: root.toplevel !== null
             icon: "picture_in_picture_alt"
             type: "tonal"
-            onClicked: Hyprland.dispatch("togglefloating")
+            onClicked: Hypr.toggleFloating()
         }
 
         IconButton {
             visible: root.toplevel !== null
             icon: "fullscreen"
             type: "tonal"
-            onClicked: Hyprland.dispatch("fullscreen 1")
+            onClicked: Hypr.toggleMaximize()
         }
 
         IconButton {
@@ -92,7 +92,7 @@ ColumnLayout {
             icon: "close"
             type: "tonal"
             onClicked: {
-                Hyprland.dispatch("killactive");
+                Hypr.closeActive();
                 DrawerState.close();
             }
         }

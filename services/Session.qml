@@ -16,7 +16,7 @@ Singleton {
     }
 
     function logout(): void {
-        Hyprland.dispatch("exit");
+        Hypr.exit();
     }
 
     function suspend(): void {

@@ -81,7 +81,7 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: Hyprland.dispatch(`workspace ${cell.index + 1}`)
+                onClicked: Hypr.focusWorkspace(cell.index + 1)
             }
         }
     }
@@ -107,6 +107,6 @@ Item {
     }
 
     WheelHandler {
-        onWheel: event => Hyprland.dispatch(`workspace ${event.angleDelta.y > 0 ? "r-1" : "r+1"}`)
+        onWheel: event => Hypr.focusWorkspace(event.angleDelta.y > 0 ? "r-1" : "r+1")
     }
 }

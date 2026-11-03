@@ -133,7 +133,7 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        Hyprland.dispatch(`workspace ${card.ws}`);
+                        Hypr.focusWorkspace(card.ws);
                         DrawerState.close();
                     }
                 }
@@ -196,13 +196,13 @@ Item {
                                 if (root.dragged) {
                                     const target = root.dropWs;
                                     if (target > 0 && target !== card.ws) {
-                                        Hyprland.dispatch(`movetoworkspacesilent ${target},address:${win.ipc.address}`);
+                                        Hypr.moveToWorkspaceSilent(target, win.ipc.address);
                                         refresh.restart();
                                     }
                                     root.dragged = null;
                                     return;
                                 }
-                                Hyprland.dispatch(`focuswindow address:${win.ipc.address}`);
+                                Hypr.focusWindow(win.ipc.address);
                                 DrawerState.close();
                             }
                         }

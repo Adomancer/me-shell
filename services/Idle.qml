@@ -38,7 +38,7 @@ Singleton {
         enabled: !root.holding && Config.idleScreenOffMinutes > 0
         timeout: Config.idleScreenOffMinutes * 60
         respectInhibitors: true
-        onIsIdleChanged: Hyprland.dispatch(isIdle ? "dpms off" : "dpms on")
+        onIsIdleChanged: Hypr.dpms(!isIdle)
     }
 
     IdleMonitor {

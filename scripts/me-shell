@@ -11,10 +11,14 @@ QS_LINK="$CONF/quickshell/me-shell"
 HYPR_DIR="$CONF/me-shell/hypr"
 HYPR_CONF="$CONF/hypr/hyprland.conf"
 SOURCE_LINE="source = $HYPR_DIR/me-shell.conf"
+# Hyprland 0.55+ memakai hyprland.lua kalau file itu ada (hyprland.conf hanya dipakai kalau tidak ada)
+HYPR_LUA="$CONF/hypr/hyprland.lua"
+LUA_LINE="dofile(\"$HYPR_DIR/me-shell.lua\")"
 BIN="$HOME/.local/bin/me-shell"
 KITTY_CONF="$CONF/kitty/kitty.conf"
 # Penanda baris config lain yang dimatikan oleh installer, supaya bisa dikembalikan saat uninstall
 MARK="#me-shell-off#"
+MARK_LUA="--me-shell-off-- "
 # Program yang tugasnya diambil alih me-shell (bar, notifikasi, idle, agen polkit)
 CLASH="waybar|swaync|mako|dunst|hyprpanel|ags|hypridle|hyprpolkitagent|polkit-gnome|polkit-kde"
 
@@ -397,9 +401,60 @@ link() {
     ok "$path -> $target"
 }
 
+# true kalau Hyprland memakai config Lua. Hyprland memilih sekali saat start: ada hyprland.lua = Lua.
+is_lua() { [ -f "$HYPR_LUA" ]; }
+
+# Isi awal config Lua; shell menulis ulang me-shell.lua dan keybinds.lua setiap start (services/Keybinds.qml)
+write_hypr_files_lua() {
+    mkdir -p "$HYPR_DIR"
+    if [ ! -f "$HYPR_DIR/me-shell.lua" ]; then
+        cat >"$HYPR_DIR/me-shell.lua" <<EOF
+-- Dibuat oleh me-shell, ditulis ulang setiap shell start. hyprland.lua memuatnya dengan:
+--   $LUA_LINE
+
+hl.on("hyprland.start", function()
+    hl.exec_cmd("qs -c me-shell")
+end)
+
+-- Aplikasi Electron/Chromium (VS Code, Discord, Brave) jalan native di Wayland, tidak buram lewat XWayland
+hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
+
+hl.config({ misc = { allow_session_lock_restore = true } })
+
+-- Muat file kalau ada, supaya file yang belum dibuat tidak menghentikan config
+local function load(file)
+    local f = io.open(file, "r")
+    if f then
+        f:close()
+        dofile(file)
+    end
+end
+load("$HYPR_DIR/keybinds.lua")
+load("$HYPR_DIR/user.lua")
+
+-- Submap kosong: dipakai menu settings saat merekam kombinasi tombol baru
+hl.define_submap("me-shell-capture", function()
+    hl.bind("escape", hl.dsp.submap("reset"), { non_consuming = true })
+end)
+EOF
+    fi
+    [ -f "$HYPR_DIR/keybinds.lua" ] || echo "-- Diisi otomatis oleh me-shell saat start" >"$HYPR_DIR/keybinds.lua"
+    if [ ! -f "$HYPR_DIR/user.lua" ]; then
+        cat >"$HYPR_DIR/user.lua" <<'EOF'
+-- Keybind dan setting Hyprland milikmu sendiri. me-shell tidak pernah menimpa file ini.
+-- Skala/resolusi monitor diatur di hyprland.lua (baris hl.monitor). Cek skala sekarang: hyprctl monitors
+EOF
+    fi
+    ok "me-shell.lua, keybinds.lua, user.lua"
+}
+
 # Isi awal; shell menulis ulang file-file ini setiap start (services/Keybinds.qml)
 write_hypr_files() {
     step "File Hyprland ($HYPR_DIR)"
+    if is_lua; then
+        write_hypr_files_lua
+        return
+    fi
     mkdir -p "$HYPR_DIR"
     if [ ! -f "$HYPR_DIR/me-shell.conf" ]; then
         cat >"$HYPR_DIR/me-shell.conf" <<EOF
@@ -475,13 +530,39 @@ $SOURCE_LINE
 EOF
 }
 
+# Config Lua (Hyprland 0.55+): satu baris dofile di akhir hyprland.lua, dengan backup
+setup_hyprland_lua() {
+    step "Hyprland ($HYPR_LUA)"
+    note "Hyprland memakai config Lua, me-shell dimuat lewat dofile"
+    if grep -qxF "$LUA_LINE" "$HYPR_LUA"; then
+        ok "Baris dofile sudah ada"
+    else
+        cp "$HYPR_LUA" "$HYPR_LUA.me-shell.bak"
+        printf '\n-- me-shell\n%s\n' "$LUA_LINE" >>"$HYPR_LUA"
+        ok "Baris dofile ditambahkan (backup: hyprland.lua.me-shell.bak)"
+    fi
+
+    # Bar/notif lain bentrok dengan me-shell; cari panggilan hl.exec_cmd satu baris di semua file Lua
+    local hits
+    hits="$(grep -rnE --include='*.lua' "^[[:space:]]*hl\.exec_cmd\(.*\b($CLASH)\b.*\)[[:space:]]*$" "$CONF/hypr" 2>/dev/null | grep -vF -e "$MARK_LUA" || true)"
+    if [ -n "$hits" ]; then
+        warn "Ditemukan program yang bentrok dengan me-shell:"
+        printf '%s\n' "$hits" | sed 's/^/      /'
+        if ask "Matikan baris-baris itu? (bisa dikembalikan lewat 'me-shell uninstall')"; then
+            printf '%s\n' "$hits" | cut -d: -f1 | sort -u | while read -r f; do
+                sed -i -E "s/^([[:space:]]*hl\.exec_cmd\(.*\b($CLASH)\b.*\)[[:space:]]*)$/$MARK_LUA\1/" "$f"
+            done
+            ok "Dimatikan"
+        fi
+    fi
+}
+
 setup_hyprland_conf() {
-    step "Hyprland ($HYPR_CONF)"
-    if [ -f "$CONF/hypr/hyprland.lua" ] && [ ! -f "$HYPR_CONF" ]; then
-        warn "Config Hyprland-mu pakai Lua (hyprland.lua). Tambahkan sendiri source ke:"
-        warn "  $HYPR_DIR/me-shell.conf"
+    if is_lua; then
+        setup_hyprland_lua
         return
     fi
+    step "Hyprland ($HYPR_CONF)"
     if [ ! -f "$HYPR_CONF" ]; then
         mkdir -p "$(dirname "$HYPR_CONF")"
         minimal_hyprland_conf >"$HYPR_CONF"
@@ -632,6 +713,25 @@ cmd_install() {
     note "Perintah: me-shell update | restart | log | uninstall"
 }
 
+# Pasang saja bagian Hyprland (autostart, keybind, config), tanpa dependency dan font. Berguna kalau
+# me-shell tidak jalan otomatis, atau setelah Hyprland berpindah ke config Lua.
+cmd_hypr() {
+    local root
+    root="$(repo_root)"
+    link "$root" "$QS_LINK"
+    write_hypr_files
+    setup_hyprland_conf
+    step "Selesai"
+    if in_hyprland; then
+        hyprctl reload >/dev/null && ok "Hyprland di-reload"
+        stop_shell
+        start_shell
+        ok "me-shell dinyalakan"
+    else
+        note "Login ke sesi Hyprland; me-shell akan jalan otomatis."
+    fi
+}
+
 cmd_update() {
     local root
     root="$(repo_root)"
@@ -671,6 +771,14 @@ cmd_uninstall() {
         sed -i "s/^$MARK //" "$f"
         ok "Dikembalikan: $f"
     done
+    if [ -f "$HYPR_LUA" ]; then
+        sed -i "\|^dofile(\"$HYPR_DIR/me-shell.lua\")\$|d; /^-- me-shell\$/d" "$HYPR_LUA"
+        ok "Baris dofile dihapus dari hyprland.lua"
+    fi
+    { grep -rlF --include='*.lua' -e "$MARK_LUA" "$CONF/hypr" 2>/dev/null || true; } | while read -r f; do
+        sed -i "s/^$MARK_LUA//" "$f"
+        ok "Dikembalikan: $f"
+    done
     if [ -f "$KITTY_CONF" ]; then
         sed -i '\|^include .*/assets/kitty/me-shell.conf$|d; /^# me-shell$/d' "$KITTY_CONF"
         ok "Gaya me-shell dilepas dari kitty.conf"
@@ -703,6 +811,7 @@ Pemakaian: me-shell <perintah> [-y]
   restart     matikan lalu nyalakan lagi shell
   log         jalankan shell di terminal dan simpan log (untuk lapor error)
   uninstall   lepas me-shell dari Hyprland dan hapus symlink
+  hypr        pasang bagian Hyprland saja (autostart, keybind, config; mendukung config Lua)
   dev         pasang alat developer per grup (editor, bahasa, container, database, aplikasi)
 
   -y          jawab "ya" untuk semua pertanyaan
@@ -721,6 +830,7 @@ main() {
     restart) cmd_restart ;;
     log) cmd_log ;;
     uninstall) cmd_uninstall ;;
+    hypr) cmd_hypr ;;
     dev) cmd_dev ;;
     -h | --help | help) usage ;;
     *) usage; exit 1 ;;
