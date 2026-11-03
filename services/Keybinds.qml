@@ -150,7 +150,6 @@ Singleton {
         ["bindel", "ALT", "XF86AudioLowerVolume", "volume downPrecise"],
         ["bindl", "", "XF86AudioMute", "volume mute"],
         ["bindl", "", "XF86AudioMicMute", "volume mic"],
-        ["bindl", "", "XF86AudioPlayPause", "media playPause"],
         ["bindl", "", "XF86AudioPause", "media playPause"],
         ["bindl", "", "XF86AudioPlay", "media playPause"],
         ["bindl", "", "XF86AudioNext", "media next"],
@@ -212,12 +211,29 @@ Singleton {
     }
 
     function generateLua(): string {
-        const lines = ["-- Dibuat otomatis oleh me-shell dari menu settings. Jangan diedit, pakai user.lua.", `local meshell = ${luaStr(ipc)}`, ""];
+        const lines = [
+            "-- Dibuat otomatis oleh me-shell dari menu settings. Jangan diedit, pakai user.lua.",
+            `local meshell = ${luaStr(ipc)}`,
+            "",
+            "-- Satu bind yang gagal (misalnya nama tombol salah) tidak boleh menghentikan bind lain;",
+            "-- errornya dikumpulkan dan ditampilkan Hyprland di akhir file",
+            "local errs = {}",
+            "local function bind(keys, cmd, flags)",
+            "    local ok, err = pcall(function()",
+            "        hl.bind(keys, hl.dsp.exec_cmd(meshell .. \" \" .. cmd), flags)",
+            "    end)",
+            "    if not ok then",
+            "        errs[#errs + 1] = tostring(err)",
+            "    end",
+            "end",
+            ""
+        ];
         for (const b of binds)
-            lines.push(`hl.bind(${luaStr(luaKeys(b.mods, b.key))}, hl.dsp.exec_cmd(meshell .. ${luaStr(" " + b.cmd)}))`);
+            lines.push(`bind(${luaStr(luaKeys(b.mods, b.key))}, ${luaStr(b.cmd)})`);
         lines.push("");
         for (const f of fixed)
-            lines.push(`hl.bind(${luaStr(luaKeys(f[1], f[2]))}, hl.dsp.exec_cmd(meshell .. ${luaStr(" " + f[3])}), ${luaFlags[f[0]]})`);
+            lines.push(`bind(${luaStr(luaKeys(f[1], f[2]))}, ${luaStr(f[3])}, ${luaFlags[f[0]]})`);
+        lines.push("", "if #errs > 0 then", "    error(table.concat(errs, \"\\n\"), 0)", "end");
         return lines.join("\n") + "\n";
     }
 
@@ -235,12 +251,16 @@ Singleton {
             "",
             "hl.config({ misc = { allow_session_lock_restore = true } })",
             "",
-            "-- Muat file kalau ada, supaya file yang belum dibuat tidak menghentikan config",
+            "-- Muat file kalau ada. Error satu file tidak menghentikan yang lain; semuanya ditampilkan di akhir",
+            "local errs = {}",
             "local function load(file)",
             "    local f = io.open(file, \"r\")",
             "    if f then",
             "        f:close()",
-            "        dofile(file)",
+            "        local ok, err = pcall(dofile, file)",
+            "        if not ok then",
+            "            errs[#errs + 1] = tostring(err)",
+            "        end",
             "    end",
             "end",
             `load(${luaStr(dir + "/keybinds.lua")})`,
@@ -250,6 +270,10 @@ Singleton {
             "hl.define_submap(\"me-shell-capture\", function()",
             "    hl.bind(\"escape\", hl.dsp.submap(\"reset\"), { non_consuming = true })",
             "end)",
+            "",
+            "if #errs > 0 then",
+            "    error(table.concat(errs, \"\\n\"), 0)",
+            "end",
             ""
         ].join("\n");
     }

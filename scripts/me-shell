@@ -421,12 +421,16 @@ hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
 
 hl.config({ misc = { allow_session_lock_restore = true } })
 
--- Muat file kalau ada, supaya file yang belum dibuat tidak menghentikan config
+-- Muat file kalau ada. Error satu file tidak menghentikan yang lain; semuanya ditampilkan di akhir
+local errs = {}
 local function load(file)
     local f = io.open(file, "r")
     if f then
         f:close()
-        dofile(file)
+        local ok, err = pcall(dofile, file)
+        if not ok then
+            errs[#errs + 1] = tostring(err)
+        end
     end
 end
 load("$HYPR_DIR/keybinds.lua")
@@ -436,6 +440,10 @@ load("$HYPR_DIR/user.lua")
 hl.define_submap("me-shell-capture", function()
     hl.bind("escape", hl.dsp.submap("reset"), { non_consuming = true })
 end)
+
+if #errs > 0 then
+    error(table.concat(errs, "\n"), 0)
+end
 EOF
     fi
     [ -f "$HYPR_DIR/keybinds.lua" ] || echo "-- Diisi otomatis oleh me-shell saat start" >"$HYPR_DIR/keybinds.lua"
