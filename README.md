@@ -1,5 +1,5 @@
 <div align="center">
-# There is some issue with the hyptland in this version so ill try fix it 
+There is some issue with the hyptland in this version so ill try fix it 
 <div></div>
 
 
