@@ -1,8 +1,5 @@
-<div align="center">
-There is some issue with the hyptland in this version so ill try fix it 
-<div></div>
-
-
+[!WARNING]
+**me-shell is still under active development and is not stable yet.** Expect bugs, missing features, and breaking changes between updates. There is still a lot left to do, and there is a known Hyprland issue in the current version that I'm working on. I don't recommend using it as your daily driver for now.
 
 <div align="center">
 
